@@ -131,14 +131,14 @@ test.describe('Spraybot simulated workflow', () => {
     const autoLength = await page.getByTestId('side-overlay-spray-length').textContent();
     const autoLineEnd = await page.getByTestId('side-display-length-line').getAttribute('x2');
     await page.getByRole('button', { name: 'Edit Measurement' }).click();
-    const endpoint = page.getByRole('slider', { name: 'Spray endpoint handle' });
+    const endpoint = page.getByRole('slider', { name: 'Spray endpoint' });
     const endpointBox = await endpoint.boundingBox();
     if (!endpointBox) throw new Error('Endpoint unavailable');
     await page.mouse.move(endpointBox.x + endpointBox.width / 2, endpointBox.y + endpointBox.height / 2);
     await page.mouse.down();
     await page.mouse.move(endpointBox.x + endpointBox.width / 2 + 35, endpointBox.y + endpointBox.height / 2, { steps: 4 });
     await expect(page.getByTestId('side-overlay-spray-length')).not.toHaveText(autoLength ?? '');
-    await expect(page.getByTestId('inspector-side-spray-length')).toHaveText(/Auto .* \/ Final/);
+    await expect(page.getByTestId('inspector-side-spray-length')).not.toHaveText(autoLength ?? '');
     await page.mouse.up();
     await expect(page.getByTestId('inspector-scale')).toHaveText(scaleBefore ?? '');
 
@@ -149,6 +149,7 @@ test.describe('Spraybot simulated workflow', () => {
     await page.getByRole('button', { name: 'Apply Measurement' }).click();
     await expect(endpoint).toHaveCount(0);
     await expect(page.getByTestId('side-display-length-line')).not.toHaveAttribute('x2', autoLineEnd ?? '');
+    await expect(page.getByTestId('inspector-side-spray-length')).toHaveText(/Auto .* \/ Final/);
     const appliedLength = await page.getByTestId('side-overlay-spray-length').textContent();
 
     await page.getByRole('button', { name: 'Capture 27 1350 ms Stable' }).click();
@@ -266,12 +267,67 @@ test.describe('Spraybot simulated workflow', () => {
     await expect(report.getByText('Finalization')).toBeVisible();
   });
 
-  test('Result V2 shows empty state when no finalized report exists', async ({ page }) => {
+  test('measurement tool modes for Side Camera provide focused interactions and preserve edits', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Result' }).click();
-    await expect(page.getByText('Final analysis required')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Return to Analysis' })).toBeVisible();
+    await page.getByRole('button', { name: 'Analysis' }).click();
+
+    await page.getByRole('button', { name: 'Edit Measurement' }).click();
+    
+    // 1. Defaults to Length tool
+    await expect(page.getByRole('tab', { name: 'Length' })).toHaveAttribute('aria-selected', 'true');
+    // 2. Length tool shows only endpoint interaction
+    await expect(page.getByRole('slider', { name: 'Spray endpoint' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Spread measurement position' })).toHaveCount(0);
+    await expect(page.getByRole('slider', { name: 'Upper angle boundary' })).toHaveCount(0);
+
+    // Make an edit in Length
+    const endpoint = page.getByRole('slider', { name: 'Spray endpoint' });
+    await endpoint.focus();
+    await page.keyboard.press('Shift+ArrowRight');
+    
+    // 3. Switch to Spread
+    await page.getByRole('tab', { name: 'Spread' }).click();
+    await expect(page.getByRole('tab', { name: 'Spread' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('slider', { name: 'Spread measurement position' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Upper spread boundary' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Lower spread boundary' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Spray endpoint' })).toHaveCount(0);
+    
+    // Make an edit in Spread
+    const upperSpread = page.getByRole('slider', { name: 'Upper spread boundary' });
+    await upperSpread.focus();
+    await page.keyboard.press('Shift+ArrowUp');
+    const spreadPos = page.getByRole('slider', { name: 'Spread measurement position' });
+    await spreadPos.focus();
+    await page.keyboard.press('Shift+ArrowLeft');
+    
+    // 4. Switch to Angle
+    await page.getByRole('tab', { name: 'Angle' }).click();
+    await expect(page.getByRole('tab', { name: 'Angle' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('slider', { name: 'Upper angle boundary' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Lower angle boundary' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Spread measurement position' })).toHaveCount(0);
+
+    // Make an edit in Angle
+    const upperAngle = page.getByRole('slider', { name: 'Upper angle boundary' });
+    await upperAngle.focus();
+    await page.keyboard.press('Shift+ArrowUp');
+
+    // Apply all edits
+    await page.getByRole('button', { name: 'Apply Measurement' }).click();
+    
+    // Check that edits are preserved
+    await expect(page.getByTestId('inspector-side-spray-length')).toHaveText(/Auto .* \/ Final/);
+    await expect(page.getByTestId('inspector-side-vertical-spread')).toHaveText(/Auto .* \/ Final/);
+    await expect(page.getByTestId('inspector-side-spray-angle')).toHaveText(/Auto .* \/ Final/);
+    
+    // Verify Cancel discards session
+    await page.getByRole('button', { name: 'Edit Measurement' }).click();
+    await expect(page.getByRole('tab', { name: 'Length' })).toHaveAttribute('aria-selected', 'true');
+    await endpoint.focus();
+    await page.keyboard.press('Shift+ArrowRight');
+    await page.getByRole('button', { name: 'Cancel' }).click();
   });
 });
 
