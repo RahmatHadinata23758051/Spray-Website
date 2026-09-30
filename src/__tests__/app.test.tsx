@@ -157,6 +157,10 @@ describe('Analysis traceability domain', () => {
       },
       sideCalibration,
       frontCalibration,
+      sideAutoGeometry: getPixelGeometry(28, 'nominal-01').side,
+      sideFinalGeometry: getPixelGeometry(28, 'nominal-01').side,
+      frontAutoGeometry: getPixelGeometry(28, 'nominal-01').front,
+      frontFinalGeometry: getPixelGeometry(28, 'nominal-01').front,
       finalizedBy: 'Nadia Putri',
       finalizedAt: '2026-09-29T14:15:00Z',
     });
@@ -274,6 +278,10 @@ describe('Synchronized capture selection domain', () => {
       front: createFrontMeasurements({ sprayAreaMm2: 19240, equivalentDiameterMm: 156, circularity: 0.86, centroidOffsetXmm: 2.1, centroidOffsetYmm: -1.4, horizontalSymmetry: 0.94, verticalSymmetry: 0.91 }),
       sideCalibration: createCalibrationSnapshot({ camera: 'side', referenceDistanceMm: 1000, anchorA: { x: 112, y: 296 }, anchorB: { x: 634, y: 296 } }),
       frontCalibration: createCalibrationSnapshot({ camera: 'front', referenceDistanceMm: 400, anchorA: { x: 200, y: 180 }, anchorB: { x: 360, y: 180 } }),
+      sideAutoGeometry: getPixelGeometry(28, 'nominal-01').side,
+      sideFinalGeometry: getPixelGeometry(28, 'nominal-01').side,
+      frontAutoGeometry: getPixelGeometry(28, 'nominal-01').front,
+      frontFinalGeometry: getPixelGeometry(28, 'nominal-01').front,
       finalizedBy: 'Nadia Putri',
       finalizedAt: '2026-09-29T14:45:00Z',
     });
@@ -444,6 +452,10 @@ describe('Calibrated pixel measurement pipeline', () => {
       front: frontAfterValues,
       sideCalibration: sideAfter,
       frontCalibration: frontAfter,
+      sideAutoGeometry: getPixelGeometry(28, 'nominal-01').side,
+      sideFinalGeometry: getPixelGeometry(28, 'nominal-01').side,
+      frontAutoGeometry: getPixelGeometry(28, 'nominal-01').front,
+      frontFinalGeometry: getPixelGeometry(28, 'nominal-01').front,
       finalizedBy: 'Nadia Putri',
       finalizedAt: '2026-09-29T14:45:00Z',
     });
@@ -542,11 +554,15 @@ describe('Final Analysis V2 report result contract', () => {
     return createFinalAnalysisReport({
       test: tests[0],
       primaryCaptureMoment: primary,
-      supportingCaptureMoments: synchronizedFrames.slice(19, 31),
+      supportingCaptureMoments: synchronizedFrames.slice(19, 28),
       side: deriveSideMeasurementsFromGeometry(geometry.side, sideCalibration, { geometry: sideCorrected, adjustedBy: 'Nadia Putri', adjustedAt: '2026-09-29T14:40:00Z' }),
       front: deriveFrontMeasurementsFromGeometry(geometry.front, frontCalibration),
       sideCalibration,
       frontCalibration,
+      sideAutoGeometry: geometry.side,
+      sideFinalGeometry: sideCorrected,
+      frontAutoGeometry: geometry.front,
+      frontFinalGeometry: geometry.front,
       finalizedBy: 'Nadia Putri',
       finalizedAt: '2026-09-29T14:45:00Z',
     });
@@ -606,10 +622,28 @@ describe('Final Analysis V2 report result contract', () => {
     expect(changedTest.productSnapshot.productName).toBe('Changed Product');
   });
 
-  it('truncates supporting captures at maximum 9', () => {
-    const report = makeReport();
-    expect(report.supportingCaptures.length).toBeLessThanOrEqual(9);
-    expect(report.supportingCaptureMomentIds.length).toBeLessThanOrEqual(9);
+  it('rejects supporting captures > 9', () => {
+    expect(() => {
+      const primary = synchronizedFrames[28];
+      const geometry = getPixelGeometry(primary.frameIndex, tests[0].fixture);
+      const sideCalibration = createCalibrationSnapshot({ camera: 'side', referenceDistanceMm: 1000, anchorA: { x: 112, y: 296 }, anchorB: { x: 634, y: 296 } });
+      const frontCalibration = createCalibrationSnapshot({ camera: 'front', referenceDistanceMm: 400, anchorA: { x: 200, y: 180 }, anchorB: { x: 360, y: 180 } });
+      createFinalAnalysisReport({
+        test: tests[0],
+        primaryCaptureMoment: primary,
+        supportingCaptureMoments: synchronizedFrames.slice(19, 31),
+        side: deriveSideMeasurementsFromGeometry(geometry.side, sideCalibration, {}),
+        front: deriveFrontMeasurementsFromGeometry(geometry.front, frontCalibration),
+        sideCalibration,
+        frontCalibration,
+        sideAutoGeometry: geometry.side,
+        sideFinalGeometry: geometry.side,
+        frontAutoGeometry: geometry.front,
+        frontFinalGeometry: geometry.front,
+        finalizedBy: 'Nadia Putri',
+        finalizedAt: '2026-09-29T14:45:00Z',
+      });
+    }).toThrow('Maximum 9 supporting captures allowed.');
   });
 
   it('uses Test Setpoints terminology not actual telemetry', () => {
@@ -699,5 +733,109 @@ describe('Task H3 — Measurement Tool Modes for Side Camera', () => {
     
     expect(valuesAfter.spreadPosition?.final).not.toBeCloseTo(valuesBefore.spreadPosition?.final ?? 0);
     expect(valuesAfter.verticalSpread.final).not.toBeCloseTo(valuesBefore.verticalSpread.final);
+  });
+});
+
+describe('Task L1 — Final Report Snapshot Integrity', () => {
+  const primary = synchronizedFrames[28];
+  const sideCalibration = createCalibrationSnapshot({ camera: 'side', referenceDistanceMm: 1000, anchorA: { x: 112, y: 296 }, anchorB: { x: 634, y: 296 } });
+  const frontCalibration = createCalibrationSnapshot({ camera: 'front', referenceDistanceMm: 500, anchorA: { x: 265, y: 85 }, anchorB: { x: 465, y: 85 } });
+  const initialGeom = getPixelGeometry(28, tests[0].fixture);
+
+  const makeValidReport = (overrides?: Partial<Parameters<typeof createFinalAnalysisReport>[0]>) => {
+    return createFinalAnalysisReport({
+      test: tests[0],
+      primaryCaptureMoment: primary,
+      supportingCaptureMoments: [synchronizedFrames[27]],
+      side: deriveSideMeasurementsFromGeometry(initialGeom.side, sideCalibration),
+      front: deriveFrontMeasurementsFromGeometry(initialGeom.front, frontCalibration),
+      sideCalibration,
+      frontCalibration,
+      sideAutoGeometry: initialGeom.side,
+      sideFinalGeometry: initialGeom.side,
+      frontAutoGeometry: initialGeom.front,
+      frontFinalGeometry: initialGeom.front,
+      finalizedBy: 'Nadia Putri',
+      finalizedAt: '2026-09-29T14:45:00Z',
+      ...overrides,
+    });
+  };
+
+  it('final report contains frozen Side and Front pixel geometry', () => {
+    const report = makeValidReport();
+    expect(report.side.autoGeometry).toEqual(initialGeom.side);
+    expect(report.side.finalGeometry).toEqual(initialGeom.side);
+    expect(report.front.autoGeometry).toEqual(initialGeom.front);
+    expect(report.front.finalGeometry).toEqual(initialGeom.front);
+  });
+
+  it('fixture mutation after finalization cannot change report snapshot', () => {
+    const mutableGeom = { ...initialGeom.side, sprayEndpointPx: { x: 500, y: 200 } };
+    const report = makeValidReport({ sideFinalGeometry: mutableGeom });
+    // Mutate source geometry object
+    mutableGeom.sprayEndpointPx.x = 999;
+    expect(report.side.finalGeometry.sprayEndpointPx.x).toBe(500);
+  });
+
+  it('calibration mutation after finalization cannot change report snapshot', () => {
+    const mutableCal = { ...sideCalibration };
+    const report = makeValidReport({ sideCalibration: mutableCal });
+    mutableCal.scaleMmPerPx = 99.99;
+    expect(report.side.calibration.scaleMmPerPx).toBe(sideCalibration.scaleMmPerPx);
+  });
+
+  it('corrected geometry mutation after finalization cannot change report snapshot', () => {
+    const correctedGeom = moveSideMeasurementHandle(initialGeom.side, 'sprayEndpoint', { x: 490, y: 200 }, { width: 720, height: 360 });
+    const report = makeValidReport({ sideFinalGeometry: correctedGeom });
+    correctedGeom.sprayEndpointPx.x = 888;
+    expect(report.side.finalGeometry.sprayEndpointPx.x).toBe(490);
+  });
+
+  it('>9 Supporting Captures is rejected rather than truncated', () => {
+    expect(() => {
+      makeValidReport({
+        supportingCaptureMoments: synchronizedFrames.slice(10, 25), // 15 captures
+      });
+    }).toThrow('Maximum 9 supporting captures allowed.');
+  });
+
+  it('unsynced Primary Capture is rejected', () => {
+    const unsyncedPrimary = { ...primary, syncStatus: 'invalid' as const };
+    expect(() => {
+      makeValidReport({ primaryCaptureMoment: unsyncedPrimary });
+    }).toThrow('Primary capture must be synchronized.');
+  });
+
+  it('Side/Front timestamp mismatch is rejected', () => {
+    const mismatchedPrimary = {
+      ...primary,
+      side: { ...primary.side, timestampMs: 1400 },
+      front: { ...primary.front, timestampMs: 1450 },
+    };
+    expect(() => {
+      makeValidReport({ primaryCaptureMoment: mismatchedPrimary });
+    }).toThrow('Side and Front frames must share the same timestamp.');
+  });
+
+  it('Side/Front frame index mismatch is rejected', () => {
+    const mismatchedPrimary = {
+      ...primary,
+      side: { ...primary.side, frameIndex: 28 },
+      front: { ...primary.front, frameIndex: 29 },
+    };
+    expect(() => {
+      makeValidReport({ primaryCaptureMoment: mismatchedPrimary });
+    }).toThrow('Side and Front frames must share the same frame index.');
+  });
+
+  it('supporting capture pairs remain synchronized', () => {
+    const report = makeValidReport({
+      supportingCaptureMoments: [synchronizedFrames[25], synchronizedFrames[26]],
+    });
+    expect(report.supportingCaptures).toHaveLength(2);
+    expect(report.supportingCaptures[0].frameIndex).toBe(25);
+    expect(report.supportingCaptures[0].side.timestampMs).toBe(report.supportingCaptures[0].front.timestampMs);
+    expect(report.supportingCaptures[1].frameIndex).toBe(26);
+    expect(report.supportingCaptures[1].side.timestampMs).toBe(report.supportingCaptures[1].front.timestampMs);
   });
 });
