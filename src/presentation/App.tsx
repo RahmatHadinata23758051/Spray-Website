@@ -249,6 +249,7 @@ function Analysis({ test, setPage, finalReport, setFinalReport }: { test: Test; 
   const [workingCalibrations, setWorkingCalibrations] = useState<Record<CameraType, CalibrationSnapshot>>(initialCalibration);
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [isEditingMeasurement, setIsEditingMeasurement] = useState(false);
+  const [activeSideTool, setActiveSideTool] = useState<ActiveSideTool>('Length');
   const [sideCorrectionsByMoment, setSideCorrectionsByMoment] = useState<Record<string, SideMeasurementCorrection>>({});
   const [frontCorrectionsByMoment, setFrontCorrectionsByMoment] = useState<Record<string, FrontMeasurementCorrection>>({});
   const [workingSideGeometry, setWorkingSideGeometry] = useState<SidePixelGeometry | null>(null);
@@ -332,6 +333,7 @@ function Analysis({ test, setPage, finalReport, setFinalReport }: { test: Test; 
     setWorkingSideGeometry(cloneSideGeometry(savedSideGeometry));
     setWorkingFrontGeometry(cloneFrontGeometry(savedFrontGeometry));
     setIsEditingMeasurement(true);
+    setActiveSideTool('Length');
     setIsCalibrating(false);
     setMode('Overlay');
   };
@@ -366,19 +368,6 @@ function Analysis({ test, setPage, finalReport, setFinalReport }: { test: Test; 
 
   const handleWorkingFrontGeometryChange = (next: FrontPixelGeometry) => {
     setWorkingFrontGeometry(cloneFrontGeometry(next));
-  };
-
-  const handleNudgeSide = (field: 'sprayLength' | 'sprayAngle' | 'verticalSpread', delta: number) => {
-    const current = workingSideGeometry ?? cloneSideGeometry(savedSideGeometry);
-    if (field === 'sprayLength') {
-      const deltaPx = delta / activeCalibrations.side.scaleMmPerPx;
-      setWorkingSideGeometry(moveSideMeasurementHandle(current, 'sprayEndpoint', { x: current.sprayEndpointPx.x + deltaPx, y: current.sprayEndpointPx.y }, { width: 720, height: 360 }));
-    } else if (field === 'verticalSpread') {
-      const deltaPx = delta / activeCalibrations.side.scaleMmPerPx;
-      setWorkingSideGeometry(moveSideMeasurementHandle(current, 'spreadBottom', { x: current.verticalSpreadBottomPx.x, y: current.verticalSpreadBottomPx.y + deltaPx }, { width: 720, height: 360 }));
-    } else if (field === 'sprayAngle') {
-      setWorkingSideGeometry(moveSideMeasurementHandle(current, 'upperAngle', { x: current.upperBoundaryPx.x, y: current.upperBoundaryPx.y - delta * 2 }, { width: 720, height: 360 }));
-    }
   };
 
   const handleNudgeFront = (field: 'sprayArea' | 'centroidOffsetX' | 'centroidOffsetY', delta: number) => {
@@ -478,6 +467,7 @@ function Analysis({ test, setPage, finalReport, setFinalReport }: { test: Test; 
             {isCalibrating && <CalibrationReferenceOverlay calibration={workingCalibrations[camera]} onChange={handleWorkingCalibrationChange} />}
             {isEditingMeasurement && <MeasurementCorrectionOverlay
               camera={camera}
+              activeSideTool={activeSideTool}
               autoSideGeometry={currentGeometry.side}
               workingSideGeometry={workingSideGeometry ?? savedSideGeometry}
               autoFrontGeometry={currentGeometry.front}
@@ -516,12 +506,13 @@ function Analysis({ test, setPage, finalReport, setFinalReport }: { test: Test; 
             onApplyCalibration={handleApplyCalibration}
             onAdjustCalibration={handleAdjustCalibration}
             isEditingMeasurement={isEditingMeasurement}
+            activeSideTool={activeSideTool}
+            onSetActiveSideTool={setActiveSideTool}
             onStartMeasurementEdit={handleStartMeasurementEdit}
             onCancelMeasurementEdit={handleCancelMeasurementEdit}
             onApplyMeasurementEdit={handleApplyMeasurementEdit}
             sideMeasurements={sideMeasurements}
             frontMeasurements={frontMeasurements}
-            onCorrectSide={handleNudgeSide}
             onCorrectFront={handleNudgeFront}
           />
           <FinalAnalysisConfirmation
@@ -654,7 +645,7 @@ function AnalysisOverlay({
         <line data-testid="side-display-length-line" x1={sideGeometry.nozzleOriginPx.x} y1="312" x2={sideGeometry.sprayEndpointPx.x} y2="312" stroke="#ffb020" strokeWidth="2" /><line x1={sideGeometry.nozzleOriginPx.x} y1="304" x2={sideGeometry.nozzleOriginPx.x} y2="320" stroke="#ffb020" strokeWidth="2" /><line x1={sideGeometry.sprayEndpointPx.x} y1="304" x2={sideGeometry.sprayEndpointPx.x} y2="320" stroke="#ffb020" strokeWidth="2" />
         <text data-testid="side-overlay-spray-length" x="330" y="304" fill="#ffb020" fontSize="12" fontFamily="IBM Plex Mono">{fmt.cm(selectMeasurementValue(sideMeasurements.sprayLength))}</text>
         <line x1={sideGeometry.verticalSpreadTopPx.x} y1={sideGeometry.verticalSpreadTopPx.y} x2={sideGeometry.verticalSpreadBottomPx.x} y2={sideGeometry.verticalSpreadBottomPx.y} stroke="#ffb020" strokeWidth="2" />
-        <text x="601" y="192" fill="#ffb020" fontSize="11" fontFamily="IBM Plex Mono">{fmt.mm(selectMeasurementValue(sideMeasurements.verticalSpread))}</text>
+        <text x={Math.min(680, sideGeometry.verticalSpreadTopPx.x + 8)} y={(sideGeometry.verticalSpreadTopPx.y + sideGeometry.verticalSpreadBottomPx.y) / 2} fill="#ffb020" fontSize="11" fontFamily="IBM Plex Mono">{fmt.mm(selectMeasurementValue(sideMeasurements.verticalSpread))}</text>
       </g>}
     </>}
 
@@ -825,10 +816,12 @@ function CalibrationReferenceOverlay({ calibration, onChange }: { calibration: C
   </svg>;
 }
 
-type MeasurementHandle = 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'upperAngle' | 'lowerAngle' | 'centroid' | 'diameterLeft' | 'diameterRight';
+type MeasurementHandle = 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'spreadPosition' | 'upperAngle' | 'lowerAngle' | 'centroid' | 'diameterLeft' | 'diameterRight';
+type ActiveSideTool = 'Length' | 'Spread' | 'Angle';
 
-function MeasurementCorrectionOverlay({ camera, autoSideGeometry, workingSideGeometry, autoFrontGeometry, workingFrontGeometry, onSideChange, onFrontChange }: {
+function MeasurementCorrectionOverlay({ camera, activeSideTool, autoSideGeometry, workingSideGeometry, autoFrontGeometry, workingFrontGeometry, onSideChange, onFrontChange }: {
   camera: CameraType;
+  activeSideTool: ActiveSideTool;
   autoSideGeometry: SidePixelGeometry;
   workingSideGeometry: SidePixelGeometry;
   autoFrontGeometry: FrontPixelGeometry;
@@ -845,7 +838,7 @@ function MeasurementCorrectionOverlay({ camera, autoSideGeometry, workingSideGeo
     return { x: (clientX - rect.left) / rect.width * 720, y: (clientY - rect.top) / rect.height * 360 };
   };
   const updateHandle = (handle: MeasurementHandle, point: Point) => {
-    if (camera === 'side') onSideChange(moveSideMeasurementHandle(workingSideGeometry, handle as 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'upperAngle' | 'lowerAngle', point, { width: 720, height: 360 }));
+    if (camera === 'side') onSideChange(moveSideMeasurementHandle(workingSideGeometry, handle as 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'spreadPosition' | 'upperAngle' | 'lowerAngle', point, { width: 720, height: 360 }));
     else onFrontChange(moveFrontMeasurementHandle(workingFrontGeometry, handle as 'centroid' | 'diameterLeft' | 'diameterRight', point, { width: 720, height: 360 }));
   };
   const pointerDown = (event: React.PointerEvent<SVGCircleElement>, handle: MeasurementHandle) => {
@@ -879,23 +872,43 @@ function MeasurementCorrectionOverlay({ camera, autoSideGeometry, workingSideGeo
   const diameterRadius = workingFrontGeometry.equivalentDiameterPx / 2;
   return <svg ref={svgRef} className={`measurement-edit-overlay ${activeHandle ? 'is-dragging' : ''}`} viewBox="0 0 720 360" role="group" aria-label={`${camera} measurement correction handles`}>
     {camera === 'side' ? <>
-      <g className="measurement-auto-geometry" aria-label="System automatic geometry">
-        <line x1={autoSideGeometry.nozzleOriginPx.x} y1={autoSideGeometry.nozzleOriginPx.y} x2={autoSideGeometry.sprayEndpointPx.x} y2={autoSideGeometry.sprayEndpointPx.y} />
-        <line x1={autoSideGeometry.nozzleOriginPx.x} y1={autoSideGeometry.nozzleOriginPx.y} x2={autoSideGeometry.upperBoundaryPx.x} y2={autoSideGeometry.upperBoundaryPx.y} />
-        <line x1={autoSideGeometry.nozzleOriginPx.x} y1={autoSideGeometry.nozzleOriginPx.y} x2={autoSideGeometry.lowerBoundaryPx.x} y2={autoSideGeometry.lowerBoundaryPx.y} />
-        <line x1={autoSideGeometry.verticalSpreadTopPx.x} y1={autoSideGeometry.verticalSpreadTopPx.y} x2={autoSideGeometry.verticalSpreadBottomPx.x} y2={autoSideGeometry.verticalSpreadBottomPx.y} />
-      </g>
-      <g className="measurement-final-geometry" aria-label="Operator final geometry">
-        <line x1={workingSideGeometry.nozzleOriginPx.x} y1={workingSideGeometry.nozzleOriginPx.y} x2={workingSideGeometry.sprayEndpointPx.x} y2={workingSideGeometry.sprayEndpointPx.y} />
-        <line x1={workingSideGeometry.nozzleOriginPx.x} y1={workingSideGeometry.nozzleOriginPx.y} x2={workingSideGeometry.upperBoundaryPx.x} y2={workingSideGeometry.upperBoundaryPx.y} />
-        <line x1={workingSideGeometry.nozzleOriginPx.x} y1={workingSideGeometry.nozzleOriginPx.y} x2={workingSideGeometry.lowerBoundaryPx.x} y2={workingSideGeometry.lowerBoundaryPx.y} />
-        <line x1={workingSideGeometry.verticalSpreadTopPx.x} y1={workingSideGeometry.verticalSpreadTopPx.y} x2={workingSideGeometry.verticalSpreadBottomPx.x} y2={workingSideGeometry.verticalSpreadBottomPx.y} />
-      </g>
-      {handle('sprayEndpoint', 'Spray endpoint handle', workingSideGeometry.sprayEndpointPx)}
-      {handle('spreadTop', 'Upper spread handle', workingSideGeometry.verticalSpreadTopPx)}
-      {handle('spreadBottom', 'Lower spread handle', workingSideGeometry.verticalSpreadBottomPx)}
-      {handle('upperAngle', 'Upper angle handle', workingSideGeometry.upperBoundaryPx)}
-      {handle('lowerAngle', 'Lower angle handle', workingSideGeometry.lowerBoundaryPx)}
+      <circle cx={workingSideGeometry.nozzleOriginPx.x} cy={workingSideGeometry.nozzleOriginPx.y} r="5" fill="#1d8fff" stroke="#dce8f1" strokeWidth="2" />
+      {activeSideTool === 'Length' && <>
+        <g className="measurement-auto-geometry" aria-label="System automatic length geometry">
+          <line x1={autoSideGeometry.nozzleOriginPx.x} y1={autoSideGeometry.nozzleOriginPx.y} x2={autoSideGeometry.sprayEndpointPx.x} y2={autoSideGeometry.sprayEndpointPx.y} stroke="#1d8fff" strokeDasharray="5 4" strokeWidth="1.5" />
+          <circle cx={autoSideGeometry.sprayEndpointPx.x} cy={autoSideGeometry.sprayEndpointPx.y} r="6" fill="none" stroke="#1d8fff" strokeWidth="2" strokeDasharray="3 2" />
+        </g>
+        <g className="measurement-final-geometry" aria-label="Operator final length geometry">
+          <line x1={workingSideGeometry.nozzleOriginPx.x} y1={workingSideGeometry.nozzleOriginPx.y} x2={workingSideGeometry.sprayEndpointPx.x} y2={workingSideGeometry.sprayEndpointPx.y} stroke="#ff8c00" strokeWidth="2" />
+        </g>
+        {handle('sprayEndpoint', 'Spray endpoint', workingSideGeometry.sprayEndpointPx)}
+      </>}
+      {activeSideTool === 'Spread' && (() => {
+        const midY = (workingSideGeometry.verticalSpreadTopPx.y + workingSideGeometry.verticalSpreadBottomPx.y) / 2;
+        return <>
+          <g className="measurement-auto-geometry" aria-label="System automatic spread geometry">
+            <line x1={autoSideGeometry.verticalSpreadTopPx.x} y1={autoSideGeometry.verticalSpreadTopPx.y} x2={autoSideGeometry.verticalSpreadBottomPx.x} y2={autoSideGeometry.verticalSpreadBottomPx.y} stroke="#1d8fff" strokeDasharray="5 4" strokeWidth="1.5" />
+          </g>
+          <g className="measurement-final-geometry" aria-label="Operator final spread geometry">
+            <line x1={workingSideGeometry.verticalSpreadTopPx.x} y1={workingSideGeometry.verticalSpreadTopPx.y} x2={workingSideGeometry.verticalSpreadBottomPx.x} y2={workingSideGeometry.verticalSpreadBottomPx.y} stroke="#ff8c00" strokeWidth="2.5" />
+          </g>
+          {handle('spreadPosition', 'Spread measurement position', { x: workingSideGeometry.verticalSpreadTopPx.x, y: midY })}
+          {handle('spreadTop', 'Upper spread boundary', workingSideGeometry.verticalSpreadTopPx)}
+          {handle('spreadBottom', 'Lower spread boundary', workingSideGeometry.verticalSpreadBottomPx)}
+        </>;
+      })()}
+      {activeSideTool === 'Angle' && <>
+        <g className="measurement-auto-geometry" aria-label="System automatic angle geometry">
+          <line x1={autoSideGeometry.nozzleOriginPx.x} y1={autoSideGeometry.nozzleOriginPx.y} x2={autoSideGeometry.upperBoundaryPx.x} y2={autoSideGeometry.upperBoundaryPx.y} stroke="#1d8fff" strokeDasharray="5 4" strokeWidth="1.5" />
+          <line x1={autoSideGeometry.nozzleOriginPx.x} y1={autoSideGeometry.nozzleOriginPx.y} x2={autoSideGeometry.lowerBoundaryPx.x} y2={autoSideGeometry.lowerBoundaryPx.y} stroke="#1d8fff" strokeDasharray="5 4" strokeWidth="1.5" />
+        </g>
+        <g className="measurement-final-geometry" aria-label="Operator final angle geometry">
+          <line x1={workingSideGeometry.nozzleOriginPx.x} y1={workingSideGeometry.nozzleOriginPx.y} x2={workingSideGeometry.upperBoundaryPx.x} y2={workingSideGeometry.upperBoundaryPx.y} stroke="#ff8c00" strokeWidth="2" />
+          <line x1={workingSideGeometry.nozzleOriginPx.x} y1={workingSideGeometry.nozzleOriginPx.y} x2={workingSideGeometry.lowerBoundaryPx.x} y2={workingSideGeometry.lowerBoundaryPx.y} stroke="#ff8c00" strokeWidth="2" />
+        </g>
+        {handle('upperAngle', 'Upper angle boundary', workingSideGeometry.upperBoundaryPx)}
+        {handle('lowerAngle', 'Lower angle boundary', workingSideGeometry.lowerBoundaryPx)}
+      </>}
       <text x="132" y="188">BLUE AUTO · ORANGE WORKING FINAL</text>
     </> : <>
       <g className="measurement-auto-geometry" aria-label="System automatic geometry">
@@ -1005,7 +1018,7 @@ function FinalAnalysisConfirmation({ status, selectedCount, primaryMoment, sideM
   </section>;
 }
 
-function Inspector({ camera, a, moment, calibration, isCalibrating, onStartCalibration, onCancelCalibration, onApplyCalibration, onAdjustCalibration, isEditingMeasurement, onStartMeasurementEdit, onCancelMeasurementEdit, onApplyMeasurementEdit, sideMeasurements, frontMeasurements, onCorrectSide, onCorrectFront }: {
+function Inspector({ camera, a, moment, calibration, isCalibrating, onStartCalibration, onCancelCalibration, onApplyCalibration, onAdjustCalibration, isEditingMeasurement, activeSideTool, onSetActiveSideTool, onStartMeasurementEdit, onCancelMeasurementEdit, onApplyMeasurementEdit, sideMeasurements, frontMeasurements, onCorrectFront }: {
   camera: CameraType;
   a: AnalysisData;
   moment?: SynchronizedAnalysisFrame;
@@ -1016,12 +1029,13 @@ function Inspector({ camera, a, moment, calibration, isCalibrating, onStartCalib
   onApplyCalibration?: () => void;
   onAdjustCalibration?: (deltaPx: number) => void;
   isEditingMeasurement?: boolean;
+  activeSideTool?: ActiveSideTool;
+  onSetActiveSideTool?: (tool: ActiveSideTool) => void;
   onStartMeasurementEdit?: () => void;
   onCancelMeasurementEdit?: () => void;
   onApplyMeasurementEdit?: () => void;
   sideMeasurements?: SideFinalMeasurements;
   frontMeasurements?: FrontFinalMeasurements;
-  onCorrectSide?: (field: 'sprayLength' | 'sprayAngle' | 'verticalSpread', delta: number) => void;
   onCorrectFront?: (field: 'sprayArea' | 'centroidOffsetX' | 'centroidOffsetY', delta: number) => void;
 }) {
   const measurementRows: { label: string; value: MeasurementValue; format: (value: number) => string }[] = camera === 'side'
@@ -1048,7 +1062,44 @@ function Inspector({ camera, a, moment, calibration, isCalibrating, onStartCalib
     </section>}
     <section>
       <h3>Measurements</h3>
-      <div className="metric-list">{measurementRows.map(row => <div className={`metric-row ${row.value.adjusted ? 'metric-row-adjusted' : ''}`} key={row.label}><span>{row.label}</span><strong data-testid={`inspector-${camera}-${metricSlug(row.label)}`} className="font-mono">{row.value.adjusted ? `Auto ${row.format(row.value.auto)} / Final ${row.format(selectMeasurementValue(row.value))}` : row.format(selectMeasurementValue(row.value))}</strong></div>)}</div>
+      {(!isEditingMeasurement || camera === 'front') && <div className="metric-list">{measurementRows.map(row => <div className={`metric-row ${row.value.adjusted ? 'metric-row-adjusted' : ''}`} key={row.label}><span>{row.label}</span><strong data-testid={`inspector-${camera}-${metricSlug(row.label)}`} className="font-mono">{row.value.adjusted ? `Auto ${row.format(row.value.auto)} / Final ${row.format(selectMeasurementValue(row.value))}` : row.format(selectMeasurementValue(row.value))}</strong></div>)}</div>}
+      
+      {isEditingMeasurement && camera === 'side' && sideMeasurements && activeSideTool && onSetActiveSideTool && <>
+        <div className="measurement-tool-bar" role="tablist" aria-label="Measurement tools">
+          <span className="measurement-tool-label">Measurement tool</span>
+          <div className="measurement-tool-buttons">
+            {(['Length', 'Spread', 'Angle'] as ActiveSideTool[]).map(tool => (
+              <button
+                key={tool}
+                type="button"
+                role="tab"
+                aria-selected={activeSideTool === tool}
+                className={`measurement-tool-btn ${activeSideTool === tool ? 'is-active' : ''}`}
+                onClick={() => onSetActiveSideTool(tool)}
+              >
+                {tool}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="metric-list">
+          {activeSideTool === 'Length' && <>
+            <div className="metric-row"><span>Automatic</span><strong className="font-mono">{fmt.cm(sideMeasurements.sprayLength.auto)}</strong></div>
+            <div className={`metric-row ${sideMeasurements.sprayLength.adjusted ? 'metric-row-adjusted' : ''}`}><span>Final</span><strong data-testid="inspector-side-spray-length" className="font-mono">{fmt.cm(selectMeasurementValue(sideMeasurements.sprayLength))}</strong></div>
+          </>}
+          {activeSideTool === 'Spread' && <>
+            <div className="metric-row"><span>Position</span><strong data-testid="inspector-side-spread-position" className="font-mono">{fmt.cm(sideMeasurements.spreadPosition?.final ?? 0)}</strong></div>
+            <div className="metric-row"><span>Automatic</span><strong className="font-mono">{fmt.mm(sideMeasurements.verticalSpread.auto)}</strong></div>
+            <div className={`metric-row ${sideMeasurements.verticalSpread.adjusted ? 'metric-row-adjusted' : ''}`}><span>Final</span><strong data-testid="inspector-side-vertical-spread" className="font-mono">{fmt.mm(selectMeasurementValue(sideMeasurements.verticalSpread))}</strong></div>
+          </>}
+          {activeSideTool === 'Angle' && <>
+            <div className="metric-row"><span>Automatic</span><strong className="font-mono">{fmt.deg(sideMeasurements.sprayAngle.auto)}</strong></div>
+            <div className={`metric-row ${sideMeasurements.sprayAngle.adjusted ? 'metric-row-adjusted' : ''}`}><span>Final</span><strong data-testid="inspector-side-spray-angle" className="font-mono">{fmt.deg(selectMeasurementValue(sideMeasurements.sprayAngle))}</strong></div>
+          </>}
+        </div>
+      </>}
+
       {(onStartMeasurementEdit || onCancelMeasurementEdit || onApplyMeasurementEdit) && <div className="measurement-actions">
         {!isEditingMeasurement && onStartMeasurementEdit && <button type="button" className="secondary-button" onClick={onStartMeasurementEdit}>Edit Measurement</button>}
         {isEditingMeasurement && <>
@@ -1057,11 +1108,6 @@ function Inspector({ camera, a, moment, calibration, isCalibrating, onStartCalib
             {onApplyMeasurementEdit && <button type="button" className="primary-button" onClick={onApplyMeasurementEdit}>Apply Measurement</button>}
           </div>
           <p className="measurement-hint">Blue is automatic detection. Drag orange handles to define the accepted final geometry. Arrow = 1 px; Shift + Arrow = 10 px.</p>
-          {camera === 'side' && onCorrectSide && <details className="measurement-fallback"><summary>Keyboard fallback controls</summary><div className="measurement-nudge">
-            <button type="button" onClick={() => onCorrectSide('sprayLength', 5)}>Length +5 mm</button>
-            <button type="button" onClick={() => onCorrectSide('sprayAngle', 0.2)}>Angle +0.2°</button>
-            <button type="button" onClick={() => onCorrectSide('verticalSpread', 2)}>Spread +2 mm</button>
-          </div></details>}
           {camera === 'front' && onCorrectFront && <details className="measurement-fallback"><summary>Keyboard fallback controls</summary><div className="measurement-nudge">
             <button type="button" onClick={() => onCorrectFront('sprayArea', 120)}>Area +120 mm²</button>
             <button type="button" onClick={() => onCorrectFront('centroidOffsetX', 0.5)}>Centroid X +0.5</button>
