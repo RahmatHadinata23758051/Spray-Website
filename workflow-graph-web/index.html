@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spraybot Execution Flow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0A0C11;
+      --ink: #E8EBF2;
+      --ink-2: #A0A8B8;
+      --ink-3: #7C8598;
+      --rule: rgba(160, 175, 205, .16);
+      --surface: #10141B;
+      --sans: 'IBM Plex Sans', system-ui, sans-serif;
+      --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans)
+    }
+
+    body {
+      background-image: radial-gradient(circle, rgba(160, 175, 205, .07) 1px, transparent 1px);
+      background-size: 28px 28px
+    }
+
+    #markmap {
+      width: 100%;
+      height: 100%;
+      display: block;
+      outline: none
+    }
+
+    /* Title block — bergaya lembar gambar teknik, tanpa kartu */
+    .titleblock {
+      position: absolute;
+      top: 28px;
+      left: 32px;
+      z-index: 10;
+      max-width: 300px;
+      padding: 2px 0 2px 18px;
+      border-left: 2px solid var(--ink);
+      background: rgba(10, 12, 17, .72);
+      backdrop-filter: blur(8px)
+    }
+
+    .tag {
+      display: block;
+      font: 500 11px var(--mono);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: #4C8DFF;
+      margin-bottom: 10px
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font: 600 28px/1.1 var(--sans);
+      letter-spacing: -.03em
+    }
+
+    .sub {
+      margin: 0 0 18px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--ink-2)
+    }
+
+    .legend {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border-top: 1px solid var(--rule)
+    }
+
+    .legend li {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      min-height: 34px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--rule);
+      font-size: 13px;
+      color: var(--ink-2);
+      cursor: pointer;
+      transition: color .2s
+    }
+
+    .legend li:hover,
+    .legend li:focus-visible {
+      color: var(--ink);
+      outline: none
+    }
+
+    .legend li:focus-visible {
+      box-shadow: inset 0 -2px 0 var(--c)
+    }
+
+    .legend .ix {
+      font: 500 11px var(--mono);
+      color: var(--c);
+      letter-spacing: .08em
+    }
+
+    .legend .n {
+      margin-left: auto;
+      font: 400 11px var(--mono);
+      color: var(--ink-3)
+    }
+
+    /* Kontrol */
+    .controls {
+      position: absolute;
+      right: 32px;
+      bottom: 28px;
+      z-index: 50;
+      display: flex;
+      border: 1px solid var(--rule);
+      background: rgba(10, 12, 17, .85);
+      backdrop-filter: blur(8px);
+      border-radius: 8px;
+      overflow: hidden
+    }
+
+    .controls button {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      background: none;
+      border: 0;
+      color: var(--ink-2);
+      cursor: pointer;
+      transition: background .2s, color .2s
+    }
+
+    .controls button+button {
+      border-left: 1px solid var(--rule)
+    }
+
+    .controls button:hover {
+      background: rgba(255, 255, 255, .06);
+      color: var(--ink)
+    }
+
+    .controls button:focus-visible {
+      outline: 2px solid #4C8DFF;
+      outline-offset: -2px
+    }
+
+    .controls svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round
+    }
+
+    /* Markmap */
+    .markmap-node,
+    .markmap-link {
+      transition: opacity .25s
+    }
+
+    .markmap-node>circle {
+      cursor: pointer;
+      stroke-width: 2px;
+      transition: r .15s
+    }
+
+    .markmap-node>circle:hover {
+      r: 8px !important
+    }
+
+    .markmap-foreign-object {
+      color: var(--ink);
+      font-family: var(--sans)
+    }
+
+    .markmap-foreign-object>div {
+      background: transparent;
+      border: 0;
+      padding: 0;
+      margin-top: -6px;
+      white-space: nowrap;
+      display: inline-block
+    }
+
+    .markmap-foreign-object>div:hover .box {
+      background: #161B25;
+      border-color: rgba(160, 175, 205, .32)
+    }
+
+    .box {
+      transition: background .2s, border-color .2s
+    }
+
+    @media (max-width:720px) {
+      .titleblock {
+        top: 16px;
+        left: 16px;
+        right: 16px;
+        max-width: none
+      }
+
+      .sub,
+      .legend {
+        display: none
+      }
+
+      h1 {
+        font-size: 22px
+      }
+
+      .controls {
+        right: 16px;
+        bottom: 16px
+      }
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+      * {
+        transition: none !important
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/markmap-view@0.15"></script>
+  <script src="https://cdn.jsdelivr.net/npm/markmap-lib@0.15"></script>
+</head>
+
+<body>
+
+  <header class="titleblock">
+    <span class="tag">System Architecture Map</span>
+    <h1>Spraybot Execution Flow</h1>
+    <p class="sub">Klik titik di ujung garis untuk membuka cabang. Titik terisi berarti cabang masih tertutup.</p>
+    <ul class="legend" id="legend"></ul>
+  </header>
+
+  <nav class="controls" aria-label="Kontrol peta">
+    <button id="btn-zoom-in" title="Perbesar" aria-label="Perbesar"><svg viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7" />
+        <path d="M21 21l-4.3-4.3M11 8v6M8 11h6" />
+      </svg></button>
+    <button id="btn-zoom-out" title="Perkecil" aria-label="Perkecil"><svg viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7" />
+        <path d="M21 21l-4.3-4.3M8 11h6" />
+      </svg></button>
+    <button id="btn-fit" title="Sesuaikan layar" aria-label="Sesuaikan layar"><svg viewBox="0 0 24 24">
+        <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+      </svg></button>
+  </nav>
+
+  <svg id="markmap"></svg>
+
+  <script type="text/template" id="markdown-data">
+# Spraybot MVP
+
+## 1. PRE-TEST PHASE
+- **Login Screen**
+  - Autentikasi operator
+  - `page === 'Login'`
+- **Dashboard Hub**
+  - Monitor latest test & stability
+  - Awaiting Review / Finalized Tests
+  - `page === 'Dashboard'`
+- **Test Configuration**
+  - Pilih Product & Recipe
+  - Start mock test
+  - `page === 'New Test'`
+
+## 2. EXECUTION PHASE
+- **Capture Monitor**
+  - Sinkronisasi kamera
+  - Timeline fase
+  - `page === 'Capture'`
+
+## 3. ANALYSIS WORKSPACE
+- **Camera Viewport**
+  - Toggle: Side vs Front
+- **Visual Rendering**
+  - Toggle: Original / Mask
+- **Frame Timeline**
+  - Pin Primary Capture
+  - Pin Supporting
+- **Calibration**
+  - Drag Anchor A & B
+  - Translasi kisi
+- **Overrides**
+  - Koreksi manual vektor
+
+## 4. FINALIZATION
+- **Quality Gate**
+  - Wajib set 1 Primary Capture
+  - `createFinalAnalysisReport()`
+- **Result Summary**
+  - View canonical result
+  - `page === 'Result'`
+- **Archive**
+  - Cetak A4 / PDF (Reports)
+  - Simpan ke Database (History)
+</script>
+
+  <script>
+    const BG = '#0A0C11', INK = '#E8EBF2', INK2 = '#A0A8B8', INK3 = '#7C8598';
+    const PHASES = ['#4C8DFF', '#2DD4BF', '#B57CFF', '#FBB13C']; // urut sesuai fase
+    const strip = s => s.replace(/<[^>]+>/g, '').trim();
+    const title = s => s.toLowerCase().replace(/(^|[\s-])(\w)/g, (m, a, b) => a + b.toUpperCase());
+
+    const { root } = new markmap.Transformer().transform(document.getElementById('markdown-data').textContent);
+
+    // Bungkus konten dengan style inline agar pengukuran layout Markmap akurat
+    function decorate(node, depth, color, idx) {
+      const raw = node.content, txt = strip(raw);
+      node.color = color;
+      if (depth === 0) {
+        node.content = `<span style="display:block;padding:2px 4px"><b style="display:block;font:600 22px/1.15 var(--sans);letter-spacing:-.03em;color:${INK}">${txt}</b><i style="display:block;margin-top:3px;font:500 10px var(--mono);letter-spacing:.16em;font-style:normal;color:${INK3}">EXECUTION FLOW</i></span>`;
+      } else if (depth === 1) {
+        const n = (node.children || []).length;
+        node.content = `<span style="display:flex;align-items:baseline;gap:10px;padding:2px 4px"><i style="font:500 11px var(--mono);font-style:normal;letter-spacing:.08em;color:${color}">${String(idx + 1).padStart(2, '0')}</i><b style="font:600 15px var(--sans);letter-spacing:-.005em;color:${INK}">${title(txt.replace(/^\d+\.\s*/, ''))}</b><i style="font:400 11px var(--mono);font-style:normal;color:${INK3}">${n}</i></span>`;
+      } else if (depth === 2) {
+        node.content = `<span class="box" style="display:block;padding:6px 12px 6px 10px;background:#10141B;border:1px solid rgba(160,175,205,.16);border-left:2px solid ${color};border-radius:4px;font:500 13px var(--sans);color:${INK}">${txt}</span>`;
+      } else if (/<code/.test(raw)) {
+        node.content = `<span style="display:inline-block;padding:1px 6px;border-radius:3px;background:${color}1F;font:400 11px var(--mono);color:${color}">${txt}</span>`;
+      } else {
+        node.content = `<span style="display:block;padding:1px 2px;font:400 12px var(--sans);color:${INK2}">${txt}</span>`;
+      }
+      (node.children || []).forEach(c => decorate(c, depth + 1, color, idx));
+    }
+    // Tiap fase punya warna sendiri; anak-anaknya mewarisi lewat decorate()
+    root.children.forEach((p, i) => decorate(p, 1, PHASES[i], i));
+    root.color = INK;
+    root.content = `<span style="display:block;padding:2px 4px"><b style="display:block;font:600 22px/1.15 var(--sans);letter-spacing:-.03em;color:${INK}">${strip(root.content)}</b><i style="display:block;margin-top:3px;font:500 10px var(--mono);letter-spacing:.16em;font-style:normal;color:${INK3}">EXECUTION FLOW</i></span>`;
+
+    const svgEl = document.getElementById('markmap');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const mm = markmap.Markmap.create(svgEl, {
+      autoFit: true,
+      fitRatio: 0.82,
+      color: n => n.color,
+      duration: reduce ? 0 : 300,
+      nodeMinHeight: 40,
+      spacingHorizontal: 110,
+      spacingVertical: 12,
+      paddingX: 12,
+      initialExpandLevel: 1
+    }, root);
+
+    // Titik terisi = tertutup, berongga = terbuka, kecil = daun
+    function restyle() {
+      const svg = d3.select(svgEl);
+      svg.selectAll('.markmap-node > circle')
+        .style('fill', d => (d.data.payload && d.data.payload.fold) ? d.data.color : BG)
+        .style('stroke', d => d.data.color)
+        .style('r', d => (d.data.children && d.data.children.length) ? '6px' : '3px');
+      svg.selectAll('path.markmap-link')
+        .style('stroke', d => d.target.data.color)
+        .style('stroke-opacity', .55)
+        .style('stroke-width', '1.5px');
+    }
+    ['render', 'renderData'].forEach(k => {
+      if (typeof mm[k] !== 'function') return;
+      const orig = mm[k].bind(mm);
+      mm[k] = async (...a) => { const r = await orig(...a); restyle(); return r; };
+    });
+    restyle();
+    setTimeout(() => { restyle(); mm.fit(); }, 350);
+
+    // Legenda = indeks fase sekaligus filter fokus (hover / fokus keyboard)
+    const legend = document.getElementById('legend');
+    root.children.forEach((p, i) => {
+      const li = document.createElement('li');
+      li.tabIndex = 0;
+      li.style.setProperty('--c', PHASES[i]);
+      li.innerHTML = `<span class="ix">${String(i + 1).padStart(2, '0')}</span><span>${title(strip(p.content).replace(/^\d+\.\s*/, '').replace(/ Phase$/i, ''))}</span><span class="n">${(p.children || []).length}</span>`;
+      const focus = c => {
+        const svg = d3.select(svgEl);
+        svg.selectAll('.markmap-node').style('opacity', d => (!c || d.depth === 0 || d.data.color === c) ? 1 : .16);
+        svg.selectAll('path.markmap-link').style('opacity', d => (!c || d.target.data.color === c) ? 1 : .12);
+      };
+      ['mouseenter', 'focus'].forEach(e => li.addEventListener(e, () => focus(PHASES[i])));
+      ['mouseleave', 'blur'].forEach(e => li.addEventListener(e, () => focus(null)));
+      legend.appendChild(li);
+    });
+
+    // Kontrol zoom
+    const zoomBy = k => d3.select(svgEl).transition().duration(reduce ? 0 : 300).call(mm.zoom.scaleBy, k);
+    document.getElementById('btn-zoom-in').addEventListener('click', () => zoomBy(1.25));
+    document.getElementById('btn-zoom-out').addEventListener('click', () => zoomBy(0.8));
+    document.getElementById('btn-fit').addEventListener('click', () => mm.fit());
+  </script>
+</body>
+
+</html>
