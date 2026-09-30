@@ -399,7 +399,8 @@ describe('Calibrated pixel measurement pipeline', () => {
   });
 
   it('updates spread and angle from Side handles while preserving calibration scale', () => {
-    const spread = moveSideMeasurementHandle(geometry.side, 'spreadBottom', { x: 600, y: 260 }, { width: 720, height: 360 });
+    const positioned = moveSideMeasurementHandle(geometry.side, 'spreadPosition', { x: 600, y: 0 }, { width: 720, height: 360 });
+    const spread = moveSideMeasurementHandle(positioned, 'spreadBottom', { x: positioned.verticalSpreadBottomPx.x, y: 260 }, { width: 720, height: 360 });
     const angled = moveSideMeasurementHandle(spread, 'upperAngle', { x: 580, y: 110 }, { width: 720, height: 360 });
     const values = deriveSideMeasurementsFromGeometry(geometry.side, sideBefore, { geometry: angled, adjustedBy: 'Nadia Putri', adjustedAt: '2026-09-29T14:40:00Z' });
     expect(values.verticalSpread.final).not.toBeCloseTo(values.verticalSpread.auto);
@@ -427,9 +428,10 @@ describe('Calibrated pixel measurement pipeline', () => {
 
   it('clamps measurement handles and prevents spread crossing', () => {
     const endpoint = moveSideMeasurementHandle(geometry.side, 'sprayEndpoint', { x: 900, y: -40 }, { width: 720, height: 360 });
-    const top = moveSideMeasurementHandle(geometry.side, 'spreadTop', { x: 900, y: 350 }, { width: 720, height: 360 });
+    const position = moveSideMeasurementHandle(geometry.side, 'spreadPosition', { x: 900, y: 0 }, { width: 720, height: 360 });
+    const top = moveSideMeasurementHandle(geometry.side, 'spreadTop', { x: 0, y: 350 }, { width: 720, height: 360 });
     expect(endpoint.sprayEndpointPx).toEqual({ x: 720, y: 0 });
-    expect(top.verticalSpreadTopPx.x).toBe(720);
+    expect(position.verticalSpreadTopPx.x).toBe(710);
     expect(top.verticalSpreadTopPx.y).toBeLessThan(top.verticalSpreadBottomPx.y);
   });
 
@@ -646,5 +648,56 @@ describe('Final Analysis V2 report result contract', () => {
     expect(csv).toContain('front_spray-area_final');
     expect(csv.toLowerCase()).not.toContain('rear');
     expect(csv).toContain('primary_timestamp_ms');
+  });
+});
+
+describe('Task H3 — Measurement Tool Modes for Side Camera', () => {
+  const geometry = getPixelGeometry(28, tests[0].fixture);
+  const sideBefore = adjustCalibration(createCalibrationSnapshot({ camera: 'side', referenceDistanceMm: 1000, anchorA: { x: 112, y: 296 }, anchorB: { x: 634, y: 296 } }), { anchorB: { x: 682, y: 296 } }, 'Nadia', 'Now');
+
+  it('updates spread position horizontally independently of endpoint', () => {
+    const positioned = moveSideMeasurementHandle(geometry.side, 'spreadPosition', { x: 400, y: 0 }, { width: 720, height: 360 });
+    expect(positioned.verticalSpreadTopPx.x).toBe(400);
+    expect(positioned.verticalSpreadBottomPx.x).toBe(400);
+    expect(positioned.sprayEndpointPx.x).toBe(geometry.side.sprayEndpointPx.x);
+  });
+
+  it('preserves horizontal position when moving spread top/bottom handles vertically', () => {
+    const positioned = moveSideMeasurementHandle(geometry.side, 'spreadPosition', { x: 400, y: 0 }, { width: 720, height: 360 });
+    const top = moveSideMeasurementHandle(positioned, 'spreadTop', { x: 999, y: 120 }, { width: 720, height: 360 });
+    expect(top.verticalSpreadTopPx.x).toBe(400);
+    expect(top.verticalSpreadTopPx.y).toBe(120);
+    
+    const bottom = moveSideMeasurementHandle(top, 'spreadBottom', { x: 0, y: 300 }, { width: 720, height: 360 });
+    expect(bottom.verticalSpreadBottomPx.x).toBe(400);
+    expect(bottom.verticalSpreadBottomPx.y).toBe(300);
+  });
+
+  it('calculates physical Spread Position and Vertical Spread using calibration', () => {
+    const positioned = moveSideMeasurementHandle(geometry.side, 'spreadPosition', { x: 400, y: 0 }, { width: 720, height: 360 });
+    const top = moveSideMeasurementHandle(positioned, 'spreadTop', { x: 0, y: 100 }, { width: 720, height: 360 });
+    const bottom = moveSideMeasurementHandle(top, 'spreadBottom', { x: 0, y: 200 }, { width: 720, height: 360 });
+    
+    const values = deriveSideMeasurementsFromGeometry(geometry.side, sideBefore, { geometry: bottom, adjustedBy: 'Nadia', adjustedAt: 'Now' });
+    
+    const expectedPositionMm = Math.abs(400 - geometry.side.nozzleOriginPx.x) * sideBefore.scaleMmPerPx;
+    const expectedSpreadMm = Math.abs(200 - 100) * sideBefore.scaleMmPerPx;
+    
+    expect(values.spreadPosition?.final).toBeCloseTo(expectedPositionMm);
+    expect(values.verticalSpread.final).toBeCloseTo(expectedSpreadMm);
+  });
+
+  it('recalculates spread position and spread length when calibration changes', () => {
+    const positioned = moveSideMeasurementHandle(geometry.side, 'spreadPosition', { x: 400, y: 0 }, { width: 720, height: 360 });
+    const top = moveSideMeasurementHandle(positioned, 'spreadTop', { x: 0, y: 100 }, { width: 720, height: 360 });
+    const bottom = moveSideMeasurementHandle(top, 'spreadBottom', { x: 0, y: 200 }, { width: 720, height: 360 });
+    
+    const valuesBefore = deriveSideMeasurementsFromGeometry(geometry.side, sideBefore, { geometry: bottom, adjustedBy: 'Nadia', adjustedAt: 'Now' });
+    
+    const sideAfter = adjustCalibration(sideBefore, { referenceDistanceMm: 1200 }, 'Nadia', 'Now');
+    const valuesAfter = deriveSideMeasurementsFromGeometry(geometry.side, sideAfter, { geometry: bottom, adjustedBy: 'Nadia', adjustedAt: 'Now' });
+    
+    expect(valuesAfter.spreadPosition?.final).not.toBeCloseTo(valuesBefore.spreadPosition?.final ?? 0);
+    expect(valuesAfter.verticalSpread.final).not.toBeCloseTo(valuesBefore.verticalSpread.final);
   });
 });
