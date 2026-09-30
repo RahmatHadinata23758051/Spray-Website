@@ -87,7 +87,7 @@ export function getFrontDisplayGeometry(autoGeometry: FrontPixelGeometry, correc
 
 export function moveSideMeasurementHandle(
   geometry: SidePixelGeometry,
-  handle: 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'upperAngle' | 'lowerAngle',
+  handle: 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'upperAngle' | 'lowerAngle' | 'spreadPosition',
   target: Point,
   bounds: { width: number; height: number },
 ): SidePixelGeometry {
@@ -102,18 +102,24 @@ export function moveSideMeasurementHandle(
       };
       break;
     }
+    case 'spreadPosition': {
+      const minX = cloned.nozzleOriginPx.x + 10;
+      const maxX = bounds.width - 10;
+      const newX = Math.min(maxX, Math.max(minX, clamped.x));
+      cloned.verticalSpreadTopPx = { x: newX, y: cloned.verticalSpreadTopPx.y };
+      cloned.verticalSpreadBottomPx = { x: newX, y: cloned.verticalSpreadBottomPx.y };
+      break;
+    }
     case 'spreadTop': {
       const maxY = cloned.verticalSpreadBottomPx.y - 10;
       const newY = Math.min(maxY, clamped.y);
-      cloned.verticalSpreadTopPx = { x: clamped.x, y: newY };
-      cloned.verticalSpreadBottomPx = { x: clamped.x, y: cloned.verticalSpreadBottomPx.y };
+      cloned.verticalSpreadTopPx = { x: cloned.verticalSpreadTopPx.x, y: newY };
       break;
     }
     case 'spreadBottom': {
       const minY = cloned.verticalSpreadTopPx.y + 10;
       const newY = Math.max(minY, clamped.y);
-      cloned.verticalSpreadBottomPx = { x: clamped.x, y: newY };
-      cloned.verticalSpreadTopPx = { x: clamped.x, y: cloned.verticalSpreadTopPx.y };
+      cloned.verticalSpreadBottomPx = { x: cloned.verticalSpreadBottomPx.x, y: newY };
       break;
     }
     case 'upperAngle': {
@@ -192,6 +198,7 @@ export type SideFinalMeasurements = {
   sprayAngle: MeasurementValue;
   verticalSpread: MeasurementValue;
   directionOffset: MeasurementValue;
+  spreadPosition?: MeasurementValue;
 };
 
 export type FrontFinalMeasurements = {
@@ -270,12 +277,14 @@ export function createSideMeasurements(side: {
   sprayAngleDeg: number;
   maxVerticalSpreadMm: number;
   directionOffsetDeg: number;
+  spreadPositionMm?: number;
 }): SideFinalMeasurements {
   return {
     sprayLength: createMeasurementValue(side.sprayLengthMm),
     sprayAngle: createMeasurementValue(side.sprayAngleDeg),
     verticalSpread: createMeasurementValue(side.maxVerticalSpreadMm),
     directionOffset: createMeasurementValue(side.directionOffsetDeg),
+    ...(side.spreadPositionMm !== undefined ? { spreadPosition: createMeasurementValue(side.spreadPositionMm) } : {}),
   };
 }
 
@@ -324,6 +333,10 @@ export function calibratedGridSpacingPx(desiredGridSpacingMm: number, calibratio
   return desiredGridSpacingMm / calibration.scaleMmPerPx;
 }
 
+export function calculateSpreadPositionMm(nozzleOriginPx: Point, spreadTopPx: Point, calibration: CalibrationSnapshot): number {
+  return Math.abs(spreadTopPx.x - nozzleOriginPx.x) * calibration.scaleMmPerPx;
+}
+
 function correctedMeasurement(auto: number, final: number, adjustedBy?: string, adjustedAt?: string): MeasurementValue {
   return final === auto ? createMeasurementValue(auto) : { auto, final, adjusted: true, adjustedBy, adjustedAt };
 }
@@ -333,7 +346,8 @@ export function getSideAutomaticMeasurements(geometry: SidePixelGeometry, calibr
   const verticalSpread = pointDistanceToMm(geometry.verticalSpreadTopPx, geometry.verticalSpreadBottomPx, calibration);
   const sprayAngle = calculateAngleDeg(geometry.nozzleOriginPx, geometry.upperBoundaryPx, geometry.lowerBoundaryPx);
   const directionOffset = calculateAngleDeg(geometry.nozzleOriginPx, geometry.sprayEndpointPx, geometry.directionReferencePx);
-  return createSideMeasurements({ sprayLengthMm: sprayLength, sprayAngleDeg: sprayAngle, maxVerticalSpreadMm: verticalSpread, directionOffsetDeg: directionOffset });
+  const spreadPosition = calculateSpreadPositionMm(geometry.nozzleOriginPx, geometry.verticalSpreadTopPx, calibration);
+  return createSideMeasurements({ sprayLengthMm: sprayLength, sprayAngleDeg: sprayAngle, maxVerticalSpreadMm: verticalSpread, directionOffsetDeg: directionOffset, spreadPositionMm: spreadPosition });
 }
 
 export function getSideFinalMeasurements(
@@ -349,6 +363,7 @@ export function getSideFinalMeasurements(
     sprayAngle: correctedMeasurement(auto.sprayAngle.auto, final.sprayAngle.auto, audit?.adjustedBy, audit?.adjustedAt),
     verticalSpread: correctedMeasurement(auto.verticalSpread.auto, final.verticalSpread.auto, audit?.adjustedBy, audit?.adjustedAt),
     directionOffset: correctedMeasurement(auto.directionOffset.auto, final.directionOffset.auto, audit?.adjustedBy, audit?.adjustedAt),
+    spreadPosition: correctedMeasurement(auto.spreadPosition?.auto ?? 0, final.spreadPosition?.auto ?? 0, audit?.adjustedBy, audit?.adjustedAt),
   };
 }
 
@@ -365,6 +380,7 @@ export function deriveSideMeasurementsFromGeometry(
   const verticalSpreadAuto = pointDistanceToMm(geometry.verticalSpreadTopPx, geometry.verticalSpreadBottomPx, calibration);
   const sprayAngleAuto = calculateAngleDeg(geometry.nozzleOriginPx, geometry.upperBoundaryPx, geometry.lowerBoundaryPx);
   const directionOffsetAuto = calculateAngleDeg(geometry.nozzleOriginPx, geometry.sprayEndpointPx, geometry.directionReferencePx);
+  const spreadPositionAuto = calculateSpreadPositionMm(geometry.nozzleOriginPx, geometry.verticalSpreadTopPx, calibration);
   const adjustedBy = legacyCorrections.adjustedBy;
   const adjustedAt = legacyCorrections.adjustedAt;
   return {
@@ -372,6 +388,7 @@ export function deriveSideMeasurementsFromGeometry(
     sprayAngle: correctedMeasurement(sprayAngleAuto, sprayAngleAuto + (legacyCorrections.sprayAngle ?? 0), adjustedBy, adjustedAt),
     verticalSpread: correctedMeasurement(verticalSpreadAuto, verticalSpreadAuto + pixelDistanceToMm(legacyCorrections.verticalSpread ?? 0, calibration.scaleMmPerPx), adjustedBy, adjustedAt),
     directionOffset: correctedMeasurement(directionOffsetAuto, directionOffsetAuto + (legacyCorrections.directionOffset ?? 0), adjustedBy, adjustedAt),
+    spreadPosition: correctedMeasurement(spreadPositionAuto, spreadPositionAuto, adjustedBy, adjustedAt),
   };
 }
 
