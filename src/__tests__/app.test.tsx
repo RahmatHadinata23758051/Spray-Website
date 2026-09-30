@@ -4,7 +4,7 @@ import { testSchema, analysisSchema, synchronizedAnalysisFrameSchema } from '../
 import { FixtureProductRepository } from '../data/productRepository';
 import { createTestSession, nextSampleId, nextTestId } from '../domain/testSession';
 import { createFinalReportCsv } from '../presentation/App';
-import { addSupportingCapture, adjustCalibration, calculateScaleMmPerPx, calibratedGridSpacingPx, canFinalize, correctMeasurement, createCalibrationSnapshot, createFinalAnalysisReport, createFrontMeasurements, createMeasurementValue, createSideMeasurements, deriveFrontMeasurementsFromGeometry, deriveSideMeasurementsFromGeometry, getPrimary, moveCalibrationAnchor, moveFrontMeasurementHandle, moveSideMeasurementHandle, pixelDistanceToMm, pointDistanceToMm, removeSupportingCapture, selectMeasurementValue, setPrimaryCapture, translateCalibrationWithinBounds, updateCalibrationGeometry } from '../domain/analysis';
+import { addSupportingCapture, adjustCalibration, calculateScaleMmPerPx, calibratedGridSpacingPx, canFinalize, correctMeasurement, createCalibrationSnapshot, createFinalAnalysisReport, createFrontMeasurements, createMeasurementValue, createSideMeasurements, deriveFrontMeasurementsFromGeometry, deriveSideMeasurementsFromGeometry, getPrimary, getUserFacingTestStatus, moveCalibrationAnchor, moveFrontMeasurementHandle, moveSideMeasurementHandle, pixelDistanceToMm, pointDistanceToMm, removeSupportingCapture, selectMeasurementValue, setPrimaryCapture, translateCalibrationWithinBounds, updateCalibrationGeometry } from '../domain/analysis';
 
 describe('Spraybot Core Fixtures & Formatters', () => {
   it('has deterministic test fixtures', () => {
@@ -837,5 +837,23 @@ describe('Task L1 — Final Report Snapshot Integrity', () => {
     expect(report.supportingCaptures[0].side.timestampMs).toBe(report.supportingCaptures[0].front.timestampMs);
     expect(report.supportingCaptures[1].frameIndex).toBe(26);
     expect(report.supportingCaptures[1].side.timestampMs).toBe(report.supportingCaptures[1].front.timestampMs);
+  });
+});
+
+describe('Task M — Status mapping', () => {
+  it('maps test states correctly to user-facing status', () => {
+    const draftTest = { ...tests[0], status: 'running' as const };
+    const completeTest = { ...tests[0], status: 'complete' as const };
+    const failedTest = { ...tests[0], status: 'failed' as const };
+
+    expect(getUserFacingTestStatus(draftTest, null)).toBe('Draft');
+    expect(getUserFacingTestStatus(completeTest, null)).toBe('Ready for Review');
+    expect(getUserFacingTestStatus(failedTest, null)).toBe('Failed');
+  });
+
+  it('reports Finalized when a matching report is present', () => {
+    const completeTest = { ...tests[0], id: 'TST-FINAL', status: 'complete' as const };
+    const fakeReport = { testId: 'TST-FINAL' } as unknown as Parameters<typeof getUserFacingTestStatus>[1];
+    expect(getUserFacingTestStatus(completeTest, fakeReport)).toBe('Finalized');
   });
 });

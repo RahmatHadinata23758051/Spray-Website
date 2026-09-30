@@ -740,3 +740,13 @@ export function createFinalAnalysisReport(input: {
     finalizedAt: input.finalizedAt,
   });
 }
+
+export type UserFacingTestStatus = 'Draft' | 'Captured' | 'Ready for Review' | 'Finalized' | 'Failed';
+
+export function getUserFacingTestStatus(test: Test, finalReport?: FinalAnalysisReport | null): UserFacingTestStatus {
+  if (finalReport && finalReport.testId === test.id) return 'Finalized';
+  if (test.status === 'failed') return 'Failed';
+  if (test.status === 'running') return 'Draft';
+  if (test.status === 'complete') return 'Ready for Review';
+  return 'Captured';
+}

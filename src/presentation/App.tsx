@@ -22,7 +22,7 @@ import { productRepository } from '../data/productRepository';
 import type { Product, TestRecipe } from '../domain/product';
 import { createTestSession, nextSampleId, nextTestId } from '../domain/testSession';
 import type { Analysis as AnalysisData, Camera as CameraType, Test, FixtureScenario, SynchronizedAnalysisFrame, CapturePhaseV2 } from '../domain/types';
-import { addSupportingCapture, adjustCalibration, calibratedGridSpacingPx, cloneFrontGeometry, cloneSideGeometry, createCalibrationSnapshot, createFinalAnalysisReport, createFrontMeasurements, createSideMeasurements, deriveFrontMeasurementsFromGeometry, deriveSideMeasurementsFromGeometry, getFrontDisplayGeometry, getPrimary, getSideDisplayGeometry, moveCalibrationAnchor, moveFrontMeasurementHandle, moveSideMeasurementHandle, removeSupportingCapture, selectMeasurementValue, setPrimaryCapture, translateCalibrationWithinBounds, type CalibrationSnapshot, type FinalAnalysisReport, type FrontFinalMeasurements, type FrontMeasurementCorrection, type FrontPixelGeometry, type MeasurementValue, type Point, type SelectedCaptureMoment, type SideFinalMeasurements, type SideMeasurementCorrection, type SidePixelGeometry } from '../domain/analysis';
+import { addSupportingCapture, adjustCalibration, calibratedGridSpacingPx, cloneFrontGeometry, cloneSideGeometry, createCalibrationSnapshot, createFinalAnalysisReport, createFrontMeasurements, createSideMeasurements, deriveFrontMeasurementsFromGeometry, deriveSideMeasurementsFromGeometry, getFrontDisplayGeometry, getPrimary, getSideDisplayGeometry, getUserFacingTestStatus, moveCalibrationAnchor, moveFrontMeasurementHandle, moveSideMeasurementHandle, removeSupportingCapture, selectMeasurementValue, setPrimaryCapture, translateCalibrationWithinBounds, type CalibrationSnapshot, type FinalAnalysisReport, type FrontFinalMeasurements, type FrontMeasurementCorrection, type FrontPixelGeometry, type MeasurementValue, type Point, type SelectedCaptureMoment, type SideFinalMeasurements, type SideMeasurementCorrection, type SidePixelGeometry } from '../domain/analysis';
 
 type NavPage = 'Dashboard' | 'New Test' | 'Capture' | 'Analysis' | 'Result' | 'History' | 'Reports' | 'Products' | 'Calibration' | 'Users';
 type Page = NavPage | 'Settings' | 'Login';
@@ -110,7 +110,7 @@ export function App() {
         </div>
         <div className="flex shrink-0 items-center gap-3"><div className="simulation-state" role="status"><span aria-hidden="true" />Simulation Mode</div></div>
       </header>
-      <div className="workspace">{page === 'Dashboard' ? <Dashboard setPage={setPage} setSelected={setSelected} /> : page === 'New Test' ? <NewTest setPage={setPage} setSelected={setSelected} /> : page === 'Capture' ? <Capture setPage={setPage} /> : page === 'Analysis' ? <Analysis test={selected} setPage={setPage} finalReport={finalReport} setFinalReport={setFinalReport} /> : page === 'Result' ? <Result test={selected} finalReport={finalReport} setPage={setPage} /> : page === 'History' ? <History setSelected={setSelected} setPage={setPage} /> : page === 'Reports' ? <Reports finalReport={finalReport} /> : page === 'Products' ? <Products /> : page === 'Calibration' ? <Calibration /> : page === 'Settings' ? <SettingsPage /> : <Users />}</div>
+      <div className="workspace">{page === 'Dashboard' ? <Dashboard setPage={setPage} setSelected={setSelected} finalReport={finalReport} /> : page === 'New Test' ? <NewTest setPage={setPage} setSelected={setSelected} /> : page === 'Capture' ? <Capture setPage={setPage} /> : page === 'Analysis' ? <Analysis test={selected} setPage={setPage} finalReport={finalReport} setFinalReport={setFinalReport} /> : page === 'Result' ? <Result test={selected} finalReport={finalReport} setPage={setPage} /> : page === 'History' ? <History setSelected={setSelected} setPage={setPage} finalReport={finalReport} /> : page === 'Reports' ? <Reports finalReport={finalReport} /> : page === 'Products' ? <Products /> : page === 'Calibration' ? <Calibration /> : page === 'Settings' ? <SettingsPage /> : <Users />}</div>
     </main>
   </div>;
 }
@@ -132,21 +132,166 @@ function Login({ setPage }: { setPage: (p: Page) => void }) {
   return <main className="grid min-h-screen place-items-center bg-canvas px-5 py-10"><section className="w-full max-w-[460px] rounded-xl border border-border-default bg-surface p-8 shadow-[0_18px_55px_rgba(28,66,98,0.09)] md:p-10"><div className="mb-8 flex items-center gap-3"><div className="product-mark" aria-hidden="true"><span /><span /><span /></div><div><div className="text-base font-bold text-text-primary">Spraybot</div><div className="text-xs font-semibold text-text-muted">R&amp;D Spray Analysis</div></div></div><form onSubmit={handleSubmit} className="space-y-5"><div><Status tone="neutral">Local workstation · Simulation Mode</Status><h1 className="mt-5 text-[30px] font-bold leading-[38px] tracking-[-0.03em]">Sign in to Spraybot</h1><p className="mt-2 text-sm leading-[22px] text-text-secondary">Access the local spray analysis workstation. No machine hardware is connected. Camera functions remain simulated.</p></div><label className="block text-sm font-semibold">Email<input value={email} onChange={e => { setEmail(e.target.value); setError(''); }} className="mt-2 w-full rounded-sm border border-border-default bg-subtle px-3.5 py-3 outline-none focus:border-primary focus:bg-white" type="email" required /></label><label className="block text-sm font-semibold">Password<div className="relative"><input value={password} onChange={e => { setPassword(e.target.value); setError(''); }} type={showPassword ? 'text' : 'password'} className="mt-2 w-full rounded-sm border border-border-default bg-subtle px-3.5 py-3 pr-14 outline-none focus:border-primary focus:bg-white" required minLength={6} /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[22px] text-xs font-semibold text-text-muted hover:text-primary" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? 'Hide' : 'Show'}</button></div></label>{error && <p className="text-sm font-semibold text-semantic-danger">{error}</p>}<button type="submit" disabled={!valid || loading} className="w-full rounded-sm bg-primary px-4 py-3 font-bold text-white shadow-[0_7px_18px_rgba(29,143,255,0.2)] hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Signing in...' : 'Sign in'}</button><p className="text-center text-xs font-semibold text-text-muted">Authorized local users only</p></form></section></main>;
 }
 
-function Dashboard({ setPage, setSelected }: { setPage: (p: Page) => void; setSelected: (t: Test) => void }) {
-  return <div className="space-y-5"><div className="flex items-center justify-between rounded-md border border-border-default bg-primary-soft p-3"><span className="text-sm">Simulation mode - mock analysis complete for latest test.</span><button onClick={() => setPage('New Test')} className="rounded-sm bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-hover">New Test</button></div><div className="grid items-start gap-5 xl:grid-cols-[1.1fr_.9fr]"><Panel title="Latest test"><Summary test={tests[0]} /></Panel><Panel title="Temporal stability"><div className="grid grid-cols-2 gap-4">{[['Length mean', fmt.cm(analyses['nominal-01'].temporal.sprayLengthMeanMm)], ['Length std dev', fmt.mm(analyses['nominal-01'].temporal.sprayLengthStdDevMm)], ['Angle mean', fmt.deg(analyses['nominal-01'].temporal.sprayAngleMeanDeg)], ['Angle std dev', fmt.deg(analyses['nominal-01'].temporal.sprayAngleStdDevDeg)]].map(x => <Metric key={x[0]} label={x[0]} value={x[1]} />)}</div></Panel></div><Recent setSelected={setSelected} setPage={setPage} /></div>;
-}
+function Dashboard({ setPage, setSelected, finalReport }: { setPage: (p: Page) => void; setSelected: (t: Test) => void; finalReport: FinalAnalysisReport | null }) {
+  const latestTest = tests[0];
+  const latestStatus = latestTest ? getUserFacingTestStatus(latestTest, finalReport) : null;
 
-function Summary({ test }: { test: Test }) {
-  return <div className="grid gap-x-6 gap-y-4 md:grid-cols-2"><Metric label="Product" value={test.productName} /><Metric label="Sample" value={test.sampleId} /><Metric label="Force" value={`${test.config.forceSetpointN} N`} /><Metric label="Duration" value={`${test.config.pressDurationMs} ms`} /></div>;
+  const awaitingReviewTests = tests.filter(t => {
+    const s = getUserFacingTestStatus(t, finalReport);
+    return s === 'Captured' || s === 'Ready for Review';
+  });
+
+  const finalizedTests = tests.filter(t => getUserFacingTestStatus(t, finalReport) === 'Finalized');
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+        <div className="text-xs text-text-muted flex items-center gap-2">
+          <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+          <span>Simulation environment · Hardware not connected</span>
+        </div>
+        <button onClick={() => setPage('New Test')} className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          New Test
+        </button>
+      </div>
+
+      <div className="grid items-start gap-5 lg:grid-cols-[1.1fr_.9fr]">
+        <Panel title="Current / Latest Test">
+          {!latestTest ? (
+            <p className="p-4 text-sm text-text-secondary">No tests yet.</p>
+          ) : (
+            <div className="space-y-4 p-1">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="font-mono text-lg font-bold text-text-primary">{latestTest.id}</div>
+                  <div className="text-sm font-medium text-text-secondary">{latestTest.productName}</div>
+                  <div className="font-mono text-xs text-text-muted">{latestTest.sampleId}</div>
+                </div>
+                <Status tone={latestStatus === 'Finalized' ? 'success' : latestStatus === 'Failed' ? 'danger' : latestStatus === 'Ready for Review' ? 'warning' : 'neutral'}>
+                  {latestStatus}
+                </Status>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-y border-border-subtle py-3 text-xs">
+                <div>
+                  <span className="text-text-muted">Created</span>
+                  <div className="font-medium text-text-primary mt-0.5">
+                    {new Date(latestTest.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-text-muted">Operator</span>
+                  <div className="font-medium text-text-primary mt-0.5">{latestTest.operatorName}</div>
+                </div>
+              </div>
+
+              <div>
+                {latestStatus === 'Finalized' ? (
+                  <button
+                    onClick={() => { setSelected(latestTest); setPage('Result'); }}
+                    className="w-full rounded-sm bg-primary py-2 text-xs font-semibold text-white hover:bg-primary-hover"
+                  >
+                    View Result
+                  </button>
+                ) : latestStatus === 'Draft' ? (
+                  <button
+                    onClick={() => { setSelected(latestTest); setPage('New Test'); }}
+                    className="w-full rounded-sm bg-primary py-2 text-xs font-semibold text-white hover:bg-primary-hover"
+                  >
+                    Continue Setup
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setSelected(latestTest); setPage('Analysis'); }}
+                    className="w-full rounded-sm bg-primary py-2 text-xs font-semibold text-white hover:bg-primary-hover"
+                  >
+                    Review Analysis
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title={`Awaiting review (${awaitingReviewTests.length})`}>
+          {awaitingReviewTests.length === 0 ? (
+            <p className="p-4 text-sm text-text-secondary">No tests are waiting for review.</p>
+          ) : (
+            <div className="divide-y divide-border-subtle">
+              {awaitingReviewTests.map(t => {
+                const s = getUserFacingTestStatus(t, finalReport);
+                return (
+                  <div key={t.id} className="flex items-center justify-between py-2.5 px-3">
+                    <div className="min-w-0">
+                      <div className="font-mono text-xs font-bold text-text-primary">{t.id}</div>
+                      <div className="truncate text-xs text-text-secondary">{t.productName}</div>
+                      <div className="text-[11px] text-text-muted">{s} · {new Date(t.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                    <button
+                      onClick={() => { setSelected(t); setPage('Analysis'); }}
+                      className="ml-3 shrink-0 rounded-sm border border-border-default bg-white px-2.5 py-1 text-xs font-medium text-primary hover:bg-subtle"
+                    >
+                      Review
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Panel>
+      </div>
+
+      <Panel title="Recent Finalized Tests">
+        {finalizedTests.length === 0 ? (
+          <p className="p-4 text-sm text-text-secondary">No finalized tests.</p>
+        ) : (
+          <Table>
+            <thead className="bg-subtle">
+              <tr>
+                {['Test ID', 'Product', 'Operator', 'Finalized', 'Primary Capture', 'Action'].map(h => (
+                  <th className="px-3 py-2 text-left font-semibold text-xs text-text-muted" key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border-default bg-surface text-xs">
+              {finalizedTests.map(t => {
+                const isFinal = finalReport && finalReport.testId === t.id;
+                const finalizedAtText = isFinal
+                  ? new Date(finalReport.finalizedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+                  : '—';
+                const primaryCaptureText = isFinal
+                  ? `#${String(finalReport.primaryCapture.frameIndex).padStart(3, '0')} · ${finalReport.primaryCapture.timestampMs} ms`
+                  : '—';
+
+                return (
+                  <tr key={t.id}>
+                    <td className="px-3 py-2 font-mono font-medium">{t.id}</td>
+                    <td className="px-3 py-2">{t.productName}</td>
+                    <td className="px-3 py-2">{t.operatorName}</td>
+                    <td className="px-3 py-2 text-text-secondary">{finalizedAtText}</td>
+                    <td className="px-3 py-2 font-mono text-text-secondary">{primaryCaptureText}</td>
+                    <td className="px-3 py-2">
+                      <button
+                        onClick={() => { setSelected(t); setPage('Result'); }}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        Open Result
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        )}
+      </Panel>
+    </div>
+  );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
   const machineLike = /\b(id|timestamp|frame|coordinate|center|scale|offset|roi)\b/i.test(label);
   return <div className="min-w-0"><div className="text-xs font-semibold leading-[18px] text-text-muted">{label}</div><div className={`${machineLike ? 'font-mono' : 'font-sans'} truncate text-[22px] font-bold leading-[32px] tracking-[-0.025em] tabular-nums`} title={value}>{value}</div></div>;
-}
-
-function Recent({ setSelected, setPage, items = tests, target = 'Analysis' }: { setSelected: (t: Test) => void; setPage: (p: Page) => void; items?: Test[]; target?: Page }) {
-  return <Panel title="Recent tests"><Table><thead className="bg-subtle"><tr>{['Test ID', 'Date', 'Product', 'Operator', 'Status', 'Action'].map(h => <th className="px-3 py-2 text-left font-semibold" key={h}>{h}</th>)}</tr></thead><tbody className="divide-y divide-border-default bg-surface">{items.map(t => <tr key={t.id}><td className="px-3 py-2 font-mono">{t.id}</td><td className="px-3 py-2">{fmt.date(t.createdAt)}</td><td className="px-3 py-2">{t.productName}</td><td className="px-3 py-2">{t.operatorName}</td><td className="px-3 py-2"><Status tone={t.status === 'complete' ? 'success' : t.status === 'failed' ? 'danger' : 'warning'}>{t.status}</Status></td><td className="px-3 py-2"><button onClick={() => { setSelected(t); setPage(target); }} className="text-primary underline">Open</button></td></tr>)}</tbody></Table></Panel>;
 }
 
 function NewTest({ setPage, setSelected }: { setPage: (p: Page) => void; setSelected?: (t: Test) => void }) {
@@ -1227,7 +1372,7 @@ function resultMetrics(camera: CameraType, report: FinalAnalysisReport): ResultM
 function ResultCameraFrame({ title, camera, frame, measurements, calibration, sideGeometry, frontGeometry }: { title: string; camera: CameraType; frame: { frameIndex: number; timestampMs: number; phase: 'pre-spray' | 'build-up' | 'decay' | 'stable' }; measurements: SideFinalMeasurements | FrontFinalMeasurements; calibration: CalibrationSnapshot; sideGeometry: SidePixelGeometry; frontGeometry: FrontPixelGeometry; }) {
   return <figure className="result-camera-frame">
     <div className="result-frame-meta"><strong>{title}</strong><span className="font-mono">#{String(frame.frameIndex).padStart(3, '0')} · {frame.timestampMs} ms</span></div>
-    <div className="result-frame-image"><AnalysisOverlay camera={camera} mode="Overlay" frame={frame as any} calibration={calibration} sideGeometry={sideGeometry} frontGeometry={frontGeometry} sideMeasurements={camera === 'side' ? measurements as SideFinalMeasurements : createSideMeasurements({ sprayLengthMm: 0, sprayAngleDeg: 0, maxVerticalSpreadMm: 0, directionOffsetDeg: 0 })} frontMeasurements={camera === 'front' ? measurements as FrontFinalMeasurements : createFrontMeasurements({ sprayAreaMm2: 0, equivalentDiameterMm: 0, circularity: 0, centroidOffsetXmm: 0, centroidOffsetYmm: 0, horizontalSymmetry: 0, verticalSymmetry: 0 })} /></div>
+    <div className="result-frame-image"><AnalysisOverlay camera={camera} mode="Overlay" frame={frame as unknown as typeof frames[number]} calibration={calibration} sideGeometry={sideGeometry} frontGeometry={frontGeometry} sideMeasurements={camera === 'side' ? measurements as SideFinalMeasurements : createSideMeasurements({ sprayLengthMm: 0, sprayAngleDeg: 0, maxVerticalSpreadMm: 0, directionOffsetDeg: 0 })} frontMeasurements={camera === 'front' ? measurements as FrontFinalMeasurements : createFrontMeasurements({ sprayAreaMm2: 0, equivalentDiameterMm: 0, circularity: 0, centroidOffsetXmm: 0, centroidOffsetYmm: 0, horizontalSymmetry: 0, verticalSymmetry: 0 })} /></div>
     <figcaption>Frozen synchronized capture · Analysis source: Simulation</figcaption>
   </figure>;
 }
@@ -1277,23 +1422,89 @@ export function createFinalReportCsv(report: FinalAnalysisReport): string {
   return `${fields.map(([key]) => key).join(',')}\n${fields.map(([, value]) => String(value)).join(',')}`;
 }
 
-function History({ setSelected, setPage }: { setSelected: (t: Test) => void; setPage: (p: Page) => void }) {
+
+
+function History({ setSelected, setPage, finalReport }: { setSelected: (t: Test) => void; setPage: (p: Page) => void; finalReport: FinalAnalysisReport | null }) {
   const [q, setQ] = useState('');
   const [product, setProduct] = useState('All');
   const [operator, setOperator] = useState('All');
-  const [state, setState] = useState('All');
+  const [status, setStatus] = useState<string>('All');
+  const [date, setDate] = useState<string>('');
+
   const filtered = tests.filter(t => {
+    const userStatus = getUserFacingTestStatus(t, finalReport);
     const haystack = `${t.id} ${t.productName} ${t.sampleId} ${t.operatorName}`.toLowerCase();
-    return haystack.includes(q.toLowerCase()) && (product === 'All' || t.productName === product) && (operator === 'All' || t.operatorName === operator) && (state === 'All' || t.status === state);
+    const matchesQuery = haystack.includes(q.toLowerCase());
+    const matchesProduct = product === 'All' || t.productName === product;
+    const matchesOperator = operator === 'All' || t.operatorName === operator;
+    const matchesStatus = status === 'All' || userStatus === status;
+    const matchesDate = !date || t.createdAt.startsWith(date);
+    return matchesQuery && matchesProduct && matchesOperator && matchesStatus && matchesDate;
   });
+
   return <div className="space-y-4">
-    <div className="grid gap-3 md:grid-cols-4">
-      <label className="block text-sm font-medium">Search <input value={q} onChange={e => setQ(e.target.value)} className="mt-1 w-full rounded-sm border border-border-default px-3 py-2" placeholder="Test ID, product, operator..." /></label>
-      <label className="block text-sm font-medium">Product <select value={product} onChange={e => setProduct(e.target.value)} className="mt-1 w-full rounded-sm border border-border-default px-3 py-2"><option>All</option>{Array.from(new Set(tests.map(t => t.productName))).map(n => <option key={n}>{n}</option>)}</select></label>
-      <label className="block text-sm font-medium">Operator <select value={operator} onChange={e => setOperator(e.target.value)} className="mt-1 w-full rounded-sm border border-border-default px-3 py-2"><option>All</option>{Array.from(new Set(tests.map(t => t.operatorName))).map(n => <option key={n}>{n}</option>)}</select></label>
-      <label className="block text-sm font-medium">State <select value={state} onChange={e => setState(e.target.value)} className="mt-1 w-full rounded-sm border border-border-default px-3 py-2"><option>All</option><option>complete</option><option>failed</option><option>running</option></select></label>
+    <div className="grid gap-3 md:grid-cols-5">
+      <label className="block text-sm font-medium">Search <input value={q} onChange={e => setQ(e.target.value)} className="mt-1 w-full rounded-sm border border-border-default px-3 py-2 text-sm" placeholder="Test ID, sample, product, operator..." /></label>
+      <label className="block text-sm font-medium">Product <select value={product} onChange={e => setProduct(e.target.value)} className="mt-1 w-full rounded-sm border border-border-default px-3 py-2 text-sm"><option>All</option>{Array.from(new Set(tests.map(t => t.productName))).map(n => <option key={n}>{n}</option>)}</select></label>
+      <label className="block text-sm font-medium">Operator <select value={operator} onChange={e => setOperator(e.target.value)} className="mt-1 w-full rounded-sm border border-border-default px-3 py-2 text-sm"><option>All</option>{Array.from(new Set(tests.map(t => t.operatorName))).map(n => <option key={n}>{n}</option>)}</select></label>
+      <label className="block text-sm font-medium">Status <select value={status} onChange={e => setStatus(e.target.value)} className="mt-1 w-full rounded-sm border border-border-default px-3 py-2 text-sm"><option>All</option><option>Draft</option><option>Captured</option><option>Ready for Review</option><option>Finalized</option><option>Failed</option></select></label>
+      <label className="block text-sm font-medium">Date <input type="date" value={date} onChange={e => setDate(e.target.value)} className="mt-1 w-full rounded-sm border border-border-default px-3 py-2 text-sm" /></label>
     </div>
-    {filtered.length === 0 ? <div className="rounded-md border border-border-default bg-subtle p-8 text-center"><p className="text-sm text-text-secondary">No tests match the current filters.</p></div> : <Recent setSelected={setSelected} setPage={setPage} items={filtered} target="Result" />}
+
+    {filtered.length === 0 ? (
+      <div className="rounded-md border border-border-default bg-subtle p-8 text-center"><p className="text-sm text-text-secondary">No tests match the current filters.</p></div>
+    ) : (
+      <Panel title="Test History">
+        <Table>
+          <thead className="bg-subtle">
+            <tr>
+              {['Test ID', 'Date / Time', 'Product', 'Sample ID', 'Operator', 'Status', 'Primary Capture', 'Action'].map(h => (
+                <th className="px-3 py-2 text-left font-semibold text-xs text-text-muted" key={h}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border-default bg-surface text-xs">
+            {filtered.map(t => {
+              const userStatus = getUserFacingTestStatus(t, finalReport);
+              const isFinal = userStatus === 'Finalized' && finalReport && finalReport.testId === t.id;
+              const primaryCaptureText = isFinal
+                ? `#${String(finalReport.primaryCapture.frameIndex).padStart(3, '0')} · ${finalReport.primaryCapture.timestampMs} ms`
+                : '—';
+
+              const actionConfig = userStatus === 'Draft'
+                ? { label: 'Continue setup', page: 'New Test' as Page }
+                : userStatus === 'Finalized'
+                ? { label: 'Open Result', page: 'Result' as Page }
+                : { label: 'Review Analysis', page: 'Analysis' as Page };
+
+              return (
+                <tr key={t.id}>
+                  <td className="px-3 py-2 font-mono font-medium">{t.id}</td>
+                  <td className="px-3 py-2 text-text-secondary">{new Date(t.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                  <td className="px-3 py-2 font-medium">{t.productName}</td>
+                  <td className="px-3 py-2 font-mono text-text-secondary">{t.sampleId}</td>
+                  <td className="px-3 py-2">{t.operatorName}</td>
+                  <td className="px-3 py-2">
+                    <Status tone={userStatus === 'Finalized' ? 'success' : userStatus === 'Failed' ? 'danger' : userStatus === 'Ready for Review' ? 'warning' : 'neutral'}>
+                      {userStatus}
+                    </Status>
+                  </td>
+                  <td className="px-3 py-2 font-mono text-text-secondary">{primaryCaptureText}</td>
+                  <td className="px-3 py-2">
+                    <button
+                      onClick={() => { setSelected(t); setPage(actionConfig.page); }}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      {actionConfig.label}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </Table>
+      </Panel>
+    )}
   </div>;
 }
 

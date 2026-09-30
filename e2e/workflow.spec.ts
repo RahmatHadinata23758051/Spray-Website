@@ -39,16 +39,15 @@ test.describe('Spraybot simulated workflow', () => {
     await expect(page.getByRole('button', { name: /rear camera/i })).toHaveCount(0);
   });
 
-  test('history filters and opens final result', async ({ page }) => {
+  test('history filters and opens test analysis or result based on status', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in' }).click();
     await page.getByRole('button', { name: 'History' }).click();
     await page.getByLabel('Search').fill('nonexistent');
     await expect(page.getByText('No tests match the current filters.')).toBeVisible();
     await page.getByLabel('Search').fill('TST-24-0618');
-    await page.getByRole('button', { name: 'Open' }).click();
-    await expect(page.getByRole('heading', { name: 'Result', exact: true })).toBeVisible();
-    await expect(page.getByText('Final analysis required')).toBeVisible();
+    await page.getByRole('button', { name: 'Review Analysis' }).click();
+    await expect(page.getByRole('heading', { name: 'Analysis', exact: true })).toBeVisible();
   });
 
   for (const viewport of [{ width: 1366, height: 768 }, { width: 768, height: 1024 }]) {
@@ -65,7 +64,7 @@ test.describe('Spraybot simulated workflow', () => {
   test('direct manipulation calibration supports live drag, translation, cancel, apply, keyboard, and camera independence', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Analysis' }).click();
+    await page.getByRole('button', { name: 'Analysis', exact: true }).click();
 
     const grid = page.getByRole('group', { name: 'Physical grid 100 millimeter spacing' });
     const overlayLength = page.getByTestId('side-overlay-spray-length');
@@ -125,7 +124,7 @@ test.describe('Spraybot simulated workflow', () => {
   test('direct measurement manipulation persists corrected Side and Front geometry per moment', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Analysis' }).click();
+    await page.getByRole('button', { name: 'Analysis', exact: true }).click();
 
     const scaleBefore = await page.getByTestId('inspector-scale').textContent();
     const autoLength = await page.getByTestId('side-overlay-spray-length').textContent();
@@ -177,7 +176,7 @@ test.describe('Spraybot simulated workflow', () => {
   test('final confirmation requires Primary and saves shared-moment summary', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Analysis' }).click();
+    await page.getByRole('button', { name: 'Analysis', exact: true }).click();
 
     await expect(page.getByText('captured')).toBeVisible();
     await expect(page.getByText('Select exactly one Primary Capture Moment before confirmation.')).toBeVisible();
@@ -198,7 +197,7 @@ test.describe('Spraybot simulated workflow', () => {
   test('capture selection: Primary, Supporting, remove, shared across tabs', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Analysis' }).click();
+    await page.getByRole('button', { name: 'Analysis', exact: true }).click();
 
     await expect(page.getByText('Selected Captures 0 / 10')).toBeVisible();
     await expect(page.getByText('No report captures selected')).toBeVisible();
@@ -223,7 +222,7 @@ test.describe('Spraybot simulated workflow', () => {
   test('finalization navigates to Result V2 and Report V2', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Analysis' }).click();
+    await page.getByRole('button', { name: 'Analysis', exact: true }).click();
 
     // Set primary and finalize
     await page.getByRole('button', { name: 'Set as Primary' }).click();
@@ -270,7 +269,7 @@ test.describe('Spraybot simulated workflow', () => {
   test('measurement tool modes for Side Camera provide focused interactions and preserve edits', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Analysis' }).click();
+    await page.getByRole('button', { name: 'Analysis', exact: true }).click();
 
     await page.getByRole('button', { name: 'Edit Measurement' }).click();
     
@@ -328,6 +327,74 @@ test.describe('Spraybot simulated workflow', () => {
     await endpoint.focus();
     await page.keyboard.press('Shift+ArrowRight');
     await page.getByRole('button', { name: 'Cancel' }).click();
+  });
+
+  test('Dashboard and History align with analysis lifecycle', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Sign in' }).click();
+
+    // Verify Dashboard shows latest/current test and review queue
+    await expect(page.getByRole('heading', { name: 'Current / Latest Test' })).toBeVisible();
+    await expect(page.getByText(/Awaiting review/i)).toBeVisible();
+    
+    // 11. Temporal Stability legacy dashboard block is removed.
+    await expect(page.getByText('Temporal stability')).toHaveCount(0);
+
+    // 8. Dashboard shows latest/current test.
+    await expect(page.getByText('TST-24-0618').first()).toBeVisible();
+    await expect(page.getByText('Ready for Review').first()).toBeVisible();
+
+    // 6. Ready-for-review action opens Analysis.
+    await page.getByRole('button', { name: 'Review Analysis' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Analysis', exact: true })).toBeVisible();
+
+    // Finalize the test
+    await page.getByRole('button', { name: 'Set as Primary' }).click();
+    await page.getByRole('button', { name: 'Confirm Final Analysis' }).click();
+    await expect(page.getByText('finalized')).toBeVisible();
+
+    // Go back to Dashboard
+    await page.getByRole('button', { name: 'Dashboard' }).click();
+    await expect(page.getByRole('heading', { name: 'Recent Finalized Tests' })).toBeVisible();
+
+    // 10. Dashboard recent finalized tests use frozen report data.
+    const finalizedRow = page.locator('table').locator('tr', { hasText: 'TST-24-0618' }).first();
+    await expect(finalizedRow.getByText('#028')).toBeVisible();
+
+    // Go to History
+    await page.getByRole('button', { name: 'History' }).click();
+    
+    // 1. History contains no Rear Camera fields.
+    // 2. History contains no Rear Validity.
+    await expect(page.getByText('Rear Validity')).toHaveCount(0);
+    await expect(page.getByText('Bottle alignment')).toHaveCount(0);
+    
+    // 12. Search matches Test ID.
+    await page.getByLabel('Search').fill('TST-24-0618');
+    
+    // 3. Finalized test displays Primary Capture from FinalAnalysisReport.
+    const historyFinalizedRow = page.getByRole('row', { name: /TST-24-0618/ });
+    await expect(historyFinalizedRow.getByText('#028')).toBeVisible(); 
+    
+    // 5. Finalized test action opens Result.
+    await historyFinalizedRow.getByRole('button', { name: 'Open Result' }).click();
+    await expect(page.getByRole('heading', { name: 'Result', exact: true })).toBeVisible();
+
+    // Go back to History to test other statuses
+    await page.getByRole('button', { name: 'History' }).click();
+    await page.getByLabel('Search').fill(''); // Clear search
+    // 13. Search matches Sample ID.
+    await page.getByLabel('Search').fill('SMP-24-0617');
+    const historyReviewRow = page.getByRole('row', { name: /TST-24-0617/ });
+    
+    // 4. Non-finalized test displays no Primary Capture.
+    await expect(historyReviewRow.getByText('—')).toBeVisible();
+
+    // 14. Status filtering works
+    await page.getByLabel('Search').fill('');
+    await page.getByLabel('Status').selectOption('Finalized');
+    await expect(page.getByRole('row', { name: /TST-24-0618/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /TST-24-0617/ })).toHaveCount(0);
   });
 });
 
