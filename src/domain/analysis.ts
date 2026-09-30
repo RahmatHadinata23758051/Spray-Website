@@ -246,11 +246,15 @@ export type FinalAnalysisReport = {
     frameId: string;
     frame: ReportFrameSnapshot;
     calibration: CalibrationSnapshot;
+    autoGeometry: SidePixelGeometry;
+    finalGeometry: SidePixelGeometry;
   };
   front: FrontFinalMeasurements & {
     frameId: string;
     frame: ReportFrameSnapshot;
     calibration: CalibrationSnapshot;
+    autoGeometry: FrontPixelGeometry;
+    finalGeometry: FrontPixelGeometry;
   };
   supportingCaptures: Array<{
     captureMomentId: string;
@@ -657,10 +661,33 @@ export function createFinalAnalysisReport(input: {
   front: FrontFinalMeasurements;
   sideCalibration: CalibrationSnapshot;
   frontCalibration: CalibrationSnapshot;
+  sideAutoGeometry: SidePixelGeometry;
+  sideFinalGeometry: SidePixelGeometry;
+  frontAutoGeometry: FrontPixelGeometry;
+  frontFinalGeometry: FrontPixelGeometry;
   finalizedBy: string;
   finalizedAt: string;
 }): FinalAnalysisReport {
-  const supportingCaptureMoments = input.supportingCaptureMoments.slice(0, 9);
+  if (input.supportingCaptureMoments.length > 9) {
+    throw new Error('Maximum 9 supporting captures allowed.');
+  }
+  if (!input.primaryCaptureMoment) {
+    throw new Error('Primary capture moment is required.');
+  }
+  if (input.primaryCaptureMoment.syncStatus !== 'synced') {
+    throw new Error('Primary capture must be synchronized.');
+  }
+  if (!input.primaryCaptureMoment.side || !input.primaryCaptureMoment.front) {
+    throw new Error('Primary capture must contain both Side and Front frames.');
+  }
+  if (input.primaryCaptureMoment.side.frameIndex !== input.primaryCaptureMoment.front.frameIndex) {
+    throw new Error('Side and Front frames must share the same frame index.');
+  }
+  if (input.primaryCaptureMoment.side.timestampMs !== input.primaryCaptureMoment.front.timestampMs) {
+    throw new Error('Side and Front frames must share the same timestamp.');
+  }
+
+  const supportingCaptureMoments = input.supportingCaptureMoments;
   const productSnapshot = input.test.productSnapshot ?? { productCode: input.test.productId ?? 'SIM-PRODUCT', productName: input.test.productName };
   const recipeSnapshot = input.test.recipeSnapshot ?? { name: 'Simulation recipe', ...input.test.config };
 
@@ -690,12 +717,16 @@ export function createFinalAnalysisReport(input: {
       frameId: input.primaryCaptureMoment.side.id,
       frame: frameSnapshot(input.primaryCaptureMoment.side),
       calibration: input.sideCalibration,
+      autoGeometry: input.sideAutoGeometry,
+      finalGeometry: input.sideFinalGeometry,
     },
     front: {
       ...input.front,
       frameId: input.primaryCaptureMoment.front.id,
       frame: frameSnapshot(input.primaryCaptureMoment.front),
       calibration: input.frontCalibration,
+      autoGeometry: input.frontAutoGeometry,
+      finalGeometry: input.frontFinalGeometry,
     },
     supportingCaptures: supportingCaptureMoments.map(moment => ({
       captureMomentId: moment.id,
