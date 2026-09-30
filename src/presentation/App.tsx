@@ -407,6 +407,9 @@ function Analysis({ test, setPage, finalReport, setFinalReport }: { test: Test; 
       .filter(selection => selection.role === 'supporting')
       .map(selection => synchronizedFrames.find(moment => moment.id === selection.captureFrameId))
       .filter((moment): moment is SynchronizedAnalysisFrame => Boolean(moment));
+    const primaryGeometry = getPixelGeometry(primaryMoment.frameIndex, test.fixture);
+    const primarySideFinalGeometry = getSideDisplayGeometry(primaryGeometry.side, sideCorrectionsByMoment[primaryMoment.id]);
+    const primaryFrontFinalGeometry = getFrontDisplayGeometry(primaryGeometry.front, frontCorrectionsByMoment[primaryMoment.id]);
     setFinalReport(createFinalAnalysisReport({
       test,
       primaryCaptureMoment: primaryMoment,
@@ -415,6 +418,10 @@ function Analysis({ test, setPage, finalReport, setFinalReport }: { test: Test; 
       front: getFrontMeasurementsForMoment(primaryMoment),
       sideCalibration: calibrations.side,
       frontCalibration: calibrations.front,
+      sideAutoGeometry: primaryGeometry.side,
+      sideFinalGeometry: primarySideFinalGeometry,
+      frontAutoGeometry: primaryGeometry.front,
+      frontFinalGeometry: primaryFrontFinalGeometry,
       finalizedBy: 'Nadia Putri',
       finalizedAt: '2026-09-29T14:45:00Z',
     }));
@@ -1177,8 +1184,8 @@ function FinalizedResult({ report, onViewReport }: { report: FinalAnalysisReport
     <section className="result-primary surface-panel">
       <div className="result-section-heading"><div><span>Primary Capture</span><h3>Capture #{String(report.primaryCapture.frameIndex).padStart(3, '0')}</h3></div><p className="font-mono">{report.primaryCapture.timestampMs} ms · {phaseLabel(report.primaryCapture.phase)}</p></div>
       <div className="result-camera-grid">
-        <ResultCameraFrame title="Side Camera Overlay" camera="side" frame={primaryFrame} measurements={report.side} calibration={report.side.calibration} />
-        <ResultCameraFrame title="Front Camera Overlay" camera="front" frame={primaryFrame} measurements={report.front} calibration={report.front.calibration} />
+        <ResultCameraFrame title="Side Camera Overlay" camera="side" frame={primaryFrame} measurements={report.side} calibration={report.side.calibration} sideGeometry={report.side.finalGeometry} frontGeometry={report.front.finalGeometry} />
+        <ResultCameraFrame title="Front Camera Overlay" camera="front" frame={primaryFrame} measurements={report.front} calibration={report.front.calibration} sideGeometry={report.side.finalGeometry} frontGeometry={report.front.finalGeometry} />
       </div>
     </section>
 
@@ -1217,11 +1224,10 @@ function resultMetrics(camera: CameraType, report: FinalAnalysisReport): ResultM
   ];
 }
 
-function ResultCameraFrame({ title, camera, frame, measurements, calibration }: { title: string; camera: CameraType; frame: typeof frames[number]; measurements: SideFinalMeasurements | FrontFinalMeasurements; calibration: CalibrationSnapshot }) {
-  const geometry = getPixelGeometry(frame.frameIndex, 'nominal-01');
+function ResultCameraFrame({ title, camera, frame, measurements, calibration, sideGeometry, frontGeometry }: { title: string; camera: CameraType; frame: { frameIndex: number; timestampMs: number; phase: 'pre-spray' | 'build-up' | 'decay' | 'stable' }; measurements: SideFinalMeasurements | FrontFinalMeasurements; calibration: CalibrationSnapshot; sideGeometry: SidePixelGeometry; frontGeometry: FrontPixelGeometry; }) {
   return <figure className="result-camera-frame">
     <div className="result-frame-meta"><strong>{title}</strong><span className="font-mono">#{String(frame.frameIndex).padStart(3, '0')} · {frame.timestampMs} ms</span></div>
-    <div className="result-frame-image"><AnalysisOverlay camera={camera} mode="Overlay" frame={frame} calibration={calibration} sideGeometry={geometry.side} frontGeometry={geometry.front} sideMeasurements={camera === 'side' ? measurements as SideFinalMeasurements : createSideMeasurements({ sprayLengthMm: 0, sprayAngleDeg: 0, maxVerticalSpreadMm: 0, directionOffsetDeg: 0 })} frontMeasurements={camera === 'front' ? measurements as FrontFinalMeasurements : createFrontMeasurements({ sprayAreaMm2: 0, equivalentDiameterMm: 0, circularity: 0, centroidOffsetXmm: 0, centroidOffsetYmm: 0, horizontalSymmetry: 0, verticalSymmetry: 0 })} /></div>
+    <div className="result-frame-image"><AnalysisOverlay camera={camera} mode="Overlay" frame={frame as any} calibration={calibration} sideGeometry={sideGeometry} frontGeometry={frontGeometry} sideMeasurements={camera === 'side' ? measurements as SideFinalMeasurements : createSideMeasurements({ sprayLengthMm: 0, sprayAngleDeg: 0, maxVerticalSpreadMm: 0, directionOffsetDeg: 0 })} frontMeasurements={camera === 'front' ? measurements as FrontFinalMeasurements : createFrontMeasurements({ sprayAreaMm2: 0, equivalentDiameterMm: 0, circularity: 0, centroidOffsetXmm: 0, centroidOffsetYmm: 0, horizontalSymmetry: 0, verticalSymmetry: 0 })} /></div>
     <figcaption>Frozen synchronized capture · Analysis source: Simulation</figcaption>
   </figure>;
 }
