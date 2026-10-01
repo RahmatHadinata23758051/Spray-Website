@@ -841,3 +841,4 @@ export function getUserFacingTestStatus(test: Test, finalReport?: FinalAnalysisR
   if (test.status === 'complete') return 'Ready for Review';
   return 'Captured';
 }
+

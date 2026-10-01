@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { FinalAnalysisReport } from '@spray-paragon/domain';
+import { createFinalReportCsv } from '../../../application/reporting/createFinalReportCsv';
 import { fmt } from '../../utils/formatters';
 import { simulationService } from '../../../application/services';
 const tests = simulationService.getTests();
@@ -7,7 +8,7 @@ const analyses = simulationService.getAnalyses();
 import { Status } from '../../components/ui/Status';
 import { Panel } from '../../components/ui/Panel';
 import { phaseLabel } from '../../features/analysis/utils';
-import { createFinalReportCsv, ResultMeasurementPanel, CalibrationSummary, AnalysisAudit, SupportingCaptures } from '../Tests/ResultPage';
+import { ResultMeasurementPanel, CalibrationSummary, AnalysisAudit, SupportingCaptures } from '../Tests/ResultPage';
 
 export function ReportsPage({ finalReport }: { finalReport: FinalAnalysisReport | null }) {
   const [exporting, setExporting] = useState(false);

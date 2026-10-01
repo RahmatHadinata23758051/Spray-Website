@@ -5,7 +5,7 @@ import type { FinalAnalysisReport, SideFinalMeasurements, FrontFinalMeasurements
 import { fmt } from '../../utils/formatters';
 import type { Frame } from '@spray-paragon/domain';
 import { Status } from '../../components/ui/Status';
-import { phaseLabel, hasAdjustedMeasurement, metricSlug } from '../../features/analysis/utils';
+import { phaseLabel, hasAdjustedMeasurement } from '../../features/analysis/utils';
 import { AnalysisOverlay } from '../../features/analysis/AnalysisOverlay';
 import { createSideMeasurements, createFrontMeasurements } from '@spray-paragon/domain';
 
@@ -244,14 +244,4 @@ export function SupportingCaptures({ report }: { report: FinalAnalysisReport }) 
       </div>
     </section>
   );
-}
-
-export function createFinalReportCsv(report: FinalAnalysisReport): string {
-  const fields: Array<[string, string | number | boolean]> = [
-    ['test_id', report.test.testId], ['sample_id', report.test.sampleId], ['status', report.status], ['analysis_source', 'Simulation'],
-    ['primary_capture_id', report.primaryCaptureMomentId], ['primary_frame_index', report.primaryCapture.frameIndex], ['primary_timestamp_ms', report.primaryCapture.timestampMs],
-  ];
-  for (const metric of resultMetrics('side', report)) fields.push([`side_${metricSlug(metric.label)}_auto`, metric.value.auto], [`side_${metricSlug(metric.label)}_final`, metric.value.final], [`side_${metricSlug(metric.label)}_adjusted`, metric.value.adjusted]);
-  for (const metric of resultMetrics('front', report)) fields.push([`front_${metricSlug(metric.label)}_auto`, metric.value.auto], [`front_${metricSlug(metric.label)}_final`, metric.value.final], [`front_${metricSlug(metric.label)}_adjusted`, metric.value.adjusted]);
-  return `${fields.map(([key]) => key).join(',')}\n${fields.map(([, value]) => String(value)).join(',')}`;
 }
