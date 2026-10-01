@@ -9,12 +9,13 @@
 - D2 Batch Capture
 - M1-M6.1 Architecture Migration
 - D3 Batch Analysis
+- D4 Batch Result
 
 ## Current
-- D4 Batch Result
+- None (Phase D4 completed)
 
 ## Next
-- D4 Batch Result
+- None (No further canonical roadmap phase defined)
 
 ## Architecture
 - apps/web
