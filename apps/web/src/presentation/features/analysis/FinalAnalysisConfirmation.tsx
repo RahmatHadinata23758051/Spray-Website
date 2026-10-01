@@ -3,7 +3,7 @@ import type { Camera as CameraType } from '@spray-paragon/domain';
 import type { SideFinalMeasurements, FrontFinalMeasurements, CalibrationSnapshot, FinalAnalysisReport } from '@spray-paragon/domain';
 import type { SynchronizedAnalysisFrame } from '@spray-paragon/domain';
 import { selectMeasurementValue } from '@spray-paragon/domain';
-import { fmt } from '../../../data';
+import { fmt } from '../../utils/formatters';
 import { hasAdjustedMeasurement } from './utils';
 
 export function FinalAnalysisConfirmation({ 

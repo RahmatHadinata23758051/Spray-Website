@@ -4,7 +4,8 @@ import type { Page } from './presentation/navigation';
 import { legacyPageToPath } from './presentation/navigation';
 import type { Test } from '@spray-paragon/domain';
 import type { FinalAnalysisReport } from '@spray-paragon/domain';
-import { tests } from './data';
+import { simulationService } from './application/services';
+const tests = simulationService.getTests();
 
 // Layout
 import { AppShell } from './presentation/components/layout/AppShell';
@@ -26,6 +27,7 @@ import { BatchesPage } from './presentation/pages/Batches/BatchesPage';
 import { NewBatchPage } from './presentation/pages/Batches/NewBatchPage';
 import { BatchDetailPage } from './presentation/pages/Batches/BatchDetailPage';
 import { BatchCapturePage } from './presentation/pages/Batches/BatchCapturePage';
+import { BatchAnalysisPage } from './presentation/pages/Batches/BatchAnalysisPage';
 
 export { createFinalReportCsv } from './presentation/pages/Tests/ResultPage';
 
@@ -52,6 +54,7 @@ export function App() {
         <Route path="/batches/new" element={<NewBatchPage />} />
         <Route path="/batches/:batchId" element={<BatchDetailPage />} />
         <Route path="/batches/:batchId/capture" element={<BatchCapturePage />} />
+        <Route path="/batches/:batchId/analysis" element={<BatchAnalysisPage />} />
 
         {/* Legacy redirect routes */}
         <Route path="/new-test" element={<Navigate to="/batches/new" replace />} />

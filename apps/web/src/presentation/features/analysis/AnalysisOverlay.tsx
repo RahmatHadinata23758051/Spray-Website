@@ -1,7 +1,7 @@
-import type { Camera as CameraType } from '@spray-paragon/domain';
+import type { Camera as CameraType, Frame } from '@spray-paragon/domain';
 import type { CalibrationSnapshot, SidePixelGeometry, FrontPixelGeometry, SideFinalMeasurements, FrontFinalMeasurements } from '@spray-paragon/domain';
 import { calibratedGridSpacingPx, selectMeasurementValue } from '@spray-paragon/domain';
-import { frames, fmt } from '../../../data';
+import { fmt } from '../../utils/formatters';
 import type { ViewMode } from './types';
 
 const frontMistPoints: readonly [number, number, number, number][] = [
@@ -23,7 +23,7 @@ export function AnalysisOverlay({
 }: {
   camera: CameraType;
   mode: ViewMode;
-  frame: typeof frames[0];
+  frame: Frame;
   calibration: CalibrationSnapshot;
   sideGeometry: SidePixelGeometry;
   frontGeometry: FrontPixelGeometry;

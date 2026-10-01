@@ -1,9 +1,14 @@
-import type { SynchronizedAnalysisFrame, Analysis as AnalysisData, CapturePhaseV2 } from '@spray-paragon/domain';
+import type { SynchronizedAnalysisFrame, CapturePhaseV2 } from '@spray-paragon/domain';
 import { phaseLabel } from './utils';
 
-export function Timeline({ moments, analysis, selectedIndex, onSelect }: { moments: SynchronizedAnalysisFrame[]; analysis: AnalysisData; selectedIndex: number; onSelect: (index: number) => void }) {
+export function Timeline({ moments, selectedIndex, onSelect }: { moments: SynchronizedAnalysisFrame[]; selectedIndex: number; onSelect: (index: number) => void }) {
   const phases: CapturePhaseV2[] = ['pre_spray', 'build_up', 'stable', 'decay'];
   const current = moments[selectedIndex];
+  
+  const stableMoments = moments.filter(m => m.phase === 'stable');
+  const startMs = stableMoments.length > 0 ? stableMoments[0].timestampMs : 0;
+  const endMs = stableMoments.length > 0 ? stableMoments[stableMoments.length - 1].timestampMs : 0;
+
   return (
     <div className="analysis-timeline">
       <div className="timeline-header">
@@ -20,7 +25,7 @@ export function Timeline({ moments, analysis, selectedIndex, onSelect }: { momen
       </div>
       <div className="timeline-bars">
         {moments.map((moment, index) => {
-          const inWindow = moment.timestampMs >= analysis.analysisWindow.startMs && moment.timestampMs <= analysis.analysisWindow.endMs;
+          const inWindow = moment.timestampMs >= startMs && moment.timestampMs <= endMs;
           const isCurrent = index === selectedIndex;
           return (
             <button
@@ -35,7 +40,7 @@ export function Timeline({ moments, analysis, selectedIndex, onSelect }: { momen
         })}
       </div>
       <div className="timeline-footer">
-        <span>Pre-spray</span><span>Build-up</span><span>Stable phase {analysis.analysisWindow.startMs}–{analysis.analysisWindow.endMs} ms</span><span>Decay</span>
+        <span>Pre-spray</span><span>Build-up</span><span>Stable phase {startMs}–{endMs} ms</span><span>Decay</span>
       </div>
     </div>
   );

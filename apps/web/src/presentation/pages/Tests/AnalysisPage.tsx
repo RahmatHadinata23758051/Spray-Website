@@ -30,7 +30,11 @@ import {
   getPrimary,
   createFinalAnalysisReport
 } from '@spray-paragon/domain';
-import { analyses, synchronizedFrames, frames, getPixelGeometry } from '../../../data';
+import { simulationService } from '../../../application/services';
+const analyses = simulationService.getAnalyses();
+const synchronizedFrames = simulationService.getSynchronizedFrames();
+const frames = simulationService.getFrames();
+const getPixelGeometry = simulationService.getPixelGeometry;
 import { cameraCopy } from '../../features/analysis/cameraCopy';
 import { Status } from '../../components/ui/Status';
 import type { ViewMode, ActiveSideTool } from '../../features/analysis/types';
@@ -305,7 +309,7 @@ export function AnalysisPage({ test, setPage, finalReport, setFinalReport }: { t
                 />
               )}
             </div>
-            <Timeline moments={synchronizedFrames} analysis={a} selectedIndex={captureIndex} onSelect={setCaptureIndex} />
+            <Timeline moments={synchronizedFrames} selectedIndex={captureIndex} onSelect={setCaptureIndex} />
           </div>
         </div>
 

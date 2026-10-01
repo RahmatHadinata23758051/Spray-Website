@@ -37,7 +37,6 @@ export default {
         camera: {
           side: '#1D8FFF',
           front: '#0D747A',
-          rear: '#526173',
         }
       },
       fontFamily: {

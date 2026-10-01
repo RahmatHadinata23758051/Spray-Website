@@ -2,7 +2,7 @@ import React from 'react';
 import type { Camera as CameraType, Analysis as AnalysisData, SynchronizedAnalysisFrame } from '@spray-paragon/domain';
 import type { CalibrationSnapshot, SideFinalMeasurements, FrontFinalMeasurements, MeasurementValue } from '@spray-paragon/domain';
 import { selectMeasurementValue } from '@spray-paragon/domain';
-import { fmt, synchronizedFrames } from '../../../data';
+import { fmt } from '../../utils/formatters';
 import { formatPointPx, metricSlug, phaseLabel } from './utils';
 import type { ActiveSideTool } from './types';
 
@@ -24,10 +24,12 @@ export function Inspector({
   onApplyMeasurementEdit, 
   sideMeasurements, 
   frontMeasurements, 
-  onCorrectFront 
+  onCorrectFront,
+  totalMomentsCount = 100,
+  readOnly = false,
 }: {
   camera: CameraType;
-  a: AnalysisData;
+  a?: Partial<AnalysisData>;
   moment?: SynchronizedAnalysisFrame;
   calibration?: CalibrationSnapshot;
   isCalibrating?: boolean;
@@ -44,22 +46,24 @@ export function Inspector({
   sideMeasurements?: SideFinalMeasurements;
   frontMeasurements?: FrontFinalMeasurements;
   onCorrectFront?: (field: 'sprayArea' | 'centroidOffsetX' | 'centroidOffsetY', delta: number) => void;
+  totalMomentsCount?: number;
+  readOnly?: boolean;
 }) {
   const measurementRows: { label: string; value: MeasurementValue; format: (value: number) => string }[] = camera === 'side'
     ? [
-      ['Spray length', sideMeasurements?.sprayLength ?? { auto: a.side.sprayLengthMm, final: a.side.sprayLengthMm, adjusted: false }, fmt.cm],
-      ['Spray angle', sideMeasurements?.sprayAngle ?? { auto: a.side.sprayAngleDeg, final: a.side.sprayAngleDeg, adjusted: false }, fmt.deg],
-      ['Vertical spread', sideMeasurements?.verticalSpread ?? { auto: a.side.maxVerticalSpreadMm, final: a.side.maxVerticalSpreadMm, adjusted: false }, fmt.mm],
-      ['Direction offset', sideMeasurements?.directionOffset ?? { auto: a.side.directionOffsetDeg, final: a.side.directionOffsetDeg, adjusted: false }, fmt.deg],
+      ['Spray length', sideMeasurements?.sprayLength ?? { auto: a?.side?.sprayLengthMm ?? 0, final: a?.side?.sprayLengthMm ?? 0, adjusted: false }, fmt.cm],
+      ['Spray angle', sideMeasurements?.sprayAngle ?? { auto: a?.side?.sprayAngleDeg ?? 0, final: a?.side?.sprayAngleDeg ?? 0, adjusted: false }, fmt.deg],
+      ['Vertical spread', sideMeasurements?.verticalSpread ?? { auto: a?.side?.maxVerticalSpreadMm ?? 0, final: a?.side?.maxVerticalSpreadMm ?? 0, adjusted: false }, fmt.mm],
+      ['Direction offset', sideMeasurements?.directionOffset ?? { auto: a?.side?.directionOffsetDeg ?? 0, final: a?.side?.directionOffsetDeg ?? 0, adjusted: false }, fmt.deg],
     ].map(([label, value, format]) => ({ label: label as string, value: value as MeasurementValue, format: format as (value: number) => string }))
     : [
-      ['Spray area', frontMeasurements?.sprayArea ?? { auto: a.front.sprayAreaMm2, final: a.front.sprayAreaMm2, adjusted: false }, fmt.area],
-      ['Equivalent diameter', frontMeasurements?.equivalentDiameter ?? { auto: a.front.equivalentDiameterMm, final: a.front.equivalentDiameterMm, adjusted: false }, fmt.mm],
-      ['Circularity', frontMeasurements?.circularity ?? { auto: a.front.circularity, final: a.front.circularity, adjusted: false }, (value: number) => value.toFixed(2)],
-      ['Centroid X', frontMeasurements?.centroidOffsetX ?? { auto: a.front.centroidOffsetXmm, final: a.front.centroidOffsetXmm, adjusted: false }, fmt.mm],
-      ['Centroid Y', frontMeasurements?.centroidOffsetY ?? { auto: a.front.centroidOffsetYmm, final: a.front.centroidOffsetYmm, adjusted: false }, fmt.mm],
-      ['Horizontal symmetry', frontMeasurements?.horizontalSymmetry ?? { auto: a.front.horizontalSymmetry, final: a.front.horizontalSymmetry, adjusted: false }, fmt.pct],
-      ['Vertical symmetry', frontMeasurements?.verticalSymmetry ?? { auto: a.front.verticalSymmetry, final: a.front.verticalSymmetry, adjusted: false }, fmt.pct],
+      ['Spray area', frontMeasurements?.sprayArea ?? { auto: a?.front?.sprayAreaMm2 ?? 0, final: a?.front?.sprayAreaMm2 ?? 0, adjusted: false }, fmt.area],
+      ['Equivalent diameter', frontMeasurements?.equivalentDiameter ?? { auto: a?.front?.equivalentDiameterMm ?? 0, final: a?.front?.equivalentDiameterMm ?? 0, adjusted: false }, fmt.mm],
+      ['Circularity', frontMeasurements?.circularity ?? { auto: a?.front?.circularity ?? 0, final: a?.front?.circularity ?? 0, adjusted: false }, (value: number) => value.toFixed(2)],
+      ['Centroid X', frontMeasurements?.centroidOffsetX ?? { auto: a?.front?.centroidOffsetXmm ?? 0, final: a?.front?.centroidOffsetXmm ?? 0, adjusted: false }, fmt.mm],
+      ['Centroid Y', frontMeasurements?.centroidOffsetY ?? { auto: a?.front?.centroidOffsetYmm ?? 0, final: a?.front?.centroidOffsetYmm ?? 0, adjusted: false }, fmt.mm],
+      ['Horizontal symmetry', frontMeasurements?.horizontalSymmetry ?? { auto: a?.front?.horizontalSymmetry ?? 0, final: a?.front?.horizontalSymmetry ?? 0, adjusted: false }, fmt.pct],
+      ['Vertical symmetry', frontMeasurements?.verticalSymmetry ?? { auto: a?.front?.verticalSymmetry ?? 0, final: a?.front?.verticalSymmetry ?? 0, adjusted: false }, fmt.pct],
     ].map(([label, value, format]) => ({ label: label as string, value: value as MeasurementValue, format: format as (value: number) => string }));
 
   return (
@@ -129,7 +133,7 @@ export function Inspector({
           </>
         )}
 
-        {(onStartMeasurementEdit || onCancelMeasurementEdit || onApplyMeasurementEdit) && (
+        {!readOnly && (onStartMeasurementEdit || onCancelMeasurementEdit || onApplyMeasurementEdit) && (
           <div className="measurement-actions">
             {!isEditingMeasurement && onStartMeasurementEdit && <button type="button" className="secondary-button" onClick={onStartMeasurementEdit}>Edit Measurement</button>}
             {isEditingMeasurement && (
@@ -158,7 +162,7 @@ export function Inspector({
         <section>
           <h3>Capture moment</h3>
           <dl className="inspector-data">
-            <div><dt>Capture</dt><dd className="font-mono">#{String(moment.frameIndex).padStart(3, '0')} · {moment.frameIndex + 1} of {synchronizedFrames.length}</dd></div>
+            <div><dt>Capture</dt><dd className="font-mono">#{String(moment.frameIndex).padStart(3, '0')} · {moment.frameIndex + 1} of {totalMomentsCount}</dd></div>
             <div><dt>Timestamp</dt><dd className="font-mono">{moment.timestampMs} ms</dd></div>
             <div><dt>Phase</dt><dd>{phaseLabel(moment.phase)}</dd></div>
             <div><dt>Sync status</dt><dd className="font-mono">{moment.syncStatus} · Δ {moment.timestampDeltaMs} ms</dd></div>
@@ -182,7 +186,7 @@ export function Inspector({
             <div><dt>Coordinate mode</dt><dd>Physical mm</dd></div>
           </dl>
         )}
-        {(onStartCalibration || onApplyCalibration || onCancelCalibration) && (
+        {!readOnly && (onStartCalibration || onApplyCalibration || onCancelCalibration) && (
           <div className="calibration-actions">
             {!isCalibrating && onStartCalibration && <button type="button" className="secondary-button" onClick={onStartCalibration}>Adjust Calibration</button>}
             {isCalibrating && (
