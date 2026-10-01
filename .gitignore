@@ -5,6 +5,7 @@ dist/
 !.env.example
 playwright-report/
 test-results/
+coverage/
 *.log
-package-lock.json
-skills-lock.json
+.claude/settings.local.json
+.codex/hooks.json
