@@ -40,7 +40,7 @@ test.describe('Spraybot simulated workflow', () => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in' }).click();
     await page.getByRole('button', { name: 'Batches' }).click();
-    await expect(page.getByRole('heading', { name: 'Batches' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Batches' }).first()).toBeVisible();
     await expect(page.getByText('BAT-24-0618')).toBeVisible();
     await page.getByRole('button', { name: 'Open Batch' }).first().click();
     await expect(page.getByRole('heading', { name: 'BAT-24-0618' })).toBeVisible();
@@ -359,7 +359,7 @@ test.describe('Spraybot simulated workflow', () => {
 
     // Go to Batches
     await page.getByRole('button', { name: 'Batches' }).click();
-    await expect(page.getByRole('heading', { name: 'Batches' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Batches' }).first()).toBeVisible();
     
     // 1. Batches contains no Rear Camera fields.
     // 2. Batches contains no Rear Validity.

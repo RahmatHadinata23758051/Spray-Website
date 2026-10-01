@@ -8,7 +8,7 @@ import { batchRepository } from '../data/batchRepositoryInstance';
 import { productRepository } from '../data/productRepository';
 import { BatchCapturePage } from '../presentation/pages/Batches/BatchCapturePage';
 import { BatchDetailPage } from '../presentation/pages/Batches/BatchDetailPage';
-import { updateCaptureSession, completeCapture } from '../domain/batch';
+import { updateCaptureSession } from '../domain/batch';
 
 describe('Phase D2 — Batch Capture Workspace Migration', () => {
   let readyBatchId: string;
@@ -138,7 +138,7 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
     const b = await batchRepository.getBatch(readyBatchId);
     if (b) {
       b.status = 'FINALIZED';
-      await (batchRepository as any).saveMutated(b);
+      await (batchRepository as unknown as { saveMutated: (b: unknown) => Promise<void> }).saveMutated(b);
     }
 
     render(
@@ -165,7 +165,8 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
     if (moment) {
       expect(moment.side).toBeDefined();
       expect(moment.front).toBeDefined();
-      expect((moment as any).rear).toBeUndefined();
+      // @ts-expect-error Verify rear is intentionally undefined/omitted
+      expect(moment.rear).toBeUndefined();
       expect(moment.frameIndex).toBeDefined();
       expect(moment.timestampMs).toBeDefined();
     }
