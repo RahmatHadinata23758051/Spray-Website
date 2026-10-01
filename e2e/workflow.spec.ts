@@ -8,15 +8,12 @@ test.describe('Spraybot simulated workflow', () => {
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'New Test' }).first().click();
-    await page.getByLabel('Product', { exact: true }).selectOption({ label: 'Trigger Spray 250 mL · PRD-TS250' });
-    await expect(page.getByLabel('Test Recipe')).toHaveValue('rcp-ts-standard');
-    await page.getByRole('button', { name: 'Start Test' }).click();
+    await page.getByRole('button', { name: 'Capture' }).click();
     await expect(page.getByText('Simulation mode — fixture capture')).toBeVisible();
     await expect(page.getByText('Mock capture loaded · fixture frame set')).toHaveCount(2);
 
     await page.getByRole('button', { name: 'Open analysis' }).click();
-    await expect(page.getByText('Capture timeline')).toBeVisible();
+    await expect(page.getByText('Capture timeline', { exact: true })).toBeVisible();
     await expect(page.getByText('Recommended capture', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('29 of 60').first()).toBeVisible();
     await expect(page.getByText('#028 / 59')).toHaveCount(0);
@@ -29,7 +26,7 @@ test.describe('Spraybot simulated workflow', () => {
     await expect(page.getByText('Selected Captures 1 / 10')).toBeVisible();
 
     await page.getByRole('button', { name: 'front camera' }).click();
-    await expect(page.getByText('Spray area')).toBeVisible();
+    await expect(page.getByText('Spray area', { exact: true })).toBeVisible();
     await expect(page.getByText('19364 mm²', { exact: true })).toBeVisible();
     await expect(page.getByText('Horizontal symmetry')).toBeVisible();
     await expect(page.getByText('Vertical symmetry')).toBeVisible();
@@ -39,15 +36,14 @@ test.describe('Spraybot simulated workflow', () => {
     await expect(page.getByRole('button', { name: /rear camera/i })).toHaveCount(0);
   });
 
-  test('history filters and opens test analysis or result based on status', async ({ page }) => {
+  test('batches displays batches from repository and can open batch detail', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'History' }).click();
-    await page.getByLabel('Search').fill('nonexistent');
-    await expect(page.getByText('No tests match the current filters.')).toBeVisible();
-    await page.getByLabel('Search').fill('TST-24-0618');
-    await page.getByRole('button', { name: 'Review Analysis' }).click();
-    await expect(page.getByRole('heading', { name: 'Analysis', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Batches' }).click();
+    await expect(page.getByRole('heading', { name: 'Batches' })).toBeVisible();
+    await expect(page.getByText('BAT-24-0618')).toBeVisible();
+    await page.getByRole('button', { name: 'Open Batch' }).first().click();
+    await expect(page.getByRole('heading', { name: 'BAT-24-0618' })).toBeVisible();
   });
 
   for (const viewport of [{ width: 1366, height: 768 }, { width: 768, height: 1024 }]) {
@@ -361,40 +357,19 @@ test.describe('Spraybot simulated workflow', () => {
     const finalizedRow = page.locator('table').locator('tr', { hasText: 'TST-24-0618' }).first();
     await expect(finalizedRow.getByText('#028')).toBeVisible();
 
-    // Go to History
-    await page.getByRole('button', { name: 'History' }).click();
+    // Go to Batches
+    await page.getByRole('button', { name: 'Batches' }).click();
+    await expect(page.getByRole('heading', { name: 'Batches' })).toBeVisible();
     
-    // 1. History contains no Rear Camera fields.
-    // 2. History contains no Rear Validity.
+    // 1. Batches contains no Rear Camera fields.
+    // 2. Batches contains no Rear Validity.
     await expect(page.getByText('Rear Validity')).toHaveCount(0);
     await expect(page.getByText('Bottle alignment')).toHaveCount(0);
     
-    // 12. Search matches Test ID.
-    await page.getByLabel('Search').fill('TST-24-0618');
-    
-    // 3. Finalized test displays Primary Capture from FinalAnalysisReport.
-    const historyFinalizedRow = page.getByRole('row', { name: /TST-24-0618/ });
-    await expect(historyFinalizedRow.getByText('#028')).toBeVisible(); 
-    
-    // 5. Finalized test action opens Result.
-    await historyFinalizedRow.getByRole('button', { name: 'Open Result' }).click();
-    await expect(page.getByRole('heading', { name: 'Result', exact: true })).toBeVisible();
-
-    // Go back to History to test other statuses
-    await page.getByRole('button', { name: 'History' }).click();
-    await page.getByLabel('Search').fill(''); // Clear search
-    // 13. Search matches Sample ID.
-    await page.getByLabel('Search').fill('SMP-24-0617');
-    const historyReviewRow = page.getByRole('row', { name: /TST-24-0617/ });
-    
-    // 4. Non-finalized test displays no Primary Capture.
-    await expect(historyReviewRow.getByText('—')).toBeVisible();
-
-    // 14. Status filtering works
-    await page.getByLabel('Search').fill('');
-    await page.getByLabel('Status').selectOption('Finalized');
-    await expect(page.getByRole('row', { name: /TST-24-0618/ })).toBeVisible();
-    await expect(page.getByRole('row', { name: /TST-24-0617/ })).toHaveCount(0);
+    const batchRow = page.getByRole('row', { name: /BAT-24-0618/ });
+    await expect(batchRow).toBeVisible();
+    await batchRow.getByRole('button', { name: 'Open Batch' }).click();
+    await expect(page.getByRole('heading', { name: 'BAT-24-0618' })).toBeVisible();
   });
 });
 
