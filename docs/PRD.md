@@ -202,7 +202,6 @@ Purpose:
 Layout:
 - Side Camera preview
 - Front Camera preview
-- Rear Camera preview
 - capture timeline
 - current simulated phase:
   - pre-spray,
@@ -219,7 +218,7 @@ The page must explain that frames are mock fixtures.
 
 This is the flagship screen.
 
-It must support three camera views.
+It must support two camera views (Side and Front).
 
 #### Side Camera
 
@@ -256,24 +255,6 @@ Visual overlays:
 - centroid,
 - horizontal/vertical symmetry axes.
 
-#### Rear Camera
-
-Primary metrics:
-
-- Bottle Alignment
-- Nozzle Alignment
-- Actuator Offset
-- Bottle Tilt
-- Movement During Test
-
-Visual overlays:
-
-- reference centerline,
-- detected bottle axis,
-- nozzle center,
-- actuator center,
-- offset arrows.
-
 #### Shared analysis controls
 
 - frame scrubber,
@@ -296,7 +277,6 @@ Sections:
 - mechanical parameters,
 - Side Camera results,
 - Front Camera results,
-- Rear Camera validation,
 - temporal summary,
 - representative images,
 - notes,
@@ -355,8 +335,7 @@ Represent future concepts:
 - pixel-to-mm scale,
 - camera ROI,
 - nozzle origin,
-- front-camera center reference,
-- rear-camera alignment reference.
+- front-camera center reference.
 
 Every value must be labelled mock/demo.
 
@@ -380,7 +359,7 @@ The product should visually communicate this sequence:
 
 1. Test created.
 2. Capture trigger starts.
-3. Three cameras capture synchronized sequences.
+3. Side and Front cameras capture synchronized sequences.
 4. Video/frame buffer is created.
 5. Frames receive timestamps.
 6. Spray event is detected.
@@ -415,15 +394,6 @@ For MVP, steps 3-12 are simulated using fixture data.
 - horizontalSymmetry
 - verticalSymmetry
 
-### Rear Camera
-
-- bottleAlignmentStatus
-- nozzleAlignmentStatus
-- actuatorOffsetXmm
-- actuatorOffsetYmm
-- bottleTiltDeg
-- movementDuringTestMm
-
 ### Temporal
 
 - stableWindowStartMs
@@ -442,7 +412,7 @@ The frontend MVP is acceptable when:
 1. A user can log in locally.
 2. All primary screens are reachable through one coherent navigation system.
 3. A user can run a fully simulated test from setup to result.
-4. The analysis workspace clearly explains all three cameras.
+4. The analysis workspace clearly explains both Side and Front cameras.
 5. Each camera has distinct, meaningful metrics and overlays.
 6. Analysis uses realistic fixture data rather than random numbers on every render.
 7. Simulation state is clearly labelled.

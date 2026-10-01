@@ -13,8 +13,8 @@ Spraybot is a software-first interface for an automated spray-bottle testing mac
 
 - Understand immediately that the system is in Simulation Mode.
 - Configure a test with product/sample data and fixture scenario selection.
-- Observe a mock synchronized 3-camera capture flow.
-- Inspect Side, Front, and Rear camera analysis separately.
+- Observe a mock synchronized camera capture flow.
+- Inspect Side and Front camera analysis separately.
 - Review deterministic results, history, and report previews.
 - Trust that the UI is honest about mock data and future integration boundaries.
 

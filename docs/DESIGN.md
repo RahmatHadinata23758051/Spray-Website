@@ -139,7 +139,6 @@ Use a restrained camera color system:
 
 - Side Camera: primary blue
 - Front Camera: deep teal
-- Rear Camera: graphite/slate
 
 These colors are for:
 - overlay lines,
@@ -284,7 +283,7 @@ Use:
 ### Tabs
 
 Tabs are appropriate for:
-- Side / Front / Rear camera views,
+- Side / Front camera views,
 - Original / Mask / Overlay.
 
 Do not turn each tab into a pill unless there is a reason.
@@ -356,16 +355,6 @@ Show:
 - equivalent circle,
 - centroid,
 - horizontal/vertical axes.
-
-### Rear Camera overlay
-
-Show:
-- machine center reference,
-- bottle axis,
-- nozzle center,
-- actuator center,
-- tilt,
-- offset arrows.
 
 ### Measurement presentation
 

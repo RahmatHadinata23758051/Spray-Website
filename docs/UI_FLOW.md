@@ -155,7 +155,6 @@ This is a workspace, not a dashboard.
 
 - Side
 - Front
-- Rear
 
 ### Main viewport
 
@@ -193,13 +192,6 @@ Show only metrics relevant to selected camera.
 - Centroid offset
 - Symmetry
 
-#### Rear
-- Bottle alignment
-- Nozzle alignment
-- Actuator offset
-- Tilt
-- movement
-
 ---
 
 ## 8. Result page
@@ -215,7 +207,6 @@ Mechanical parameters
 
 Side Camera result
 Front Camera result
-Rear validation
 
 Temporal stability
 
@@ -238,7 +229,6 @@ Table columns:
 - Sample ID
 - Operator
 - Test state
-- Rear validity
 - Action
 
 Filters:
@@ -285,7 +275,6 @@ Sections:
 
 - Side camera scale
 - Front reference center
-- Rear alignment reference
 - ROI preview
 
 Always show `Mock calibration`.

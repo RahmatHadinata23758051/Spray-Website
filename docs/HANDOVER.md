@@ -14,9 +14,9 @@
 | 5 | New Test | ✅ Complete | Full validation, scenario-driven prefill, deterministic new test IDs, Save draft handler, Start simulated test wired |
 | 6 | Capture Monitor | ✅ Complete | 3 cameras, timeline with phases, "Simulation mode — fixture capture" label |
 | 7 | Analysis Workspace | ✅ Complete | Large viewport, camera/mode switching (Original/Mask/Overlay), Inspector, frame timeline with stable window |
-| 8 | Camera-specific metrics & overlays | ✅ Complete | Side (geometry), Front (pattern), Rear (alignment) — distinct presentations |
+| 8 | Camera-specific metrics & overlays | ✅ Complete | Side (geometry), Front (pattern) — distinct presentations |
 | 9 | Final Result | ✅ Complete | Summary + 3 camera panels + representative images |
-| 10 | History | ✅ Complete | Table-first, functional filters (search, product, operator, state), empty state, Rear Validity column, routes to Result |
+| 10 | History | ✅ Complete | Table-first, functional filters (search, product, operator, state), empty state, routes to Result |
 | 11 | Reports | ✅ Complete | Printable preview, **mock CSV export added**, print styles in CSS |
 | 12 | Products / Presets | ✅ Complete | Table-first, 2 fixture rows, empty state not needed for presets |
 | 13 | Calibration | ✅ Complete | "Mock calibration" warning, calibration metrics shown |

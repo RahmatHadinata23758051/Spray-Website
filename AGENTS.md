@@ -155,8 +155,7 @@ This is the flagship screen.
 It must clearly separate:
 
 - Side Camera analysis,
-- Front Camera analysis,
-- Rear Camera validation.
+- Front Camera analysis.
 
 It must support:
 

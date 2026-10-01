@@ -67,7 +67,7 @@ type CaptureFrame = {
 }
 
 type CameraCapture = {
-  camera: "side" | "front" | "rear"
+  camera: "side" | "front"
   fps: number
   frames: CaptureFrame[]
 }
@@ -110,15 +110,6 @@ type AnalysisResult = {
     verticalSymmetry: number
   }
 
-  rear: {
-    bottleAlignmentStatus: "pass" | "review" | "fail"
-    nozzleAlignmentStatus: "pass" | "review" | "fail"
-    actuatorOffsetXmm: number
-    actuatorOffsetYmm: number
-    bottleTiltDeg: number
-    movementDuringTestMm: number
-  }
-
   temporal: {
     sprayLengthMeanMm: number
     sprayLengthStdDevMm: number
@@ -148,7 +139,7 @@ Create at least these fixtures:
 - front pattern centroid/symmetry differs from nominal.
 
 ### `alignment-review-01`
-- rear alignment requires review.
+- simulated alignment anomaly requires review.
 
 These scenarios make the interface credible without inventing real product acceptance thresholds.
 
