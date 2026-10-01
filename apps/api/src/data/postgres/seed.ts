@@ -1,4 +1,4 @@
-import { db } from '../server/src/db';
+import { db } from './client';
 import { users } from './schema';
 import argon2 from 'argon2';
 import { eq } from 'drizzle-orm';
