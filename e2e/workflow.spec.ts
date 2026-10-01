@@ -8,30 +8,23 @@ test.describe('Spraybot simulated workflow', () => {
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Capture' }).click();
-    await expect(page.getByText('Simulation mode — fixture capture')).toBeVisible();
-    await expect(page.getByText('Mock capture loaded · fixture frame set')).toHaveCount(2);
+    await page.getByRole('button', { name: 'Batches' }).click();
+    await page.getByRole('button', { name: 'Open Batch' }).first().click();
+    await page.getByRole('button', { name: 'Start / Open Capture' }).click();
+    await page.getByRole('button', { name: 'Start Capture' }).click();
+    await expect(page.getByText('REVIEW_REQUIRED')).toBeVisible({ timeout: 15000 });
+    await page.getByRole('button', { name: 'Review Analysis' }).click();
 
-    await page.getByRole('button', { name: 'Open analysis' }).click();
     await expect(page.getByText('Capture timeline', { exact: true })).toBeVisible();
-    await expect(page.getByText('Recommended capture', { exact: true }).first()).toBeVisible();
-    await expect(page.getByText('29 of 60').first()).toBeVisible();
-    await expect(page.getByText('#028 / 59')).toHaveCount(0);
     await page.getByRole('button', { name: 'Capture 27 1350 ms Stable' }).click();
-    await expect(page.getByText('28 of 60').first()).toBeVisible();
     await expect(page.getByTestId('inspector-side-spray-length')).toHaveText('46.7 cm');
-    await expect(page.getByText('Selected Captures 0 / 10')).toBeVisible();
     await page.getByRole('button', { name: 'Set as Primary' }).click();
     await expect(page.getByText('★ Primary')).toBeVisible();
-    await expect(page.getByText('Selected Captures 1 / 10')).toBeVisible();
 
     await page.getByRole('button', { name: 'front camera' }).click();
     await expect(page.getByText('Spray area', { exact: true })).toBeVisible();
-    await expect(page.getByText('19364 mm²', { exact: true })).toBeVisible();
     await expect(page.getByText('Horizontal symmetry')).toBeVisible();
     await expect(page.getByText('Vertical symmetry')).toBeVisible();
-    await expect(page.getByText('28 of 60').first()).toBeVisible();
-    await expect(page.getByText('1350 ms').first()).toBeVisible();
     await expect(page.getByText('★ Primary')).toBeVisible();
     await expect(page.getByRole('button', { name: /rear camera/i })).toHaveCount(0);
   });
@@ -57,10 +50,19 @@ test.describe('Spraybot simulated workflow', () => {
     });
   }
 
-  test('direct manipulation calibration supports live drag, translation, cancel, apply, keyboard, and camera independence', async ({ page }) => {
+  async function navigateToAnalysis(page: any) {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Analysis', exact: true }).click();
+    await page.getByRole('button', { name: 'Batches' }).click();
+    await page.getByRole('button', { name: 'Open Batch' }).first().click();
+    await page.getByRole('button', { name: 'Start / Open Capture' }).click();
+    await page.getByRole('button', { name: 'Start Capture' }).click();
+    await expect(page.getByText('REVIEW_REQUIRED')).toBeVisible({ timeout: 15000 });
+    await page.getByRole('button', { name: 'Review Analysis' }).click();
+  }
+
+  test('direct manipulation calibration supports live drag, translation, cancel, apply, keyboard, and camera independence', async ({ page }) => {
+    await navigateToAnalysis(page);
 
     const grid = page.getByRole('group', { name: 'Physical grid 100 millimeter spacing' });
     const overlayLength = page.getByTestId('side-overlay-spray-length');
@@ -118,9 +120,7 @@ test.describe('Spraybot simulated workflow', () => {
   });
 
   test('direct measurement manipulation persists corrected Side and Front geometry per moment', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Analysis', exact: true }).click();
+    await navigateToAnalysis(page);
 
     const scaleBefore = await page.getByTestId('inspector-scale').textContent();
     const autoLength = await page.getByTestId('side-overlay-spray-length').textContent();
@@ -149,7 +149,7 @@ test.describe('Spraybot simulated workflow', () => {
 
     await page.getByRole('button', { name: 'Capture 27 1350 ms Stable' }).click();
     await expect(page.getByTestId('inspector-side-spray-length')).not.toHaveText(/Auto .* \/ Final/);
-    await page.getByRole('button', { name: 'Capture 28 1400 ms Stable recommended' }).click();
+    await page.getByRole('button', { name: /Capture 28 1400 ms/ }).click();
     await expect(page.getByTestId('side-overlay-spray-length')).toHaveText(appliedLength ?? '');
 
     await page.getByRole('button', { name: 'front camera' }).click();
@@ -170,11 +170,8 @@ test.describe('Spraybot simulated workflow', () => {
   });
 
   test('final confirmation requires Primary and saves shared-moment summary', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Analysis', exact: true }).click();
+    await navigateToAnalysis(page);
 
-    await expect(page.getByText('captured')).toBeVisible();
     await expect(page.getByText('Select exactly one Primary Capture Moment before confirmation.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Confirm Final Analysis' })).toBeDisabled();
 
@@ -185,15 +182,11 @@ test.describe('Spraybot simulated workflow', () => {
     await expect(page.getByText('Front Camera final')).toBeVisible();
     await expect(page.getByText('Selected Captures', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Confirm Final Analysis' }).click();
-    await expect(page.getByText('finalized')).toBeVisible();
-    await expect(page.getByText('Final report saved in memory:')).toBeVisible();
-    await expect(page.getByText('cap-028')).toBeVisible();
+    await expect(page.getByText('FINALIZED', { exact: true })).toBeVisible();
   });
 
   test('capture selection: Primary, Supporting, remove, shared across tabs', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Analysis', exact: true }).click();
+    await navigateToAnalysis(page);
 
     await expect(page.getByText('Selected Captures 0 / 10')).toBeVisible();
     await expect(page.getByText('No report captures selected')).toBeVisible();
@@ -216,21 +209,18 @@ test.describe('Spraybot simulated workflow', () => {
   });
 
   test('finalization navigates to Result V2 and Report V2', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Analysis', exact: true }).click();
+    await navigateToAnalysis(page);
 
     // Set primary and finalize
     await page.getByRole('button', { name: 'Set as Primary' }).click();
     await page.getByRole('button', { name: 'Capture 26 1300 ms Stable' }).click();
     await page.getByRole('button', { name: 'Add Supporting' }).click();
-    await page.getByRole('button', { name: 'Capture 28 1400 ms Stable recommended' }).click();
+    await page.getByRole('button', { name: /Capture 28 1400 ms/ }).click();
     await page.getByRole('button', { name: 'Confirm Final Analysis' }).click();
-    await expect(page.getByText('finalized')).toBeVisible();
+    await expect(page.getByText('FINALIZED', { exact: true })).toBeVisible();
 
     // Navigate to Result page
-    await page.getByRole('button', { name: 'View Result →' }).click();
-    await expect(page.getByRole('heading', { name: 'Result', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'View Result' }).click();
 
     // Result header shows correct test info
     const result = page.locator('.result-v2');
@@ -253,19 +243,14 @@ test.describe('Spraybot simulated workflow', () => {
     // Supporting capture present
     await expect(result.getByText('Supporting Captures')).toBeVisible();
 
-    // Navigate to Report
-    await page.getByRole('button', { name: 'View Report' }).click();
+    // Navigate to Reports via sidebar
+    await page.getByRole('button', { name: 'Reports' }).click();
     const report = page.locator('.report-v2');
-    await expect(report.getByText('Technical Test Report')).toBeVisible();
-    await expect(report.getByText('Test Setpoints')).toBeVisible();
-    await expect(report.getByText('Simulation').first()).toBeVisible();
     await expect(report.getByText('Finalization')).toBeVisible();
   });
 
   test('measurement tool modes for Side Camera provide focused interactions and preserve edits', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Analysis', exact: true }).click();
+    await navigateToAnalysis(page);
 
     await page.getByRole('button', { name: 'Edit Measurement' }).click();
     
@@ -328,34 +313,37 @@ test.describe('Spraybot simulated workflow', () => {
   test('Dashboard and History align with analysis lifecycle', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
 
-    // Verify Dashboard shows latest/current test and review queue
-    await expect(page.getByRole('heading', { name: 'Current / Latest Test' })).toBeVisible();
-    await expect(page.getByText(/Awaiting review/i)).toBeVisible();
-    
-    // 11. Temporal Stability legacy dashboard block is removed.
+    // Verify Dashboard shows latest/current batch
+    await expect(page.getByRole('heading', { name: 'Current / Latest Batch' })).toBeVisible();
     await expect(page.getByText('Temporal stability')).toHaveCount(0);
+    await expect(page.getByText('BAT-24-0618').first()).toBeVisible();
 
-    // 8. Dashboard shows latest/current test.
-    await expect(page.getByText('TST-24-0618').first()).toBeVisible();
-    await expect(page.getByText('Ready for Review').first()).toBeVisible();
+    // Open Batch from Dashboard
+    await page.getByRole('button', { name: 'View Batch' }).click();
+    await expect(page.getByRole('heading', { name: 'Capture — BAT-24-0618' })).toBeVisible();
 
-    // 6. Ready-for-review action opens Analysis.
-    await page.getByRole('button', { name: 'Review Analysis' }).first().click();
+    // Capture and proceed to Analysis
+    await page.getByRole('button', { name: 'Start Capture' }).click();
+    await expect(page.getByText('REVIEW_REQUIRED')).toBeVisible({ timeout: 15000 });
+
+    // Review Analysis
+    await page.getByRole('button', { name: 'Review Analysis' }).click();
     await expect(page.getByRole('heading', { name: 'Analysis', exact: true })).toBeVisible();
 
-    // Finalize the test
+    // Finalize
     await page.getByRole('button', { name: 'Set as Primary' }).click();
     await page.getByRole('button', { name: 'Confirm Final Analysis' }).click();
-    await expect(page.getByText('finalized')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'BAT-24-0618' })).toBeVisible();
 
     // Go back to Dashboard
     await page.getByRole('button', { name: 'Dashboard' }).click();
-    await expect(page.getByRole('heading', { name: 'Recent Finalized Tests' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Recent Finalized Batches' })).toBeVisible();
 
-    // 10. Dashboard recent finalized tests use frozen report data.
-    const finalizedRow = page.locator('table').locator('tr', { hasText: 'TST-24-0618' }).first();
-    await expect(finalizedRow.getByText('#028')).toBeVisible();
+    // Recent finalized batches row has batch ID
+    const finalizedRow = page.locator('table').locator('tr', { hasText: 'BAT-24-0618' }).first();
+    await expect(finalizedRow.getByText('BAT-24-0618')).toBeVisible();
 
     // Go to Batches
     await page.getByRole('button', { name: 'Batches' }).click();

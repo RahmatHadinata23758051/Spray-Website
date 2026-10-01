@@ -1,23 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { FinalAnalysisReport } from '@spray-paragon/domain';
 import { createFinalReportCsv } from '../../../application/reporting/createFinalReportCsv';
-import { fmt } from '../../utils/formatters';
-import { simulationService } from '../../../application/services';
-const tests = simulationService.getTests();
-const analyses = simulationService.getAnalyses();
+import { batchRepository } from '../../../application/services';
 import { Status } from '../../components/ui/Status';
 import { Panel } from '../../components/ui/Panel';
 import { phaseLabel } from '../../features/analysis/utils';
-import { ResultMeasurementPanel, CalibrationSummary, AnalysisAudit, SupportingCaptures } from '../Tests/ResultPage';
+import { ResultMeasurementPanel, CalibrationSummary, AnalysisAudit, SupportingCaptures } from '../Batches/BatchResultPage';
 
-export function ReportsPage({ finalReport }: { finalReport: FinalAnalysisReport | null }) {
+export function ReportsPage() {
+  const [report, setReport] = useState<FinalAnalysisReport | null>(null);
+  const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    batchRepository.listBatches().then(batches => {
+      if (!active) return;
+      const finalized = batches
+        .filter(b => b.status === 'FINALIZED' && b.finalReport)
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      if (finalized.length > 0 && finalized[0].finalReport) {
+        setReport(finalized[0].finalReport);
+      }
+      setLoading(false);
+    }).catch(e => {
+      console.error(e);
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
+
   const handleExport = () => {
+    if (!report) return;
     setExporting(true);
-    const csv = finalReport ? createFinalReportCsv(finalReport) : [
-      'Test ID,Date,Product,Sample,Operator,Status,Spray Angle,Spray Area',
-      ...tests.map(t => { const a = analyses[t.fixture]; return [t.id, fmt.date(t.createdAt), t.productName, t.sampleId, t.operatorName, t.status, fmt.deg(a.side.sprayAngleDeg), fmt.area(a.front.sprayAreaMm2)].join(','); }),
-    ].join('\n');
+    const csv = createFinalReportCsv(report);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -30,18 +46,21 @@ export function ReportsPage({ finalReport }: { finalReport: FinalAnalysisReport 
     setTimeout(() => setExporting(false), 800);
   };
 
-  if (!finalReport) {
+  if (loading) {
+    return <div className="p-4 text-sm text-text-secondary">Loading reports...</div>;
+  }
+
+  if (!report) {
     return (
       <Panel title="Reports">
         <div className="p-4">
-          <p className="text-sm text-text-secondary">No finalized analysis report is available. Finalize an Analysis V2 session to produce a report.</p>
-          <button onClick={handleExport} disabled={exporting} className="mt-3 rounded-sm border border-border-default px-4 py-2 text-sm hover:bg-subtle disabled:opacity-50">
-            {exporting ? 'Exporting...' : 'Export Legacy CSV'}
-          </button>
+          <p className="text-sm text-text-secondary">No finalized analysis report is available. Finalize a Batch Analysis session to produce a report.</p>
         </div>
       </Panel>
     );
   }
+
+  const finalReport = report;
 
   return (
     <article className="report-v2">

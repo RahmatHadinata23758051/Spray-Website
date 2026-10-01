@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   CreateBatchDraftInput,
   Batch,
-  batchToTest,
   InvalidLifecycleTransitionError,
   BatchValidationError
 } from '@spray-paragon/domain';
@@ -294,18 +293,7 @@ describe('Phase A - Canonical Batch Domain & Persistence', () => {
     expect(batch).toBeDefined();
   });
 
-  it('17. Batch adapter correctly converts Batch to legacy Test interface', async () => {
-    let batch = await repo.createBatchDraft(dummyDraftInput);
-    batch = await repo.prepareBatch(batch.id);
-    const legacyTest = batchToTest(batch);
-
-    expect(legacyTest.id).toBe(batch.id);
-    expect(legacyTest.productName).toBe('Perfume');
-    expect(legacyTest.productionBatch).toBe('LOT-XYZ');
-    expect(legacyTest.status).toBe('running');
-  });
-
-  it('18. Non-existent batch operations reject with BatchNotFoundError', async () => {
+  it('17. Non-existent batch operations reject with BatchNotFoundError', async () => {
     await expect(repo.prepareBatch('BAT-NONEXISTENT'))
       .rejects.toThrowError(BatchNotFoundError);
   });

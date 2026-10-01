@@ -10,9 +10,10 @@
 - M1-M6.1 Architecture Migration
 - D3 Batch Analysis
 - D4 Batch Result
+- D5 Canonical Workflow Consolidation
 
 ## Current
-- None (Phase D4 completed)
+- None (Phase D5 completed)
 
 ## Next
 - None (No further canonical roadmap phase defined)

@@ -78,6 +78,18 @@ export function BatchAnalysisPage() {
         // Side/Front geometries are saved directly, but we'll map them back below.
       }
 
+      const moments = b.captureSession?.synchronizedMoments || [];
+      const recommendedIdx = moments.findIndex(m => m.recommended);
+      if (draft?.primaryCaptureMomentId) {
+        const primaryIdx = moments.findIndex(m => m.id === draft.primaryCaptureMomentId);
+        if (primaryIdx >= 0) setCaptureIndex(primaryIdx);
+        else if (recommendedIdx >= 0) setCaptureIndex(recommendedIdx);
+      } else if (recommendedIdx >= 0) {
+        setCaptureIndex(recommendedIdx);
+      } else if (moments.length > 28) {
+        setCaptureIndex(28);
+      }
+
       if (draft) {
         setCalibrations({
           side: draft.calibration.side,

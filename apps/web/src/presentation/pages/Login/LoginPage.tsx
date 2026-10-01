@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import type { Page } from '../../navigation';
+import { useNavigate } from 'react-router-dom';
 import { Status } from '../../components/ui/Status';
 
-export function LoginPage({ setPage }: { setPage: (p: Page) => void }) {
+export function LoginPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('operator@local.test');
   const [password, setPassword] = useState('spraybot123');
   const [error, setError] = useState('');
@@ -14,7 +15,7 @@ export function LoginPage({ setPage }: { setPage: (p: Page) => void }) {
     e.preventDefault();
     if (!valid) return;
     setLoading(true);
-    setTimeout(() => { setLoading(false); setPage('Dashboard'); }, 400);
+    setTimeout(() => { setLoading(false); navigate('/dashboard'); }, 400);
   };
 
   return (

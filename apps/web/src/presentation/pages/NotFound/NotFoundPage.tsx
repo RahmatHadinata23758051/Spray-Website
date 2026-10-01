@@ -1,6 +1,7 @@
-import type { Page } from '../../navigation';
+import { useNavigate } from 'react-router-dom';
 
-export function NotFoundPage({ setPage }: { setPage: (p: Page) => void }) {
+export function NotFoundPage() {
+  const navigate = useNavigate();
   return (
     <div className="surface-panel p-8 text-center space-y-4">
       <div>
@@ -9,7 +10,7 @@ export function NotFoundPage({ setPage }: { setPage: (p: Page) => void }) {
       </div>
       <div>
         <button 
-          onClick={() => setPage('Dashboard')} 
+          onClick={() => navigate('/dashboard')} 
           className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
         >
           Return to Dashboard

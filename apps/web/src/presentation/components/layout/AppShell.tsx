@@ -4,14 +4,14 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import type { Page } from '../../navigation';
 import { pathToLegacyPage, legacyPageToPath } from '../../navigation';
-import type { Test } from '@spray-paragon/domain';
 
-export function AppShell({ selected }: { selected: Test }) {
+export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   const page = pathToLegacyPage[location.pathname] || 'Dashboard';
+  const isAnalysisPage = location.pathname.includes('/analysis');
 
   const setPage = (nextPage: Page) => {
     navigate(legacyPageToPath[nextPage] || '/dashboard');
@@ -25,8 +25,8 @@ export function AppShell({ selected }: { selected: Test }) {
         page={page} 
         setPage={setPage} 
       />
-      <main className={`app-main ${page === 'Analysis' ? 'analysis-page' : ''}`}>
-        <Header page={page} selected={selected} />
+      <main className={`app-main ${isAnalysisPage ? 'analysis-page' : ''}`}>
+        <Header page={page} />
         <div className="workspace">
           <Outlet context={{ setPage }} />
         </div>

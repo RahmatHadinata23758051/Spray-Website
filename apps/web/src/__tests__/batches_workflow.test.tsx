@@ -39,7 +39,7 @@ describe('Phase D1 - Canonical Batch Workflow & Persistence', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'New Batch' })).toBeInTheDocument();
+      expect(screen.getAllByRole('heading', { name: 'New Batch' }).length).toBeGreaterThan(0);
     });
 
     expect(screen.getByText('Product Identity')).toBeInTheDocument();

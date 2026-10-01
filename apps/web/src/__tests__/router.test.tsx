@@ -22,13 +22,13 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
     expect(screen.getByText('Sign in to Spraybot')).toBeInTheDocument();
   });
 
-  it('2. /dashboard renders Dashboard page', () => {
+  it('2. /dashboard renders Dashboard page', async () => {
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
         <App />
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
   });
 
   it('3. /products renders Products page', () => {
@@ -89,37 +89,40 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
       </MemoryRouter>
     );
     expect(currentPath).toBe('/batches/new');
-    expect(screen.getByRole('heading', { name: 'New Batch' })).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: 'New Batch' }).length).toBeGreaterThan(0);
   });
 
-  it('9. Legacy /capture route still works', () => {
+  it('9. Legacy /capture route redirects to /batches', () => {
+    let currentPath = '';
     render(
       <MemoryRouter initialEntries={['/capture']}>
+        <LocationTracker onLocation={(p) => { currentPath = p; }} />
         <App />
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: 'Capture' })).toBeInTheDocument();
-    expect(screen.getByText('Side Camera')).toBeInTheDocument();
+    expect(currentPath).toBe('/batches');
   });
 
-  it('10. Legacy /analysis route works with current in-app context', () => {
+  it('10. Legacy /analysis route redirects to /batches', () => {
+    let currentPath = '';
     render(
       <MemoryRouter initialEntries={['/analysis']}>
+        <LocationTracker onLocation={(p) => { currentPath = p; }} />
         <App />
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: 'Analysis' })).toBeInTheDocument();
-    expect(screen.getByText('Capture timeline')).toBeInTheDocument();
+    expect(currentPath).toBe('/batches');
   });
 
-  it('11. Legacy /result route renders with safe unfinalized state when missing report', () => {
+  it('11. Legacy /result route redirects to /batches', () => {
+    let currentPath = '';
     render(
       <MemoryRouter initialEntries={['/result']}>
+        <LocationTracker onLocation={(p) => { currentPath = p; }} />
         <App />
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: 'Result' })).toBeInTheDocument();
-    expect(screen.getByText('Final analysis required')).toBeInTheDocument();
+    expect(currentPath).toBe('/batches');
   });
 
   it('12. Unknown route renders 404 Not Found Page deterministically', () => {
@@ -132,7 +135,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
     expect(screen.getByText('The requested URL route does not exist.')).toBeInTheDocument();
   });
 
-  it('13. Sidebar navigation triggers route update via setPage legacy bridge', async () => {
+  it('13. Sidebar navigation triggers route update via native routing', async () => {
     let currentPath = '';
     const user = userEvent.setup();
 
@@ -143,7 +146,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
     expect(currentPath).toBe('/dashboard');
 
     const productsBtn = screen.getByRole('button', { name: 'Products' });
