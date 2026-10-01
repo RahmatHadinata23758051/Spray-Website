@@ -18,7 +18,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run preview -- --port 4173',
+    command: 'npm run preview --workspace=@spray-paragon/web -- --port 4173',
     url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
   },
