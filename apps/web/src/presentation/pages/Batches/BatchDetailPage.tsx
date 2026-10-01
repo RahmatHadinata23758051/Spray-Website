@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { batchRepository } from '../../../data';
+import { batchRepository } from '../../../application/services';
 import type { Batch } from '@spray-paragon/domain';
 import { Status } from '../../components/ui/Status';
 import { Panel } from '../../components/ui/Panel';
@@ -169,7 +169,7 @@ export function BatchDetailPage() {
             <div className="rounded-sm border border-emerald-500/20 bg-emerald-50/50 p-4 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-emerald-800">Batch is ready for capture</h3>
-                <p className="mt-1 text-xs text-emerald-700">The hardware is standing by. All setup parameters are frozen.</p>
+                <p className="mt-1 text-xs text-emerald-700">Fixture capture ready. All setup parameters are frozen in simulation mode.</p>
               </div>
               <button
                 onClick={() => navigate(`/batches/${batch.id}/capture`)}
@@ -203,16 +203,32 @@ export function BatchDetailPage() {
           )}
 
           {batch.status === 'REVIEW_REQUIRED' && (
-            <div className="rounded-sm border border-blue-500/20 bg-blue-50/50 p-4">
-              <h3 className="text-sm font-bold text-blue-800">Capture complete</h3>
-              <p className="mt-1 text-xs text-blue-700">Analysis review required. Spatial geometry ready for verification.</p>
+            <div className="rounded-sm border border-blue-500/20 bg-blue-50/50 p-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-blue-800">Capture complete</h3>
+                <p className="mt-1 text-xs text-blue-700">Analysis review required. Spatial geometry ready for verification.</p>
+              </div>
+              <button
+                onClick={() => navigate(`/batches/${batch.id}/analysis`)}
+                className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+              >
+                Review Analysis
+              </button>
             </div>
           )}
           
           {batch.status === 'FINALIZED' && (
-            <div className="rounded-sm border border-blue-500/20 bg-blue-50/50 p-4">
-              <h3 className="text-sm font-bold text-blue-800">Batch is finalized</h3>
-              <p className="mt-1 text-xs text-blue-700">Detailed result view will be migrated in future phases.</p>
+            <div className="rounded-sm border border-blue-500/20 bg-blue-50/50 p-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-blue-800">Batch is finalized</h3>
+                <p className="mt-1 text-xs text-blue-700">Detailed result view will be migrated in future phases.</p>
+              </div>
+              <button
+                onClick={() => navigate(`/batches/${batch.id}/analysis`)}
+                className="rounded-sm border border-border-subtle bg-bg-surface px-4 py-2 text-sm font-semibold text-text-primary hover:bg-bg-subtle shadow-sm"
+              >
+                View Analysis (Read-Only)
+              </button>
             </div>
           )}
         </div>

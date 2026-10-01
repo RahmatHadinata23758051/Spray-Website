@@ -3,7 +3,7 @@ import type { Page } from '../../navigation';
 import type { Test, FixtureScenario } from '@spray-paragon/domain';
 import type { Product, TestRecipe } from '@spray-paragon/domain';
 import { createTestSession, nextSampleId, nextTestId } from '@spray-paragon/domain';
-import { productRepository } from '../../../data';
+import { productRepository } from '../../../application/services';
 import { Status } from '../../components/ui/Status';
 
 export function NewTestPage({ setPage, setSelected }: { setPage: (p: Page) => void; setSelected?: (t: Test) => void }) {

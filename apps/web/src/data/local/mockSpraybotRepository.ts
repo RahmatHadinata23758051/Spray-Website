@@ -247,6 +247,14 @@ export const fmt = {
   date: (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
 };
 
+export const mockSpraybotService = {
+  getFrames: () => frames,
+  getSynchronizedFrames: () => synchronizedFrames,
+  getPixelGeometry: getPixelGeometry,
+  getAnalyses: () => analyses,
+  getTests: () => tests,
+};
+
 export const fixtureLabels: Record<FixtureScenario, string> = {
   'nominal-01': 'Nominal performance baseline',
   'direction-offset-01': 'Direction offset scenario',

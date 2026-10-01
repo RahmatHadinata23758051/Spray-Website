@@ -2,7 +2,8 @@ import React from 'react';
 import type { Page } from '../../navigation';
 import type { Camera as CameraType, Test } from '@spray-paragon/domain';
 import type { FinalAnalysisReport, SideFinalMeasurements, FrontFinalMeasurements, CalibrationSnapshot, SidePixelGeometry, FrontPixelGeometry, MeasurementValue } from '@spray-paragon/domain';
-import { fmt, frames } from '../../../data';
+import { fmt } from '../../utils/formatters';
+import type { Frame } from '@spray-paragon/domain';
 import { Status } from '../../components/ui/Status';
 import { phaseLabel, hasAdjustedMeasurement, metricSlug } from '../../features/analysis/utils';
 import { AnalysisOverlay } from '../../features/analysis/AnalysisOverlay';
@@ -138,7 +139,7 @@ function ResultCameraFrame({
         <AnalysisOverlay 
           camera={camera} 
           mode="Overlay" 
-          frame={frame as unknown as typeof frames[number]} 
+          frame={frame as unknown as Frame} 
           calibration={calibration} 
           sideGeometry={sideGeometry} 
           frontGeometry={frontGeometry} 

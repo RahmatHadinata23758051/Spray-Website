@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Product, TestRecipe } from '@spray-paragon/domain';
-import { productRepository } from '../../../data';
-import { batchRepository } from '../../../data';
+import { productRepository, batchRepository } from '../../../application/services';
 import type { FixtureScenario } from '@spray-paragon/domain';
 
 export function NewBatchPage() {

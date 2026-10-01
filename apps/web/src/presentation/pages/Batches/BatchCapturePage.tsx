@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { batchRepository } from '../../../data';
+import { batchRepository, simulationService } from '../../../application/services';
 import type { Batch } from '@spray-paragon/domain';
 import type { Camera as CameraType } from '@spray-paragon/domain';
-import { frames } from '../../../data';
+const frames = simulationService.getFrames();
 import { Status } from '../../components/ui/Status';
 import { Panel } from '../../components/ui/Panel';
 import { Overlay } from '../../components/ui/Overlay';
@@ -79,6 +79,11 @@ export function BatchCapturePage() {
 
     try {
       // Complete capture (CAPTURING → PROCESSING)
+      // MOCK: populate synchronized frames
+      const { simulationService } = await import('../../../application/services');
+      const synchronizedFrames = simulationService.getSynchronizedFrames();
+      await batchRepository.updateCaptureSession(batch.id, synchronizedFrames);
+
       const processing = await batchRepository.completeCapture(batch.id);
       setBatch(processing);
 
@@ -105,7 +110,7 @@ export function BatchCapturePage() {
           }
           return prev + 1;
         });
-      }, 200); // Simulate faster progress for testing
+      }, 20); // Simulate faster progress for testing
 
       return () => clearInterval(interval);
     }

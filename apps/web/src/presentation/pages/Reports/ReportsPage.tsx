@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import type { FinalAnalysisReport } from '@spray-paragon/domain';
-import { fmt, tests, analyses } from '../../../data';
+import { fmt } from '../../utils/formatters';
+import { simulationService } from '../../../application/services';
+const tests = simulationService.getTests();
+const analyses = simulationService.getAnalyses();
 import { Status } from '../../components/ui/Status';
 import { Panel } from '../../components/ui/Panel';
 import { phaseLabel } from '../../features/analysis/utils';

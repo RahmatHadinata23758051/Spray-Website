@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { batchRepository } from '../../../data';
+import { batchRepository } from '../../../application/services';
 import type { Batch } from '@spray-paragon/domain';
 import { Status } from '../../components/ui/Status';
 import { Table } from '../../components/ui/Table';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Product, TestRecipe } from '@spray-paragon/domain';
-import { productRepository } from '../../../data';
-import { fmt } from '../../../data';
+import { productRepository } from '../../../application/services';
+import { fmt } from '../../utils/formatters';
 import { Panel } from '../../components/ui/Panel';
 import { Table } from '../../components/ui/Table';
 import { Status } from '../../components/ui/Status';

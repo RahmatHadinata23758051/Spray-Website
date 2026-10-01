@@ -1,6 +1,7 @@
 import type { Page } from '../../navigation';
 import type { Camera as CameraType } from '@spray-paragon/domain';
-import { frames } from '../../../data';
+import { simulationService } from '../../../application/services';
+const frames = simulationService.getFrames();
 import { Status } from '../../components/ui/Status';
 import { Panel } from '../../components/ui/Panel';
 
