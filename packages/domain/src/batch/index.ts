@@ -283,6 +283,38 @@ export function updateAnalysisDraft(batch: Batch, draft: BatchAnalysisDraft, now
     throw new BatchValidationError(`Analysis draft exceeds maximum of 9 supporting captures (got ${draft.supportingCaptureMomentIds.length}).`);
   }
 
+  if (draft.primaryCaptureMomentId && draft.supportingCaptureMomentIds.includes(draft.primaryCaptureMomentId)) {
+    throw new BatchValidationError('Primary capture cannot also be a supporting capture.');
+  }
+
+  const moments = batch.captureSession?.synchronizedMoments || [];
+  
+  if (moments.length > 0) {
+    if (draft.primaryCaptureMomentId) {
+      const pm = moments.find(m => m.id === draft.primaryCaptureMomentId);
+      if (!pm) {
+        throw new BatchValidationError(`Primary capture moment ${draft.primaryCaptureMomentId} not found in capture session.`);
+      }
+      if (pm.syncStatus !== 'synced') {
+        throw new BatchValidationError(`Primary capture moment must be synchronized.`);
+      }
+    }
+
+    for (const id of draft.supportingCaptureMomentIds) {
+      const sm = moments.find(m => m.id === id);
+      if (!sm) {
+        throw new BatchValidationError(`Supporting capture moment ${id} not found in capture session.`);
+      }
+      if (sm.syncStatus !== 'synced') {
+        throw new BatchValidationError(`Supporting capture moment ${id} must be synchronized.`);
+      }
+    }
+  }
+  
+  if (draft.primaryCaptureMomentId ? draft.supportingCaptureMomentIds.length > 9 : draft.supportingCaptureMomentIds.length > 10) {
+    throw new BatchValidationError('Maximum of 10 selected captures exceeded.');
+  }
+
   return {
     ...batch,
     analysisDraft: {
@@ -312,6 +344,21 @@ export function finalizeBatch(batch: Batch, report: FinalAnalysisReport, now = n
   }
   if (report.supportingCaptures.length > 9) {
     throw new BatchValidationError(`Final report exceeds maximum of 9 supporting captures.`);
+  }
+
+  const moments = batch.captureSession?.synchronizedMoments || [];
+  if (moments.length > 0) {
+    const primaryMom = moments.find(m => m.id === report.primaryCaptureMomentId);
+    if (!primaryMom || primaryMom.syncStatus !== 'synced') {
+      throw new BatchValidationError('Final report primary capture must exist and be synchronized.');
+    }
+
+    for (const supp of report.supportingCaptures) {
+      const suppMom = moments.find(m => m.id === supp.captureMomentId);
+      if (!suppMom || suppMom.syncStatus !== 'synced') {
+        throw new BatchValidationError(`Supporting capture ${supp.captureMomentId} must exist and be synchronized.`);
+      }
+    }
   }
 
   const frozenReport = Object.freeze({ ...report });

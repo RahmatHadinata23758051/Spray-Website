@@ -5,6 +5,7 @@ import {
   startCapture,
   completeCapture,
   markReviewRequired,
+  updateAnalysisDraft,
   InvalidLifecycleTransitionError,
 } from '../batch/index';
 
@@ -105,5 +106,154 @@ describe('@spray-paragon/domain: Pure Domain Invariants', () => {
     });
 
     expect(() => startCapture(draft)).toThrow(InvalidLifecycleTransitionError);
+  });
+
+  describe('D3 Contextual Analysis Domain Invariants', () => {
+    const synchronizedMoments = [
+      {
+        id: 'mom-1',
+        frameIndex: 0,
+        timestampMs: 100,
+        timestampDeltaMs: 0,
+        syncStatus: 'synced' as const,
+        phase: 'stable' as const,
+        recommended: true,
+        side: { id: 's1', frameIndex: 0, timestampMs: 100, phase: 'stable' as const, assets: { original: '', mask: '', overlay: '' } },
+        front: { id: 'f1', frameIndex: 0, timestampMs: 100, phase: 'stable' as const, assets: { original: '', mask: '', overlay: '' } },
+      },
+      {
+        id: 'mom-2',
+        frameIndex: 1,
+        timestampMs: 200,
+        timestampDeltaMs: 0,
+        syncStatus: 'synced' as const,
+        phase: 'stable' as const,
+        recommended: false,
+        side: { id: 's2', frameIndex: 1, timestampMs: 200, phase: 'stable' as const, assets: { original: '', mask: '', overlay: '' } },
+        front: { id: 'f2', frameIndex: 1, timestampMs: 200, phase: 'stable' as const, assets: { original: '', mask: '', overlay: '' } },
+      },
+      {
+        id: 'mom-unsynced',
+        frameIndex: 2,
+        timestampMs: 300,
+        timestampDeltaMs: 20,
+        syncStatus: 'unsynced' as const,
+        phase: 'stable' as const,
+        recommended: false,
+        side: { id: 's3', frameIndex: 2, timestampMs: 300, phase: 'stable' as const, assets: { original: '', mask: '', overlay: '' } },
+        front: { id: 'f3', frameIndex: 2, timestampMs: 320, phase: 'stable' as const, assets: { original: '', mask: '', overlay: '' } },
+      },
+    ];
+
+    function setupReviewRequiredBatch() {
+      const draft = createBatchDraft({
+        productId: 'p1',
+        productSnapshot: dummyProduct,
+        recipeId: 'r1',
+        recipeSnapshot: dummyRecipe,
+        operatorId: 'op1',
+        operatorName: 'Operator Name',
+        fixture: 'nominal-01',
+      });
+      const ready = prepareBatch(draft);
+      const capturing = startCapture(ready);
+      const withSession = {
+        ...capturing,
+        captureSession: {
+          ...capturing.captureSession!,
+          synchronizedMoments,
+        },
+      };
+      const processing = completeCapture(withSession);
+      return markReviewRequired(processing);
+    }
+
+    it('allows updating analysis draft in REVIEW_REQUIRED state', () => {
+      const batch = setupReviewRequiredBatch();
+      const updated = updateAnalysisDraft(batch, {
+        calibration: {
+          side: { camera: 'side', referenceDistanceMm: 1000, anchorA: { x: 0, y: 0 }, anchorB: { x: 100, y: 0 }, scaleMmPerPx: 10, adjusted: false },
+          front: { camera: 'front', referenceDistanceMm: 500, anchorA: { x: 0, y: 0 }, anchorB: { x: 50, y: 0 }, scaleMmPerPx: 10, adjusted: false },
+        },
+        primaryCaptureMomentId: 'mom-1',
+        supportingCaptureMomentIds: ['mom-2'],
+        sideCorrections: {},
+        frontCorrections: {},
+        updatedAt: new Date().toISOString(),
+      });
+
+      expect(updated.analysisDraft?.primaryCaptureMomentId).toBe('mom-1');
+      expect(updated.analysisDraft?.supportingCaptureMomentIds).toEqual(['mom-2']);
+    });
+
+    it('rejects analysis draft update when status is not REVIEW_REQUIRED', () => {
+      const batch = setupReviewRequiredBatch();
+      const finalized = { ...batch, status: 'FINALIZED' as const };
+
+      expect(() =>
+        updateAnalysisDraft(finalized, {
+          calibration: batch.analysisDraft?.calibration || {
+            side: { camera: 'side', referenceDistanceMm: 1000, anchorA: { x: 0, y: 0 }, anchorB: { x: 100, y: 0 }, scaleMmPerPx: 10, adjusted: false },
+            front: { camera: 'front', referenceDistanceMm: 500, anchorA: { x: 0, y: 0 }, anchorB: { x: 50, y: 0 }, scaleMmPerPx: 10, adjusted: false },
+          },
+          primaryCaptureMomentId: 'mom-1',
+          supportingCaptureMomentIds: [],
+          sideCorrections: {},
+          frontCorrections: {},
+          updatedAt: new Date().toISOString(),
+        })
+      ).toThrow(InvalidLifecycleTransitionError);
+    });
+
+    it('rejects unsynced primary capture moment', () => {
+      const batch = setupReviewRequiredBatch();
+      expect(() =>
+        updateAnalysisDraft(batch, {
+          calibration: {
+            side: { camera: 'side', referenceDistanceMm: 1000, anchorA: { x: 0, y: 0 }, anchorB: { x: 100, y: 0 }, scaleMmPerPx: 10, adjusted: false },
+            front: { camera: 'front', referenceDistanceMm: 500, anchorA: { x: 0, y: 0 }, anchorB: { x: 50, y: 0 }, scaleMmPerPx: 10, adjusted: false },
+          },
+          primaryCaptureMomentId: 'mom-unsynced',
+          supportingCaptureMomentIds: [],
+          sideCorrections: {},
+          frontCorrections: {},
+          updatedAt: new Date().toISOString(),
+        })
+      ).toThrow();
+    });
+
+    it('rejects primary capture appearing in supporting captures', () => {
+      const batch = setupReviewRequiredBatch();
+      expect(() =>
+        updateAnalysisDraft(batch, {
+          calibration: {
+            side: { camera: 'side', referenceDistanceMm: 1000, anchorA: { x: 0, y: 0 }, anchorB: { x: 100, y: 0 }, scaleMmPerPx: 10, adjusted: false },
+            front: { camera: 'front', referenceDistanceMm: 500, anchorA: { x: 0, y: 0 }, anchorB: { x: 50, y: 0 }, scaleMmPerPx: 10, adjusted: false },
+          },
+          primaryCaptureMomentId: 'mom-1',
+          supportingCaptureMomentIds: ['mom-1'],
+          sideCorrections: {},
+          frontCorrections: {},
+          updatedAt: new Date().toISOString(),
+        })
+      ).toThrow();
+    });
+
+    it('rejects supporting count > 9', () => {
+      const batch = setupReviewRequiredBatch();
+      expect(() =>
+        updateAnalysisDraft(batch, {
+          calibration: {
+            side: { camera: 'side', referenceDistanceMm: 1000, anchorA: { x: 0, y: 0 }, anchorB: { x: 100, y: 0 }, scaleMmPerPx: 10, adjusted: false },
+            front: { camera: 'front', referenceDistanceMm: 500, anchorA: { x: 0, y: 0 }, anchorB: { x: 50, y: 0 }, scaleMmPerPx: 10, adjusted: false },
+          },
+          primaryCaptureMomentId: 'mom-1',
+          supportingCaptureMomentIds: ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10'],
+          sideCorrections: {},
+          frontCorrections: {},
+          updatedAt: new Date().toISOString(),
+        })
+      ).toThrow();
+    });
   });
 });

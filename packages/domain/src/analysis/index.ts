@@ -1,4 +1,5 @@
 import type { Camera, SynchronizedAnalysisFrame, Test } from '../types/index';
+import type { Batch } from '../batch/index';
 
 export type MeasurementValue = {
   auto: number;
@@ -653,6 +654,96 @@ function frameSnapshot(frame: SynchronizedAnalysisFrame['side']): ReportFrameSna
   };
 }
 
+export function createBatchFinalAnalysisReport(input: {
+  batch: Batch;
+  primaryCaptureMoment: SynchronizedAnalysisFrame;
+  supportingCaptureMoments: SynchronizedAnalysisFrame[];
+  side: SideFinalMeasurements;
+  front: FrontFinalMeasurements;
+  sideCalibration: CalibrationSnapshot;
+  frontCalibration: CalibrationSnapshot;
+  sideAutoGeometry: SidePixelGeometry;
+  sideFinalGeometry: SidePixelGeometry;
+  frontAutoGeometry: FrontPixelGeometry;
+  frontFinalGeometry: FrontPixelGeometry;
+  finalizedBy: string;
+  finalizedAt: string;
+}): FinalAnalysisReport {
+  if (input.supportingCaptureMoments.length > 9) {
+    throw new Error('Maximum 9 supporting captures allowed.');
+  }
+  if (!input.primaryCaptureMoment) {
+    throw new Error('Primary capture moment is required.');
+  }
+  if (input.primaryCaptureMoment.syncStatus !== 'synced') {
+    throw new Error('Primary capture must be synchronized.');
+  }
+  if (!input.primaryCaptureMoment.side || !input.primaryCaptureMoment.front) {
+    throw new Error('Primary capture must contain both Side and Front frames.');
+  }
+  if (input.primaryCaptureMoment.side.frameIndex !== input.primaryCaptureMoment.front.frameIndex) {
+    throw new Error('Side and Front frames must share the same frame index.');
+  }
+  if (input.primaryCaptureMoment.side.timestampMs !== input.primaryCaptureMoment.front.timestampMs) {
+    throw new Error('Side and Front frames must share the same timestamp.');
+  }
+
+  const setup = input.batch.setupSnapshot;
+  if (!setup) {
+    throw new Error('Batch setup snapshot is required to finalize analysis.');
+  }
+
+  const supportingCaptureMoments = input.supportingCaptureMoments;
+
+  return structuredClone({
+    status: 'finalized',
+    analysisSource: 'simulation',
+    test: {
+      testId: input.batch.id,
+      sampleId: setup.sampleId,
+      product: setup.productSnapshot,
+      recipe: setup.recipeSnapshot,
+      productionBatch: setup.productLot,
+      operator: setup.operatorName,
+      testTimestamp: setup.createdAt,
+      setpoints: setup.setpoints,
+    },
+    testId: input.batch.id,
+    primaryCaptureMomentId: input.primaryCaptureMoment.id,
+    supportingCaptureMomentIds: supportingCaptureMoments.map(moment => moment.id),
+    primaryCapture: {
+      frameIndex: input.primaryCaptureMoment.frameIndex,
+      timestampMs: input.primaryCaptureMoment.timestampMs,
+      phase: input.primaryCaptureMoment.phase,
+    },
+    side: {
+      ...input.side,
+      frameId: input.primaryCaptureMoment.side.id,
+      frame: frameSnapshot(input.primaryCaptureMoment.side),
+      calibration: input.sideCalibration,
+      autoGeometry: input.sideAutoGeometry,
+      finalGeometry: input.sideFinalGeometry,
+    },
+    front: {
+      ...input.front,
+      frameId: input.primaryCaptureMoment.front.id,
+      frame: frameSnapshot(input.primaryCaptureMoment.front),
+      calibration: input.frontCalibration,
+      autoGeometry: input.frontAutoGeometry,
+      finalGeometry: input.frontFinalGeometry,
+    },
+    supportingCaptures: supportingCaptureMoments.map(moment => ({
+      captureMomentId: moment.id,
+      frameIndex: moment.frameIndex,
+      timestampMs: moment.timestampMs,
+      phase: moment.phase,
+      side: frameSnapshot(moment.side),
+      front: frameSnapshot(moment.front),
+    })),
+    finalizedBy: input.finalizedBy,
+    finalizedAt: input.finalizedAt,
+  });
+}
 export function createFinalAnalysisReport(input: {
   test: Test;
   primaryCaptureMoment: SynchronizedAnalysisFrame;
