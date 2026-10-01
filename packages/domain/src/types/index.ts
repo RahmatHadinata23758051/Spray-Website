@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Product, TestRecipe } from './product';
+import type { Product, TestRecipe } from '../product/index';
 
 export type Camera = 'side' | 'front';
 export type TestStatus = 'complete' | 'failed' | 'running';

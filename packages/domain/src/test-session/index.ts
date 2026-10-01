@@ -1,4 +1,4 @@
-import type { CreateTestSessionInput, FirmwareSetpoints, Test } from './types';
+import type { CreateTestSessionInput, FirmwareSetpoints, Test } from '../types/index';
 
 const deterministicSessionIndex = 18;
 export const nextTestId = () => `TST-260929-${String(deterministicSessionIndex).padStart(4, '0')}`;

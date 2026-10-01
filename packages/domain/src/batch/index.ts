@@ -1,12 +1,5 @@
-import type { FixtureScenario, SynchronizedAnalysisFrame, Test } from './types';
-import type { CalibrationSnapshot, FinalAnalysisReport, FrontPixelGeometry, SidePixelGeometry } from './analysis';
-
-export class BatchNotFoundError extends Error {
-  constructor(batchId: string) {
-    super(`Batch not found: ${batchId}`);
-    this.name = 'BatchNotFoundError';
-  }
-}
+import type { FixtureScenario, SynchronizedAnalysisFrame } from '../types';
+import type { CalibrationSnapshot, FinalAnalysisReport, FrontPixelGeometry, SidePixelGeometry } from '../analysis';
 
 export class InvalidLifecycleTransitionError extends Error {
   constructor(message: string) {
@@ -66,7 +59,7 @@ export interface CaptureSession {
   scenario: FixtureScenario;
   synchronizedMoments: SynchronizedAnalysisFrame[];
   startedAt: string;
-  capturedAt?: string; // Populated when frozen at PROCESSING
+  capturedAt?: string;
 }
 
 export interface BatchAnalysisDraft {
@@ -82,7 +75,7 @@ export interface BatchAnalysisDraft {
 }
 
 export interface Batch {
-  id: string; // e.g. BAT-260929-0018
+  id: string;
   status: BatchStatus;
   setupDraft?: BatchSetupDraft;
   setupSnapshot?: BatchSetupSnapshot;
@@ -106,26 +99,8 @@ export interface CreateBatchDraftInput {
   operatorName: string;
   fixture: FixtureScenario;
   notes?: string;
-  sampleId?: string;
 }
 
-export interface BatchRepository {
-  getBatch(id: string): Promise<Batch | null>;
-  listBatches(): Promise<Batch[]>;
-  createBatchDraft(input: CreateBatchDraftInput): Promise<Batch>;
-  updateBatchSetupDraft(id: string, patch: Partial<BatchSetupDraft>): Promise<Batch>;
-  prepareBatch(id: string): Promise<Batch>;
-  startCapture(id: string, scenario?: FixtureScenario): Promise<Batch>;
-  updateCaptureSession(id: string, moments: SynchronizedAnalysisFrame[]): Promise<Batch>;
-  completeCapture(id: string): Promise<Batch>;
-  markReviewRequired(id: string, initialDraft?: BatchAnalysisDraft): Promise<Batch>;
-  updateAnalysisDraft(id: string, draft: BatchAnalysisDraft): Promise<Batch>;
-  finalizeBatch(id: string, report: FinalAnalysisReport): Promise<Batch>;
-  markFailed(id: string, reason: string): Promise<Batch>;
-  abortBatch(id: string, reason?: string): Promise<Batch>;
-}
-
-// Invariants and domain logic helpers
 export function createBatchDraft(input: CreateBatchDraftInput, now = new Date().toISOString()): Batch {
   const id = input.id || `BAT-${now.slice(2, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
   const setupDraft: BatchSetupDraft = {
@@ -161,20 +136,19 @@ export function updateBatchSetupDraft(batch: Batch, patch: Partial<BatchSetupDra
     throw new InvalidLifecycleTransitionError(`Cannot update setup draft: batch ${batch.id} is in status ${batch.status}, expected DRAFT.`);
   }
   if (!batch.setupDraft) {
-    throw new BatchValidationError(`Batch ${batch.id} has no setup draft.`);
+    throw new BatchValidationError(`Batch ${batch.id} has no setupDraft to update.`);
   }
 
-  const updatedDraft: BatchSetupDraft = {
+  const updatedSetup: BatchSetupDraft = {
     ...batch.setupDraft,
     ...patch,
-    productSnapshot: patch.productSnapshot ? { ...patch.productSnapshot } : batch.setupDraft.productSnapshot ? { ...batch.setupDraft.productSnapshot } : undefined,
-    recipeSnapshot: patch.recipeSnapshot ? { ...patch.recipeSnapshot } : batch.setupDraft.recipeSnapshot ? { ...batch.setupDraft.recipeSnapshot } : undefined,
-    setpoints: patch.setpoints ? { ...patch.setpoints } : batch.setupDraft.setpoints ? { ...batch.setupDraft.setpoints } : undefined,
+    productSnapshot: patch.productSnapshot || batch.setupDraft.productSnapshot,
+    recipeSnapshot: patch.recipeSnapshot || batch.setupDraft.recipeSnapshot,
   };
 
   return {
     ...batch,
-    setupDraft: updatedDraft,
+    setupDraft: updatedSetup,
     updatedAt: now,
   };
 }
@@ -184,13 +158,10 @@ export function prepareBatch(batch: Batch, now = new Date().toISOString()): Batc
     throw new InvalidLifecycleTransitionError(`Cannot prepare batch: batch ${batch.id} is in status ${batch.status}, expected DRAFT.`);
   }
   if (!batch.setupDraft) {
-    throw new BatchValidationError(`Cannot prepare batch ${batch.id}: missing setupDraft.`);
+    throw new BatchValidationError(`Cannot prepare batch ${batch.id}: setup draft is missing.`);
   }
-  if (!batch.setupDraft.productSnapshot) {
-    throw new BatchValidationError(`Cannot prepare batch ${batch.id}: missing product snapshot.`);
-  }
-  if (!batch.setupDraft.recipeSnapshot) {
-    throw new BatchValidationError(`Cannot prepare batch ${batch.id}: missing recipe snapshot.`);
+  if (!batch.setupDraft.productSnapshot || !batch.setupDraft.recipeSnapshot) {
+    throw new BatchValidationError(`Cannot prepare batch ${batch.id}: product or recipe snapshot missing.`);
   }
 
   const setpoints = batch.setupDraft.setpoints || {
@@ -222,7 +193,6 @@ export function prepareBatch(batch: Batch, now = new Date().toISOString()): Batc
     ...batch,
     status: 'READY',
     setupSnapshot,
-    // retain setupDraft as non-authoritative historical reference or clear
     updatedAt: now,
   };
 }
@@ -256,14 +226,14 @@ export function updateCaptureSession(batch: Batch, moments: SynchronizedAnalysis
     throw new InvalidLifecycleTransitionError(`Cannot update capture session: batch ${batch.id} is in status ${batch.status}, expected CAPTURING.`);
   }
   if (!batch.captureSession) {
-    throw new BatchValidationError(`Cannot update capture session for batch ${batch.id}: session does not exist.`);
+    throw new BatchValidationError(`Batch ${batch.id} has no capture session to update.`);
   }
 
   return {
     ...batch,
     captureSession: {
       ...batch.captureSession,
-      synchronizedMoments: [...moments],
+      synchronizedMoments: moments,
     },
     updatedAt: now,
   };
@@ -274,29 +244,26 @@ export function completeCapture(batch: Batch, now = new Date().toISOString()): B
     throw new InvalidLifecycleTransitionError(`Cannot complete capture: batch ${batch.id} is in status ${batch.status}, expected CAPTURING.`);
   }
   if (!batch.captureSession) {
-    throw new BatchValidationError(`Cannot complete capture: batch ${batch.id} has no capture session.`);
+    throw new BatchValidationError(`Batch ${batch.id} has no capture session to complete.`);
   }
-
-  const frozenSession: CaptureSession = {
-    ...batch.captureSession,
-    capturedAt: now,
-    synchronizedMoments: [...batch.captureSession.synchronizedMoments],
-  };
 
   return {
     ...batch,
     status: 'PROCESSING',
-    captureSession: frozenSession,
+    captureSession: {
+      ...batch.captureSession,
+      capturedAt: now,
+    },
     updatedAt: now,
   };
 }
 
 export function markReviewRequired(batch: Batch, initialDraft?: BatchAnalysisDraft, now = new Date().toISOString()): Batch {
   if (batch.status !== 'PROCESSING') {
-    throw new InvalidLifecycleTransitionError(`Cannot transition to REVIEW_REQUIRED: batch ${batch.id} is in status ${batch.status}, expected PROCESSING.`);
+    throw new InvalidLifecycleTransitionError(`Cannot mark review required: batch ${batch.id} is in status ${batch.status}, expected PROCESSING.`);
   }
-  if (!batch.captureSession || !batch.captureSession.capturedAt) {
-    throw new BatchValidationError(`Cannot transition to REVIEW_REQUIRED: batch ${batch.id} requires a frozen capture session.`);
+  if (!batch.captureSession) {
+    throw new BatchValidationError(`Batch ${batch.id} has no capture session to review.`);
   }
 
   return {
@@ -347,17 +314,19 @@ export function finalizeBatch(batch: Batch, report: FinalAnalysisReport, now = n
     throw new BatchValidationError(`Final report exceeds maximum of 9 supporting captures.`);
   }
 
+  const frozenReport = Object.freeze({ ...report });
+
   return {
     ...batch,
     status: 'FINALIZED',
-    finalReport: Object.freeze({ ...report }),
+    finalReport: frozenReport,
     updatedAt: now,
   };
 }
 
 export function markFailed(batch: Batch, reason: string, now = new Date().toISOString()): Batch {
-  if (batch.status === 'FINALIZED') {
-    throw new InvalidLifecycleTransitionError(`Cannot mark finalized batch ${batch.id} as failed.`);
+  if (batch.status !== 'CAPTURING' && batch.status !== 'PROCESSING') {
+    throw new InvalidLifecycleTransitionError(`Cannot mark failed: batch ${batch.id} is in status ${batch.status}, expected CAPTURING or PROCESSING.`);
   }
 
   return {
@@ -369,8 +338,8 @@ export function markFailed(batch: Batch, reason: string, now = new Date().toISOS
 }
 
 export function abortBatch(batch: Batch, reason?: string, now = new Date().toISOString()): Batch {
-  if (batch.status === 'FINALIZED') {
-    throw new InvalidLifecycleTransitionError(`Cannot abort finalized batch ${batch.id}.`);
+  if (batch.status !== 'DRAFT' && batch.status !== 'READY') {
+    throw new InvalidLifecycleTransitionError(`Cannot abort batch: batch ${batch.id} is in status ${batch.status}, expected DRAFT or READY.`);
   }
 
   return {
@@ -378,48 +347,5 @@ export function abortBatch(batch: Batch, reason?: string, now = new Date().toISO
     status: 'ABORTED',
     failureReason: reason,
     updatedAt: now,
-  };
-}
-
-// Adapters to preserve backward-compatibility with Test interface
-export function batchToTest(batch: Batch): Test {
-  const snapshot = batch.setupSnapshot;
-  const draft = batch.setupDraft;
-  const productId = snapshot?.productId || draft?.productId || 'prd-default';
-  const productName = snapshot?.productSnapshot.productName || draft?.productSnapshot?.productName || 'Unknown Product';
-  const recipeId = snapshot?.recipeId || draft?.recipeId;
-  const sampleId = snapshot?.sampleId || `SMP-${batch.id}`;
-  const operatorName = snapshot?.operatorName || draft?.operatorName || 'Unknown Operator';
-  const operatorId = snapshot?.operatorId || draft?.operatorId;
-  const setpoints = snapshot?.setpoints || draft?.setpoints || { forceSetpointN: 30, pressDurationMs: 800, strokeMm: 8 };
-  const fixture = snapshot?.fixture || draft?.fixture || 'nominal-01';
-
-  let status: Test['status'] = 'running';
-  if (batch.status === 'FINALIZED' || batch.status === 'REVIEW_REQUIRED') {
-    status = 'complete';
-  } else if (batch.status === 'FAILED' || batch.status === 'ABORTED') {
-    status = 'failed';
-  }
-
-  return {
-    id: batch.id,
-    sampleId,
-    productId,
-    productSnapshot: snapshot?.productSnapshot || draft?.productSnapshot,
-    productName,
-    recipeId,
-    recipeSnapshot: snapshot?.recipeSnapshot || draft?.recipeSnapshot,
-    productionBatch: snapshot?.productLot || draft?.productLot,
-    operatorId,
-    operatorName,
-    createdAt: batch.createdAt,
-    source: 'fixture',
-    fixture,
-    config: {
-      forceSetpointN: setpoints.forceSetpointN,
-      pressDurationMs: setpoints.pressDurationMs,
-      strokeMm: setpoints.strokeMm,
-    },
-    status,
   };
 }

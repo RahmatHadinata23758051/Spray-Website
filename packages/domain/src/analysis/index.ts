@@ -1,4 +1,4 @@
-import type { Camera, SynchronizedAnalysisFrame, Test } from './types';
+import type { Camera, SynchronizedAnalysisFrame, Test } from '../types/index';
 
 export type MeasurementValue = {
   auto: number;
