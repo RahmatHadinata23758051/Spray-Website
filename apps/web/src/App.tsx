@@ -28,8 +28,9 @@ import { NewBatchPage } from './presentation/pages/Batches/NewBatchPage';
 import { BatchDetailPage } from './presentation/pages/Batches/BatchDetailPage';
 import { BatchCapturePage } from './presentation/pages/Batches/BatchCapturePage';
 import { BatchAnalysisPage } from './presentation/pages/Batches/BatchAnalysisPage';
+import { BatchResultPage } from './presentation/pages/Batches/BatchResultPage';
 
-export { createFinalReportCsv } from './presentation/pages/Tests/ResultPage';
+export { createFinalReportCsv } from './application/reporting/createFinalReportCsv';
 
 export function App() {
   const [selected, setSelected] = useState<Test>(tests[0]);
@@ -55,6 +56,7 @@ export function App() {
         <Route path="/batches/:batchId" element={<BatchDetailPage />} />
         <Route path="/batches/:batchId/capture" element={<BatchCapturePage />} />
         <Route path="/batches/:batchId/analysis" element={<BatchAnalysisPage />} />
+        <Route path="/batches/:batchId/result" element={<BatchResultPage />} />
 
         {/* Legacy redirect routes */}
         <Route path="/new-test" element={<Navigate to="/batches/new" replace />} />

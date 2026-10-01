@@ -221,13 +221,13 @@ export function BatchDetailPage() {
             <div className="rounded-sm border border-blue-500/20 bg-blue-50/50 p-4 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-blue-800">Batch is finalized</h3>
-                <p className="mt-1 text-xs text-blue-700">Detailed result view will be migrated in future phases.</p>
+                <p className="mt-1 text-xs text-blue-700">Detailed historical result available.</p>
               </div>
               <button
-                onClick={() => navigate(`/batches/${batch.id}/analysis`)}
-                className="rounded-sm border border-border-subtle bg-bg-surface px-4 py-2 text-sm font-semibold text-text-primary hover:bg-bg-subtle shadow-sm"
+                onClick={() => navigate(`/batches/${batch.id}/result`)}
+                className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
               >
-                View Analysis (Read-Only)
+                View Result
               </button>
             </div>
           )}
