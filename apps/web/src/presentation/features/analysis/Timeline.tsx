@@ -12,9 +12,9 @@ export function Timeline({ moments, selectedIndex, onSelect }: { moments: Synchr
   return (
     <div className="analysis-timeline">
       <div className="timeline-header">
-        <span>Capture timeline</span>
+        <span>Linimasa akuisisi</span>
         <span>
-          <strong className="font-mono">Capture #{String(current.frameIndex).padStart(3, '0')}</strong> · <strong className="font-mono">{selectedIndex + 1} of {moments.length}</strong> · <strong className="font-mono">{current.timestampMs} ms</strong>
+          <strong className="font-mono">Tangkapan #{String(current.frameIndex).padStart(3, '0')}</strong> · <strong className="font-mono">{selectedIndex + 1} dari {moments.length}</strong> · <strong className="font-mono">{current.timestampMs} ms</strong>
         </span>
       </div>
       <div className="timeline-phases" aria-hidden="true">
@@ -32,15 +32,15 @@ export function Timeline({ moments, selectedIndex, onSelect }: { moments: Synchr
               key={moment.id}
               onClick={() => onSelect(index)}
               className={`timeline-frame phase-${moment.phase.replace('_', '')} ${inWindow ? 'timeline-stable' : ''} ${moment.recommended ? 'timeline-recommended' : ''} ${isCurrent ? 'timeline-current' : ''}`}
-              title={`Capture #${moment.frameIndex} · ${moment.timestampMs} ms · ${phaseLabel(moment.phase)}${moment.recommended ? ' · Recommended' : ''}`}
-              aria-label={`Capture ${moment.frameIndex} ${moment.timestampMs} ms ${phaseLabel(moment.phase)}${moment.recommended ? ' recommended' : ''}`}
+              title={`Tangkapan #${moment.frameIndex} · ${moment.timestampMs} ms · ${phaseLabel(moment.phase)}${moment.recommended ? ' · Direkomendasikan' : ''}`}
+              aria-label={`Tangkapan ${moment.frameIndex} ${moment.timestampMs} ms ${phaseLabel(moment.phase)}${moment.recommended ? ' direkomendasikan' : ''}`}
               aria-pressed={isCurrent}
             />
           );
         })}
       </div>
       <div className="timeline-footer">
-        <span>Pre-spray</span><span>Build-up</span><span>Stable phase {startMs}–{endMs} ms</span><span>Decay</span>
+        <span>Pra-spray</span><span>Pembentukan</span><span>Fase stabil {startMs}–{endMs} ms</span><span>Peluruhan</span>
       </div>
     </div>
   );
