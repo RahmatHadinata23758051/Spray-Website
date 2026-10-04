@@ -40,7 +40,7 @@ export function AnalysisOverlay({
   const gridSpacingPx = calibratedGridSpacingPx(spacingMm, calibration);
   const numVertical = Math.min(24, Math.floor(720 / gridSpacingPx));
   const numHorizontal = Math.min(16, Math.floor(360 / gridSpacingPx));
-  const physicalGrid = mode !== 'Mask' && <g className="calibrated-grid" opacity="0.5" data-grid-spacing-px={gridSpacingPx.toFixed(3)} aria-label={`Physical grid ${spacingMm} millimeter spacing`} role="group">
+  const physicalGrid = mode !== 'Mask' && <g className="calibrated-grid" opacity="0.5" data-grid-spacing-px={gridSpacingPx.toFixed(3)} aria-label={`Grid fisik jarak ${spacingMm} milimeter`} role="group">
     {Array.from({ length: numVertical + 1 }, (_, i) => {
       const x = i * gridSpacingPx;
       return <g key={`v${i}`}>
@@ -54,7 +54,7 @@ export function AnalysisOverlay({
     })}
   </g>;
 
-  return <svg viewBox="0 0 720 360" className="h-full w-full" role="img" aria-label={`${camera} camera ${mode.toLowerCase()} fixture frame`}>
+  return <svg viewBox="0 0 720 360" className="h-full w-full" role="img" aria-label={`Frame tangkapan ${mode.toLowerCase()} kamera ${camera === 'side' ? 'samping' : 'depan'}`}>
     <defs>
       <filter id="mist-blur"><feGaussianBlur stdDeviation="5" /></filter>
       <filter id="fine-blur"><feGaussianBlur stdDeviation="1.7" /></filter>

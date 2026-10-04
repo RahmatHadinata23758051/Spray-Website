@@ -90,69 +90,67 @@ export function MeasurementCorrectionOverlay({
   const diameterRadius = workingFrontGeometry.equivalentDiameterPx / 2;
 
   return (
-    <svg ref={svgRef} className={`measurement-edit-overlay ${activeHandle ? 'is-dragging' : ''}`} viewBox="0 0 720 360" role="group" aria-label={`${camera} measurement correction handles`}>
+    <svg ref={svgRef} className={`measurement-edit-overlay ${activeHandle ? 'is-dragging' : ''}`} viewBox="0 0 720 360" role="group" aria-label={`Handel koreksi pengukuran ${camera === 'side' ? 'samping' : 'depan'}`}>
       {camera === 'side' ? (
         <>
           <circle cx={workingSideGeometry.nozzleOriginPx.x} cy={workingSideGeometry.nozzleOriginPx.y} r="5" fill="#1d8fff" stroke="#dce8f1" strokeWidth="2" />
           {activeSideTool === 'Length' && (
             <>
-              <g className="measurement-auto-geometry" aria-label="System automatic length geometry">
+              <g className="measurement-auto-geometry" aria-label="Geometri panjang otomatis sistem">
                 <line x1={autoSideGeometry.nozzleOriginPx.x} y1={autoSideGeometry.nozzleOriginPx.y} x2={autoSideGeometry.sprayEndpointPx.x} y2={autoSideGeometry.sprayEndpointPx.y} stroke="#1d8fff" strokeDasharray="5 4" strokeWidth="1.5" />
                 <circle cx={autoSideGeometry.sprayEndpointPx.x} cy={autoSideGeometry.sprayEndpointPx.y} r="6" fill="none" stroke="#1d8fff" strokeWidth="2" strokeDasharray="3 2" />
               </g>
-              <g className="measurement-final-geometry" aria-label="Operator final length geometry">
+              <g className="measurement-final-geometry" aria-label="Geometri panjang akhir operator">
                 <line x1={workingSideGeometry.nozzleOriginPx.x} y1={workingSideGeometry.nozzleOriginPx.y} x2={workingSideGeometry.sprayEndpointPx.x} y2={workingSideGeometry.sprayEndpointPx.y} stroke="#ff8c00" strokeWidth="2" />
               </g>
-              {handle('sprayEndpoint', 'Spray endpoint', workingSideGeometry.sprayEndpointPx)}
+              {handle('sprayEndpoint', 'Titik ujung semprot', workingSideGeometry.sprayEndpointPx)}
             </>
           )}
           {activeSideTool === 'Spread' && (() => {
             const midY = (workingSideGeometry.verticalSpreadTopPx.y + workingSideGeometry.verticalSpreadBottomPx.y) / 2;
             return (
               <>
-                <g className="measurement-auto-geometry" aria-label="System automatic spread geometry">
+                <g className="measurement-auto-geometry" aria-label="Geometri sebaran otomatis sistem">
                   <line x1={autoSideGeometry.verticalSpreadTopPx.x} y1={autoSideGeometry.verticalSpreadTopPx.y} x2={autoSideGeometry.verticalSpreadBottomPx.y} y2={autoSideGeometry.verticalSpreadBottomPx.y} stroke="#1d8fff" strokeDasharray="5 4" strokeWidth="1.5" />
                 </g>
-                <g className="measurement-final-geometry" aria-label="Operator final spread geometry">
+                <g className="measurement-final-geometry" aria-label="Geometri sebaran akhir operator">
                   <line x1={workingSideGeometry.verticalSpreadTopPx.x} y1={workingSideGeometry.verticalSpreadTopPx.y} x2={workingSideGeometry.verticalSpreadBottomPx.y} y2={workingSideGeometry.verticalSpreadBottomPx.y} stroke="#ff8c00" strokeWidth="2.5" />
                 </g>
-                {handle('spreadPosition', 'Spread measurement position', { x: workingSideGeometry.verticalSpreadTopPx.x, y: midY })}
-                {handle('spreadTop', 'Upper spread boundary', workingSideGeometry.verticalSpreadTopPx)}
-                {handle('spreadBottom', 'Lower spread boundary', workingSideGeometry.verticalSpreadBottomPx)}
+                {handle('spreadPosition', 'Posisi pengukuran sebaran', { x: workingSideGeometry.verticalSpreadTopPx.x, y: midY })}
+                {handle('spreadTop', 'Batas sebaran atas', workingSideGeometry.verticalSpreadTopPx)}
+                {handle('spreadBottom', 'Batas sebaran bawah', workingSideGeometry.verticalSpreadBottomPx)}
               </>
             );
           })()}
           {activeSideTool === 'Angle' && (
             <>
-              <g className="measurement-auto-geometry" aria-label="System automatic angle geometry">
+              <g className="measurement-auto-geometry" aria-label="Geometri sudut otomatis sistem">
                 <line x1={autoSideGeometry.nozzleOriginPx.x} y1={autoSideGeometry.nozzleOriginPx.y} x2={autoSideGeometry.upperBoundaryPx.x} y2={autoSideGeometry.upperBoundaryPx.y} stroke="#1d8fff" strokeDasharray="5 4" strokeWidth="1.5" />
                 <line x1={autoSideGeometry.nozzleOriginPx.x} y1={autoSideGeometry.nozzleOriginPx.y} x2={autoSideGeometry.lowerBoundaryPx.x} y2={autoSideGeometry.lowerBoundaryPx.y} stroke="#1d8fff" strokeDasharray="5 4" strokeWidth="1.5" />
               </g>
-              <g className="measurement-final-geometry" aria-label="Operator final angle geometry">
+              <g className="measurement-final-geometry" aria-label="Geometri sudut akhir operator">
                 <line x1={workingSideGeometry.nozzleOriginPx.x} y1={workingSideGeometry.nozzleOriginPx.y} x2={workingSideGeometry.upperBoundaryPx.x} y2={workingSideGeometry.upperBoundaryPx.y} stroke="#ff8c00" strokeWidth="2" />
                 <line x1={workingSideGeometry.nozzleOriginPx.x} y1={workingSideGeometry.nozzleOriginPx.y} x2={workingSideGeometry.lowerBoundaryPx.x} y2={workingSideGeometry.lowerBoundaryPx.y} stroke="#ff8c00" strokeWidth="2" />
               </g>
-              {handle('upperAngle', 'Upper angle boundary', workingSideGeometry.upperBoundaryPx)}
-              {handle('lowerAngle', 'Lower angle boundary', workingSideGeometry.lowerBoundaryPx)}
+              {handle('upperAngle', 'Batas sudut atas', workingSideGeometry.upperBoundaryPx)}
+              {handle('lowerAngle', 'Batas sudut bawah', workingSideGeometry.lowerBoundaryPx)}
             </>
           )}
-          <text x="132" y="188">BLUE AUTO · ORANGE WORKING FINAL</text>
         </>
       ) : (
         <>
-          <g className="measurement-auto-geometry" aria-label="System automatic geometry">
+          <g className="measurement-auto-geometry" aria-label="Geometri otomatis sistem">
             <circle cx={autoFrontGeometry.referenceCenterPx.x} cy={autoFrontGeometry.referenceCenterPx.y} r={autoFrontGeometry.equivalentDiameterPx / 2} />
             <line x1={autoFrontGeometry.referenceCenterPx.x} y1={autoFrontGeometry.referenceCenterPx.y} x2={autoFrontGeometry.centroidPx.x} y2={autoFrontGeometry.centroidPx.y} />
           </g>
-          <g className="measurement-final-geometry" aria-label="Operator final geometry">
+          <g className="measurement-final-geometry" aria-label="Geometri akhir operator">
             <circle cx={workingFrontGeometry.referenceCenterPx.x} cy={workingFrontGeometry.referenceCenterPx.y} r={diameterRadius} />
             <line x1={workingFrontGeometry.referenceCenterPx.x} y1={workingFrontGeometry.referenceCenterPx.y} x2={workingFrontGeometry.centroidPx.x} y2={workingFrontGeometry.centroidPx.y} />
             <line x1={workingFrontGeometry.referenceCenterPx.x - diameterRadius} y1={workingFrontGeometry.referenceCenterPx.y} x2={workingFrontGeometry.referenceCenterPx.x + diameterRadius} y2={workingFrontGeometry.referenceCenterPx.y} />
           </g>
-          {handle('centroid', 'Spray centroid handle', workingFrontGeometry.centroidPx)}
-          {handle('diameterLeft', 'Equivalent diameter handle left', { x: workingFrontGeometry.referenceCenterPx.x - diameterRadius, y: workingFrontGeometry.referenceCenterPx.y })}
-          {handle('diameterRight', 'Equivalent diameter handle right', { x: workingFrontGeometry.referenceCenterPx.x + diameterRadius, y: workingFrontGeometry.referenceCenterPx.y })}
-          <text x="360" y="48" textAnchor="middle">BLUE AUTO · ORANGE WORKING FINAL</text>
+          {handle('centroid', 'Handel centroid semprot', workingFrontGeometry.centroidPx)}
+          {handle('diameterLeft', 'Handel diameter ekuivalen kiri', { x: workingFrontGeometry.referenceCenterPx.x - diameterRadius, y: workingFrontGeometry.referenceCenterPx.y })}
+          {handle('diameterRight', 'Handel diameter ekuivalen kanan', { x: workingFrontGeometry.referenceCenterPx.x + diameterRadius, y: workingFrontGeometry.referenceCenterPx.y })}
         </>
       )}
     </svg>

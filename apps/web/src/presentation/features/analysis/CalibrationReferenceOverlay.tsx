@@ -15,9 +15,7 @@ export function CalibrationReferenceOverlay({ calibration, onChange }: { calibra
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<CalibrationDrag | null>(null);
   const [activeTarget, setActiveTarget] = useState<CalibrationDragTarget | null>(null);
-  const { anchorA, anchorB, referenceDistanceMm, scaleMmPerPx } = calibration;
-  const midX = (anchorA.x + anchorB.x) / 2;
-  const midY = (anchorA.y + anchorB.y) / 2;
+  const { anchorA, anchorB, referenceDistanceMm } = calibration;
   const angleDeg = Math.atan2(anchorB.y - anchorA.y, anchorB.x - anchorA.x) * 180 / Math.PI;
   const referenceLengthPx = Math.hypot(anchorB.x - anchorA.x, anchorB.y - anchorA.y);
   const intervalCount = Math.max(1, Math.round(referenceDistanceMm / 100));
@@ -80,7 +78,7 @@ export function CalibrationReferenceOverlay({ calibration, onChange }: { calibra
   };
 
   return (
-    <svg ref={svgRef} className={`calibration-overlay ${activeTarget ? 'is-dragging' : ''}`} viewBox="0 0 720 360" role="group" aria-label={`Calibration reference ${referenceDistanceMm} millimeters`}>
+    <svg ref={svgRef} className={`calibration-overlay ${activeTarget ? 'is-dragging' : ''}`} viewBox="0 0 720 360" role="group" aria-label={`Referensi kalibrasi ${referenceDistanceMm} milimeter`}>
       <g className="calibration-ruler" transform={`translate(${anchorA.x} ${anchorA.y}) rotate(${angleDeg})`}>
         <line x1="0" y1="0" x2={referenceLengthPx} y2="0" className="calibration-line" />
         {Array.from({ length: intervalCount + 1 }, (_, i) => {
@@ -99,7 +97,7 @@ export function CalibrationReferenceOverlay({ calibration, onChange }: { calibra
           y2="0"
           className={`calibration-body-hit ${activeTarget === 'body' ? 'is-active' : ''}`}
           role="slider"
-          aria-label="Calibration grid reference body"
+          aria-label="Badan referensi kalibrasi grid"
           tabIndex={0}
           onPointerDown={event => startDrag(event, 'body')}
           onPointerMove={moveDrag}
@@ -113,7 +111,7 @@ export function CalibrationReferenceOverlay({ calibration, onChange }: { calibra
         r="9"
         className={`calibration-anchor ${activeTarget === 'anchorA' ? 'is-active' : ''}`}
         role="slider"
-        aria-label="Calibration anchor A"
+        aria-label="Jangkar kalibrasi A"
         aria-valuetext={`${anchorA.x.toFixed(0)}, ${anchorA.y.toFixed(0)} pixels`}
         tabIndex={0}
         onKeyDown={event => nudgeAnchor(event, 'anchorA')}
@@ -128,7 +126,7 @@ export function CalibrationReferenceOverlay({ calibration, onChange }: { calibra
         r="9"
         className={`calibration-anchor ${activeTarget === 'anchorB' ? 'is-active' : ''}`}
         role="slider"
-        aria-label="Calibration anchor B"
+        aria-label="Jangkar kalibrasi B"
         aria-valuetext={`${anchorB.x.toFixed(0)}, ${anchorB.y.toFixed(0)} pixels`}
         tabIndex={0}
         onKeyDown={event => nudgeAnchor(event, 'anchorB')}
@@ -139,11 +137,6 @@ export function CalibrationReferenceOverlay({ calibration, onChange }: { calibra
       />
       <text x={anchorA.x} y={anchorA.y + 28} textAnchor="middle">A</text>
       <text x={anchorB.x} y={anchorB.y + 28} textAnchor="middle">B</text>
-      <g className="calibration-live-readout" transform={`translate(${Math.min(620, Math.max(100, midX))}, ${Math.max(42, midY - 38)})`}>
-        <rect x="-96" y="-26" width="192" height="44" rx="5" />
-        <text x="-84" y="-8">Reference</text><text x="84" y="-8" textAnchor="end">{referenceDistanceMm} mm</text>
-        <text x="-84" y="10">Scale</text><text x="84" y="10" textAnchor="end">{scaleMmPerPx.toFixed(3)} mm/px</text>
-      </g>
     </svg>
   );
 }
