@@ -12,10 +12,10 @@ export type NavPage = 'Dashboard' | 'Batches' | 'Reports' | 'Products' | 'Calibr
 export type Page = NavPage | 'Settings' | 'Login';
 
 export const navigation: { label: string; items: { page: NavPage; icon: LucideIcon }[] }[] = [
-  { label: 'Main navigation', items: [{ page: 'Dashboard', icon: LayoutDashboard }, { page: 'Batches', icon: Layers }] },
-  { label: 'Workflow', items: [{ page: 'Reports', icon: FileText }] },
-  { label: 'Configuration', items: [{ page: 'Products', icon: Beaker }, { page: 'Calibration', icon: SlidersHorizontal }] },
-  { label: 'System', items: [{ page: 'Users', icon: UsersIcon }] },
+  { label: 'Navigasi Utama', items: [{ page: 'Dashboard', icon: LayoutDashboard }, { page: 'Batches', icon: Layers }] },
+  { label: 'Alur Kerja', items: [{ page: 'Reports', icon: FileText }] },
+  { label: 'Konfigurasi', items: [{ page: 'Products', icon: Beaker }, { page: 'Calibration', icon: SlidersHorizontal }] },
+  { label: 'Sistem', items: [{ page: 'Users', icon: UsersIcon }] },
 ];
 
 export const legacyPageToPath: Record<Page, string> = {
@@ -40,12 +40,23 @@ export const pathToLegacyPage: Record<string, Page> = {
   '/settings': 'Settings',
 };
 
+export const pageLabels: Record<Page, string> = {
+  Login: 'Masuk',
+  Dashboard: 'Dasbor',
+  Batches: 'Batch',
+  Reports: 'Laporan',
+  Products: 'Produk',
+  Calibration: 'Kalibrasi',
+  Users: 'Pengguna',
+  Settings: 'Pengaturan',
+};
+
 export const pageDescriptions: Record<Exclude<Page, 'Login'>, string> = {
-  Dashboard: 'Overview of testing queue, recent results, and system status.',
-  Batches: 'Manage spray testing batches, draft setups, and historical runs.',
-  Reports: 'Generated PDF reports and raw CSV data export for quality assurance.',
-  Products: 'Manage product catalog, expected nozzle geometries, and target limits.',
-  Calibration: 'System-wide physical calibration for spatial reference mapping.',
-  Users: 'Manage operator access, roles, and shift configurations.',
-  Settings: 'Hardware configuration, integration endpoints, and maintenance logs.',
+  Dashboard: '',
+  Batches: 'Kelola draf, antrean pengujian, dan riwayat batch.',
+  Reports: 'Laporan hasil pengujian yang telah difinalisasi.',
+  Products: 'Master data spesifikasi produk dan parameter pengujian.',
+  Calibration: 'Pemetaan referensi spasial stasiun kamera ganda.',
+  Users: 'Manajemen peran dan hak akses operator workstation.',
+  Settings: 'Konfigurasi environment dan penyimpanan workstation.',
 };

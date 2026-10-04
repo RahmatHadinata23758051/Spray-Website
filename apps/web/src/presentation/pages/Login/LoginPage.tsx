@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Status } from '../../components/ui/Status';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -21,18 +20,13 @@ export function LoginPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-canvas px-5 py-10">
       <section className="w-full max-w-[460px] rounded-xl border border-border-default bg-surface p-8 shadow-[0_18px_55px_rgba(28,66,98,0.09)] md:p-10">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="product-mark" aria-hidden="true"><span /><span /><span /></div>
-          <div>
-            <div className="text-base font-bold text-text-primary">Spraybot</div>
-            <div className="text-xs font-semibold text-text-muted">R&amp;D Spray Analysis</div>
-          </div>
+        <div className="mb-8">
+          <img src="/branding/paragon-logo.jpg" alt="Paragon Technology and Innovation" className="h-10 w-auto object-contain mix-blend-multiply" />
         </div>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <Status tone="neutral">Local workstation · Simulation Mode</Status>
-            <h1 className="mt-5 text-[30px] font-bold leading-[38px] tracking-[-0.03em]">Sign in to Spraybot</h1>
-            <p className="mt-2 text-sm leading-[22px] text-text-secondary">Access the local spray analysis workstation. No machine hardware is connected. Camera functions remain simulated.</p>
+            <h1 className="mt-2 text-[30px] font-bold leading-[38px] tracking-[-0.03em]">Masuk ke Spraybot</h1>
+            <p className="mt-2 text-sm leading-[22px] text-text-secondary">Akses stasiun analisis pengujian lokal.</p>
           </div>
           <label className="block text-sm font-semibold">
             Email
@@ -45,7 +39,7 @@ export function LoginPage() {
             />
           </label>
           <label className="block text-sm font-semibold">
-            Password
+            Kata Sandi
             <div className="relative">
               <input 
                 value={password} 
@@ -59,9 +53,9 @@ export function LoginPage() {
                 type="button" 
                 onClick={() => setShowPassword(!showPassword)} 
                 className="absolute right-3 top-[22px] text-xs font-semibold text-text-muted hover:text-primary" 
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
               >
-                {showPassword ? 'Hide' : 'Show'}
+                {showPassword ? 'Tutup' : 'Lihat'}
               </button>
             </div>
           </label>
@@ -69,11 +63,11 @@ export function LoginPage() {
           <button 
             type="submit" 
             disabled={!valid || loading} 
+            aria-label="Masuk"
             className="w-full rounded-sm bg-primary px-4 py-3 font-bold text-white shadow-[0_7px_18px_rgba(29,143,255,0.2)] hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'Masuk...' : 'Masuk'}
           </button>
-          <p className="text-center text-xs font-semibold text-text-muted">Authorized local users only</p>
         </form>
       </section>
     </main>

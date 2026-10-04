@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import type { Page } from '../../navigation';
-import { pageDescriptions, pathToLegacyPage } from '../../navigation';
+import { pageDescriptions, pathToLegacyPage, pageLabels } from '../../navigation';
 
 export function Header({ page }: { page?: Page }) {
   const location = useLocation();
@@ -9,7 +9,7 @@ export function Header({ page }: { page?: Page }) {
 
   let title = page || pathToLegacyPage[pathname] || 'Dashboard';
   let description = pageDescriptions[title as Exclude<Page, 'Login'>] || '';
-  let subSection: string | null = null;
+  let subSectionLabel: string | null = null;
   let batchIdMatch: string | null = null;
 
   if (pathname.startsWith('/batches')) {
@@ -18,16 +18,17 @@ export function Header({ page }: { page?: Page }) {
 
     const parts = pathname.split('/').filter(Boolean); // ['batches', ':batchId', 'analysis']
     if (parts.length === 2 && parts[1] === 'new') {
-      subSection = 'New Batch';
+      subSectionLabel = 'Batch Baru';
     } else if (parts.length >= 2) {
+      description = '';
       batchIdMatch = parts[1];
       if (parts.length === 3) {
-        if (parts[2] === 'capture') subSection = 'Capture';
-        else if (parts[2] === 'analysis') subSection = 'Analysis';
-        else if (parts[2] === 'result') subSection = 'Result';
-        else subSection = parts[2];
+        if (parts[2] === 'capture') { subSectionLabel = 'Pengambilan Data'; }
+        else if (parts[2] === 'analysis') { subSectionLabel = 'Analisis'; }
+        else if (parts[2] === 'result') { subSectionLabel = 'Hasil'; }
+        else { subSectionLabel = parts[2]; }
       } else {
-        subSection = 'Details';
+        subSectionLabel = 'Detail Batch';
       }
     }
   }
@@ -35,38 +36,34 @@ export function Header({ page }: { page?: Page }) {
   const isAnalysisWorkspace = pathname.includes('/analysis');
 
   return (
-    <header className={`context-header ${isAnalysisWorkspace ? 'analysis-context-header' : ''}`}>
+    <header className={`flex items-center justify-between gap-4 pb-6 pt-2 ${isAnalysisWorkspace ? 'pb-4' : ''}`}>
       <div className="min-w-0">
-        <div className="breadcrumb">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-text-muted">
           <span>Spraybot</span>
-          <ChevronRight size={12} />
-          <span>{title}</span>
+          <ChevronRight size={13} className="text-border-strong shrink-0" />
+          <span>{pageLabels[title as Page] || title}</span>
           {batchIdMatch && (
             <>
-              <ChevronRight size={12} />
-              <span className="font-mono">{batchIdMatch}</span>
+              <ChevronRight size={13} className="text-border-strong shrink-0" />
+              <span className="font-mono text-text-secondary">{batchIdMatch}</span>
             </>
           )}
-          {subSection && (
+          {subSectionLabel && (
             <>
-              <ChevronRight size={12} />
-              <span>{subSection}</span>
+              <ChevronRight size={13} className="text-border-strong shrink-0" />
+              <span className="text-text-primary font-bold">{subSectionLabel}</span>
             </>
           )}
         </div>
-        <div className="mt-1 flex min-w-0 items-baseline gap-3">
-          <h1>{subSection ? `${subSection}` : title}</h1>
+        <div className="mt-1 flex items-baseline gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">
+            {subSectionLabel ? subSectionLabel : (pageLabels[title as Page] || title)}
+          </h1>
           {description && (
-            <p className="hidden truncate text-sm text-text-muted xl:block">
+            <p className="hidden truncate text-sm text-text-secondary xl:block">
               {description}
             </p>
           )}
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-3">
-        <div className="simulation-state" role="status">
-          <span aria-hidden="true" />
-          Simulation Mode
         </div>
       </div>
     </header>
