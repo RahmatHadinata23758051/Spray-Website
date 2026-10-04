@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { batchRepository, simulationService } from '../../../application/services';
-import type { Batch } from '@spray-paragon/domain';
-import type { Camera as CameraType } from '@spray-paragon/domain';
-const frames = simulationService.getFrames();
+import type { Batch, Camera as CameraType } from '@spray-paragon/domain';
 import { Status } from '../../components/ui/Status';
-import { Panel } from '../../components/ui/Panel';
 import { Overlay } from '../../components/ui/Overlay';
+import { formatStatus } from '../../utils/formatters';
+
+const frames = simulationService.getFrames();
 
 export function BatchCapturePage() {
   const { batchId } = useParams();
@@ -19,7 +19,7 @@ export function BatchCapturePage() {
 
   useEffect(() => {
     if (!batchId) {
-      setError('Batch ID missing from URL');
+      setError('Batch ID hilang dari URL');
       setLoading(false);
       return;
     }
@@ -28,19 +28,16 @@ export function BatchCapturePage() {
       try {
         const b = await batchRepository.getBatch(batchId);
         if (!b) {
-          setError(`Batch ${batchId} not found`);
+          setError(`Batch ${batchId} tidak ditemukan`);
           return;
         }
 
-        // Validate lifecycle state
         if (b.status === 'DRAFT' || b.status === 'FINALIZED' || b.status === 'FAILED' || b.status === 'ABORTED') {
-          // Redirect to batch detail for invalid states
           navigate(`/batches/${batchId}`);
           return;
         }
 
         if (b.status === 'PROCESSING' || b.status === 'REVIEW_REQUIRED') {
-          // Capture already completed, redirect to detail
           navigate(`/batches/${batchId}`);
           return;
         }
@@ -52,7 +49,7 @@ export function BatchCapturePage() {
         }
       } catch (e) {
         console.error('Failed to load batch', e);
-        setError('Failed to load batch data');
+        setError('Gagal memuat data batch');
       } finally {
         setLoading(false);
       }
@@ -70,7 +67,7 @@ export function BatchCapturePage() {
       setIsCapturing(true);
     } catch (e) {
       console.error('Failed to start capture', e);
-      setError('Failed to start capture');
+      setError('Gagal memulai akuisisi');
     }
   };
 
@@ -78,8 +75,6 @@ export function BatchCapturePage() {
     if (!batch) return;
 
     try {
-      // Complete capture (CAPTURING → PROCESSING)
-      // MOCK: populate synchronized frames
       const { simulationService } = await import('../../../application/services');
       const synchronizedFrames = simulationService.getSynchronizedFrames();
       await batchRepository.updateCaptureSession(batch.id, synchronizedFrames);
@@ -87,15 +82,13 @@ export function BatchCapturePage() {
       const processing = await batchRepository.completeCapture(batch.id);
       setBatch(processing);
 
-      // In simulation, processing is instantaneous and transitions to REVIEW_REQUIRED
       const reviewRequired = await batchRepository.markReviewRequired(batch.id);
       setBatch(reviewRequired);
       setIsCapturing(false);
-      // After capture completion, navigate to batch detail
       navigate(`/batches/${batchId}`);
     } catch (e) {
       console.error('Failed to complete capture', e);
-      setError('Failed to complete capture');
+      setError('Gagal menyelesaikan akuisisi');
     }
   }, [batch, batchId, navigate]);
 
@@ -110,7 +103,7 @@ export function BatchCapturePage() {
           }
           return prev + 1;
         });
-      }, 20); // Simulate faster progress for testing
+      }, 20);
 
       return () => clearInterval(interval);
     }
@@ -132,21 +125,21 @@ export function BatchCapturePage() {
       setCaptureProgress(0);
     } catch (e) {
       console.error('Failed to abort capture', e);
-      setError('Failed to abort capture');
+      setError('Gagal membatalkan akuisisi');
     }
   };
 
   if (loading) {
-    return <div className="p-4 text-sm text-text-secondary">Loading capture session...</div>;
+    return <div className="p-4 text-sm text-text-secondary">Memuat sesi akuisisi...</div>;
   }
 
   if (error) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-bold text-text-primary">Capture Error</h1>
+        <h1 aria-label="Kesalahan Akuisisi" className="text-xl font-bold text-text-primary">Kesalahan Akuisisi</h1>
         <p className="text-sm text-text-secondary">{error}</p>
         <button onClick={() => navigate(`/batches/${batchId}`)} className="text-sm font-medium text-primary hover:underline">
-          &larr; Return to Batch Detail
+          &larr; Kembali ke Detail Batch
         </button>
       </div>
     );
@@ -155,89 +148,110 @@ export function BatchCapturePage() {
   if (!batch) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-bold text-text-primary">Batch Not Found</h1>
-        <p className="text-sm text-text-secondary">The batch {batchId} does not exist or cannot be accessed for capture.</p>
+        <h1 className="text-xl font-bold text-text-primary">Batch Tidak Ditemukan</h1>
+        <p className="text-sm text-text-secondary">Batch {batchId} tidak ada atau tidak dapat diakses untuk akuisisi.</p>
         <button onClick={() => navigate('/batches')} className="text-sm font-medium text-primary hover:underline">
-          &larr; Return to Batches
+          &larr; Kembali ke Daftar Batch
         </button>
       </div>
     );
   }
 
+  const getPhaseName = (phase: string) => {
+    if (phase === 'pre-spray' || phase === 'pre_spray') return 'PRA-SPRAY';
+    if (phase === 'build-up' || phase === 'build_up') return 'PEMBENTUKAN';
+    if (phase === 'stable') return 'STABIL';
+    if (phase === 'decay' || phase === 'complete') return 'PELURUHAN';
+    return phase.toUpperCase();
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-        <div>
-          <button onClick={() => navigate(`/batches/${batchId}`)} className="text-xs font-semibold text-text-muted hover:text-text-primary mb-1 inline-block">
-            &larr; Back to Batch Detail
-          </button>
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight text-text-primary">Capture — {batch.id}</h1>
+    <div className="flex flex-col h-full space-y-6 max-w-[1320px] mx-auto w-full">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border-subtle pb-4">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-base font-bold text-text-primary">{batch.id}</span>
+            <span className="text-text-muted">•</span>
+            <span className="text-sm font-semibold text-text-secondary">
+              {batch.setupSnapshot?.productSnapshot.productName ?? batch.setupDraft?.productSnapshot?.productName}
+            </span>
+            <span className="text-text-muted">•</span>
             <Status tone={isCapturing ? 'warning' : 'neutral'}>
-              {isCapturing ? 'CAPTURING' : batch.status}
+              {isCapturing ? 'Merekam' : formatStatus(batch.status)}
             </Status>
           </div>
-          <p className="mt-1 text-sm text-text-secondary">
-            {batch.setupSnapshot?.productSnapshot.productName ?? batch.setupDraft?.productSnapshot?.productName}
-          </p>
         </div>
 
-        {isCapturing ? (
-          <button
-            onClick={handleAbortCapture}
-            className="rounded-sm bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-          >
-            Abort Capture
-          </button>
-        ) : batch.status === 'READY' ? (
-          <button
-            onClick={handleStartCapture}
-            className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-          >
-            Start Capture
-          </button>
-        ) : null}
-      </div>
-
-      <Status>Simulation environment · No hardware connected</Status>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {(['side', 'front'] as CameraType[]).map(c => (
-          <CameraBox key={c} camera={c} captureProgress={captureProgress} isCapturing={isCapturing} />
-        ))}
-      </div>
-
-      <Panel title="Capture timeline">
-        <div className="flex gap-1">
-          {frames.map((f, idx) => {
-            const isCaptured = idx < captureProgress;
-            const isCurrent = idx === captureProgress && isCapturing;
-            return (
-              <div
-                key={f.frameIndex}
-                title={`${f.frameIndex} ${f.phase}`}
-                className={`h-8 flex-1 rounded-xs ${isCurrent ? 'bg-primary-hover ring-2 ring-primary' : isCaptured ? 'bg-primary' : 'bg-border-default'}`}
-              />
-            );
-          })}
+        <div>
+          {isCapturing ? (
+            <button onClick={handleAbortCapture} className="btn btn-danger">
+              Batalkan Akuisisi
+            </button>
+          ) : batch.status === 'READY' ? (
+            <button onClick={handleStartCapture} className="btn btn-primary" aria-label="Mulai Pengambilan">
+              Mulai Pengambilan Data
+            </button>
+          ) : null}
         </div>
-        <div className="mt-4 flex items-center justify-between">
-          <div className="text-sm text-text-secondary">
+      </div>
+
+      <div className="flex-1 grid gap-6 xl:grid-cols-2">
+        <CameraBox camera="side" captureProgress={captureProgress} isCapturing={isCapturing} />
+        <CameraBox camera="front" captureProgress={captureProgress} isCapturing={isCapturing} />
+      </div>
+
+      <div className="bg-surface rounded-xl border border-border-default shadow-[0_4px_20px_rgba(16,42,67,0.04)] p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold text-text-primary">
+            Sinkronisasi Tangkapan
+          </h2>
+          <div className="text-sm font-semibold">
             {isCapturing ? (
-              <span>Capturing {captureProgress} / 60 frames...</span>
+              <span className="text-primary">{captureProgress} / 60 tangkapan</span>
             ) : batch.status === 'READY' ? (
-              <span>Ready to start capture</span>
+              <span className="text-text-muted">0 / 60 tangkapan</span>
             ) : (
-              <span>Capture {captureProgress} / 60 frames completed</span>
+              <span className="text-text-primary">60 / 60 tangkapan</span>
             )}
           </div>
-          {isCapturing && (
-            <div className="text-xs font-medium text-text-muted">
-              {Math.round((captureProgress / 60) * 100)}% complete
-            </div>
-          )}
         </div>
-      </Panel>
+        
+        <div className="space-y-1.5">
+          <div className="flex gap-0.5 px-0.5">
+            {/* Phase legend row */}
+            {['pre-spray', 'build-up', 'stable', 'decay'].map(phaseKey => {
+              const phaseFrames = frames.filter(f => f.phase === phaseKey || (phaseKey === 'decay' && f.phase === 'complete'));
+              if (phaseFrames.length === 0) return null;
+              
+              const flexWidth = phaseFrames.length;
+              return (
+                <div key={phaseKey} style={{ flex: flexWidth }} className="text-[10px] font-bold uppercase tracking-wider text-text-secondary border-l border-border-default pl-1">
+                  {getPhaseName(phaseKey)}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-0.5 h-10 w-full rounded overflow-hidden bg-bg-subtle border border-border-subtle p-0.5">
+            {frames.map((f, idx) => {
+              const isCaptured = idx < captureProgress;
+              const isCurrent = idx === captureProgress && isCapturing;
+              
+              let bgColor = 'bg-border-default';
+              if (isCurrent) bgColor = 'bg-semantic-warning ring-1 ring-semantic-warning animate-pulse';
+              else if (isCaptured) bgColor = 'bg-primary';
+              
+              return (
+                <div
+                  key={f.frameIndex}
+                  title={`Tangkapan ${f.frameIndex} (${getPhaseName(f.phase)})`}
+                  className={`flex-1 ${bgColor} rounded-sm transition-colors duration-75`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -248,18 +262,22 @@ function CameraBox({ camera, captureProgress, isCapturing }: {
   isCapturing: boolean; 
 }) {
   return (
-    <Panel title={`${camera[0].toUpperCase() + camera.slice(1)} Camera`}>
-      <div className="relative aspect-video overflow-hidden rounded-sm border border-border-strong bg-subtle">
+    <div className="flex flex-col bg-surface rounded-xl overflow-hidden border border-border-default shadow-[0_4px_20px_rgba(16,42,67,0.04)]">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle bg-bg-subtle">
+        <h2 className="text-sm font-bold tracking-tight text-text-primary">
+          Kamera {camera === 'side' ? 'Samping' : 'Depan'}
+        </h2>
+      </div>
+      <div className="relative aspect-[600/340] w-full bg-surface-subtle overflow-hidden flex-1 border-t border-border-subtle">
         <Overlay camera={camera} />
         {isCapturing && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <div className="text-white text-lg font-bold">Capturing frame {captureProgress + 1}</div>
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <div className="font-mono text-2xl font-bold text-white tracking-tight">
+              FRAME <span className="text-primary">{String(captureProgress + 1).padStart(3, '0')}</span>
+            </div>
           </div>
         )}
       </div>
-      <p className="mt-2 text-xs text-text-muted">
-        {isCapturing ? `Capturing frame ${captureProgress + 1} of 60` : 'Mock capture loaded · fixture frame set'}
-      </p>
-    </Panel>
+    </div>
   );
 }
