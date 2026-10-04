@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spraybot Peta Sistem Pengujian</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div id="app">
+        <header id="top-bar">
+            <div class="title-area">
+                <div class="logo-circle">SB</div>
+                <span class="logo-text">Spraybot — Peta Sistem Pengujian</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn" id="btn-reset">Tutup Semua</button>
+                <button class="btn" id="btn-expand-all">Tampilkan Semua</button>
+                <button class="btn" id="btn-toggle-notes">Catatan</button>
+                <button class="btn btn-primary" id="btn-present">Presentasi</button>
+            </div>
+        </header>
+
+        <main id="main-area">
+            <div id="canvas-container">
+                <div id="map-world">
+                    <svg id="svg-layer"></svg>
+                    <div class="col left" id="col-left"></div>
+                    <div class="col center" id="col-center"></div>
+                    <div class="col right" id="col-right"></div>
+                </div>
+            </div>
+
+            <aside id="note-panel">
+                <div class="panel-header">
+                    <h3 id="panel-title">Detail</h3>
+                    <button class="btn-close" id="btn-close-panel" title="Tutup">✕</button>
+                </div>
+                <div class="panel-body">
+                    <p class="note-summary" id="panel-summary"></p>
+                    <ul class="note-bullets" id="panel-bullets"></ul>
+                    
+                    <div class="note-input-section">
+                        <label>Catatan Saya</label>
+                        <textarea id="note-textarea" placeholder="Tulis catatan penting terkait topik ini..."></textarea>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <footer id="presentation-bar">
+            <button class="btn-icon" id="btn-pres-prev" title="Sebelumnya (ArrowLeft)">←</button>
+            <div class="pres-info">
+                <div class="pres-title" id="pres-title">Gambaran Sistem</div>
+                <div class="pres-step" id="pres-step">01 / 07</div>
+            </div>
+            <button class="btn-icon" id="btn-pres-next" title="Selanjutnya (ArrowRight, Space)">→</button>
+            <div class="pres-divider"></div>
+            <button class="pres-close" id="btn-pres-close">Keluar</button>
+        </footer>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
