@@ -14,6 +14,7 @@ import { CaptureSelection } from '../../features/analysis/CaptureSelection';
 import { Inspector } from '../../features/analysis/Inspector';
 import { FinalAnalysisConfirmation } from '../../features/analysis/FinalAnalysisConfirmation';
 import { phaseLabel } from '../../features/analysis/utils';
+import { formatStatus } from '../../utils/formatters';
 
 // getPixelGeometry and frames pulled via simulationService port
 const frames = simulationService.getFrames();
@@ -151,15 +152,15 @@ export function BatchAnalysisPage() {
   }, [loadBatch]);
 
   if (loading) {
-    return <div className="p-4 text-sm text-text-secondary">Loading analysis...</div>;
+    return <div className="p-4 text-sm text-text-secondary">Memuat analisis...</div>;
   }
 
   if (!batch) {
     return (
       <div className="space-y-4 p-8">
-        <h1 className="text-xl font-bold text-text-primary">Batch Not Found</h1>
+        <h1 className="text-xl font-bold text-text-primary">Batch Tidak Ditemukan</h1>
         <button onClick={() => navigate('/batches')} className="text-sm font-medium text-primary hover:underline">
-          &larr; Return to Batches
+          &larr; Kembali ke Daftar Batch
         </button>
       </div>
     );
@@ -168,13 +169,13 @@ export function BatchAnalysisPage() {
   if (batch.status !== 'REVIEW_REQUIRED' && batch.status !== 'FINALIZED') {
     return (
       <div className="space-y-4 p-8">
-        <h1 className="text-xl font-bold text-text-primary">Analysis Unavailable</h1>
+        <h1 className="text-xl font-bold text-text-primary">Analisis Tidak Tersedia</h1>
         <p className="text-sm text-text-secondary">
-          Analysis is disabled for batch in lifecycle state <strong>{batch.status}</strong>. 
-          Editable analysis is only permitted when status is REVIEW_REQUIRED.
+          Analisis dinonaktifkan untuk batch dalam status siklus <strong>{formatStatus(batch.status)}</strong>. 
+          Analisis yang dapat diedit hanya diizinkan saat statusnya adalah {formatStatus('REVIEW_REQUIRED')}.
         </p>
         <button onClick={() => navigate(`/batches/${batch.id}`)} className="text-sm font-medium text-primary hover:underline">
-          &larr; Return to Batch Details
+          &larr; Kembali ke Detail Batch
         </button>
       </div>
     );
@@ -184,7 +185,7 @@ export function BatchAnalysisPage() {
   const moments = batch.captureSession?.synchronizedMoments || [];
   
   if (moments.length === 0) {
-    return <div className="p-4">No synchronized moments found in this batch.</div>;
+    return <div className="p-4">Tidak ada momen sinkron yang ditemukan dalam batch ini.</div>;
   }
 
   const currentMoment = moments[captureIndex] || moments[0];
@@ -411,87 +412,144 @@ export function BatchAnalysisPage() {
   };
 
   return (
-    <div className="analysis-workspace">
-      <div className="analysis-status-row flex items-center justify-between">
-        <div className="flex gap-4">
-          <Status tone={isStable ? 'success' : 'neutral'}>{isStable ? 'Stable phase' : phaseLabel(currentMoment.phase)}</Status>
-          {currentMoment.recommended && <Status tone="warning">Recommended capture</Status>}
-          <span>Batch: <strong className="font-mono">{batch.id}</strong></span>
-          <span>Capture: <strong className="font-mono">{currentMoment.frameIndex + 1} of {moments.length}</strong></span>
-          <span>Time: <strong className="font-mono">{currentMoment.timestampMs} ms</strong></span>
-          <span>Sync: <strong className="font-mono">{currentMoment.syncStatus} · Δ {currentMoment.timestampDeltaMs} ms</strong></span>
-          {isReadOnly && <span className="ml-4 font-bold text-blue-600">READ ONLY</span>}
+    <div className="flex flex-col h-full gap-4">
+      {/* Context Bar */}
+      <div className="flex items-center justify-between rounded-panel border border-border-default bg-surface px-4 py-3 shadow-sm text-sm">
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-2 font-mono font-bold text-text-primary">
+            Batch: {batch.id}
+          </div>
+          <div className="h-4 w-px bg-border-strong hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <span className="text-text-muted font-mono font-bold text-[11px] uppercase tracking-wider">Tangkapan</span>
+            <span className="font-mono font-bold text-text-primary">{currentMoment.frameIndex + 1} / {moments.length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-text-muted font-mono font-bold text-[11px] uppercase tracking-wider">Waktu</span>
+            <span className="font-mono font-bold text-text-primary">{currentMoment.timestampMs} ms</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-text-muted font-mono font-bold text-[11px] uppercase tracking-wider">Sinkron</span>
+            <span className="font-mono font-bold text-text-primary">SINKRONISASI · Δ {currentMoment.timestampDeltaMs} ms</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Status tone={isStable ? 'success' : 'neutral'}>{isStable ? 'Fase Stabil' : phaseLabel(currentMoment.phase)}</Status>
+          </div>
+          {currentMoment.recommended && (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-semantic-warning">
+              <span className="h-2 w-2 rounded-full bg-semantic-warning" /> Direkomendasikan
+            </div>
+          )}
+          {isReadOnly && (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+              <span className="h-2 w-2 rounded-full bg-primary" /> Hanya Baca
+            </div>
+          )}
         </div>
-        <button onClick={() => navigate(`/batches/${batch.id}`)} className="text-xs font-semibold hover:underline">
-          &larr; Back to Batch Details
+        <button onClick={() => navigate(`/batches/${batch.id}`)} className="text-xs font-semibold hover:text-primary transition-colors text-text-secondary flex items-center gap-1 shrink-0">
+          <span>&larr;</span> Kembali ke Detail
         </button>
       </div>
 
-      <div className="analysis-shell">
-        <div className="surface-panel analysis-panel">
-          <div className="analysis-toolbar">
-            {(['side', 'front'] as CameraType[]).map(c => {
-              const active = camera === c;
-              return (
-                <button key={c} onClick={() => setCamera(c)} aria-label={`${c} camera`} className={`analysis-tab ${active ? 'analysis-tab-active' : ''}`}>
-                  <span className="analysis-tab-dot" style={{ background: cameraCopy[c].accent }} />
-                  <span>{cameraCopy[c].title}</span>
-                </button>
-              );
-            })}
-            <div className="mode-switch">
-              {(['Original', 'Mask', 'Overlay'] as ViewMode[]).map(m => (
-                <button key={m} onClick={() => setMode(m)} className={mode === m ? 'mode-active' : ''}>{m}</button>
-              ))}
+      <div className="flex-1 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] items-start">
+        {/* Technical Workbench */}
+        <div className="flex flex-col bg-workbench rounded-panel overflow-hidden border border-workbench-border shadow-sm">
+          {/* Toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 bg-workbench-raised px-4 py-2.5 border-b border-workbench-border">
+            <div className="flex gap-2">
+              {(['side', 'front'] as CameraType[]).map(c => {
+                const active = camera === c;
+                return (
+                  <button 
+                    key={c} 
+                    onClick={() => setCamera(c)} 
+                    aria-label={`kamera ${c === 'side' ? 'samping' : 'depan'}`} 
+                    className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors ${active ? 'bg-workbench border border-workbench-border text-white shadow-sm' : 'text-workbench-muted hover:text-white hover:bg-workbench'}`}
+                  >
+                    <span className={`h-2 w-2 rounded-full ${c === 'side' ? 'bg-camera-side' : 'bg-camera-front'}`} />
+                    {cameraCopy[c].title}
+                  </button>
+                );
+              })}
             </div>
-          </div>
-
-          <div className="analysis-viewport">
-            <div className="analysis-frame">
-              <div className="analysis-frame-label">
-                <span>CAM {camera.toUpperCase()}</span>
-                <span>FRAME #{String(currentFrame.frameIndex).padStart(3, '0')}</span>
-                <span>{currentFrame.timestampMs} ms</span>
-                <span>{mode.toUpperCase()}</span>
-              </div>
-              <AnalysisOverlay
-                camera={camera}
-                mode={mode}
-                frame={frames[currentMoment.frameIndex] || frames[0]} // Using legacy global 'frames' mapped by index
-                calibration={activeCalibrations[camera]}
-                sideGeometry={displaySideGeometry}
-                frontGeometry={displayFrontGeometry}
-                sideMeasurements={sideMeasurements}
-                frontMeasurements={frontMeasurements}
-              />
-              {isCalibrating && <CalibrationReferenceOverlay calibration={workingCalibrations[camera]} onChange={handleWorkingCalibrationChange} />}
-              {isEditingMeasurement && (
-                <MeasurementCorrectionOverlay
-                  camera={camera}
-                  activeSideTool={activeSideTool}
-                  autoSideGeometry={currentGeometry.side}
-                  workingSideGeometry={workingSideGeometry ?? savedSideGeometry}
-                  autoFrontGeometry={currentGeometry.front}
-                  workingFrontGeometry={workingFrontGeometry ?? savedFrontGeometry}
-                  onSideChange={handleWorkingSideGeometryChange}
-                  onFrontChange={handleWorkingFrontGeometryChange}
-                />
+            <div className="flex items-center gap-4">
+              {(isEditingMeasurement || isCalibrating) && (
+                <div className="hidden xl:flex items-center gap-3 text-[10px] font-mono text-workbench-muted">
+                  <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-[#1d8fff]" /> Biru · Otomatis</span>
+                  <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-[#ff8c00]" /> Oranye · Koreksi aktif</span>
+                  <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-semantic-warning" /> Kuning · Hasil diterapkan</span>
+                </div>
               )}
+              <div className="flex items-center p-0.5 rounded-lg bg-[#080f18] border border-workbench-border">
+                {(['Original', 'Mask', 'Overlay'] as ViewMode[]).map(m => {
+                  const labelMap: Record<ViewMode, string> = {
+                    Original: 'Citra Asli',
+                    Mask: 'Mask',
+                    Overlay: 'Overlay',
+                  };
+                  return (
+                    <button 
+                      key={m} 
+                      onClick={() => setMode(m)} 
+                      className={`rounded-md px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all ${mode === m ? 'bg-workbench-raised text-white shadow-sm border border-workbench-border' : 'text-workbench-muted hover:text-white'}`}
+                    >
+                      {labelMap[m]}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          <Timeline
-            moments={moments}
-            selectedIndex={captureIndex}
-            onSelect={idx => {
-              if (isCalibrating) handleCancelCalibration();
-              if (isEditingMeasurement) handleCancelMeasurementEdit();
-              setCaptureIndex(idx);
-            }}
-          />
+          <div className="analysis-viewport bg-[#080f18] relative aspect-[2/1] w-full flex items-center justify-center border-b border-workbench-border">
+            <div className="absolute top-3 left-3 z-10 text-[11px] font-mono font-bold text-workbench-text tracking-wide bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded border border-workbench-border/60 flex items-center gap-2 shadow-sm">
+              <span className="text-white uppercase">{camera === 'side' ? 'SAMPING' : 'DEPAN'}</span>
+              <span className="text-workbench-muted">•</span>
+              <span>#{String(currentFrame.frameIndex + 1).padStart(3, '0')}</span>
+              <span className="text-workbench-muted">•</span>
+              <span>{currentFrame.timestampMs} ms</span>
+              <span className="text-workbench-muted">•</span>
+              <span className="text-primary">{mode === 'Original' ? 'Citra Asli' : mode}</span>
+            </div>
+            <AnalysisOverlay
+              camera={camera}
+              mode={mode}
+              frame={frames[currentMoment.frameIndex] || frames[0]} // Using legacy global 'frames' mapped by index
+              calibration={activeCalibrations[camera]}
+              sideGeometry={displaySideGeometry}
+              frontGeometry={displayFrontGeometry}
+              sideMeasurements={sideMeasurements}
+              frontMeasurements={frontMeasurements}
+            />
+            {isCalibrating && <CalibrationReferenceOverlay calibration={workingCalibrations[camera]} onChange={handleWorkingCalibrationChange} />}
+            {isEditingMeasurement && (
+              <MeasurementCorrectionOverlay
+                camera={camera}
+                activeSideTool={activeSideTool}
+                autoSideGeometry={currentGeometry.side}
+                workingSideGeometry={workingSideGeometry ?? savedSideGeometry}
+                autoFrontGeometry={currentGeometry.front}
+                workingFrontGeometry={workingFrontGeometry ?? savedFrontGeometry}
+                onSideChange={handleWorkingSideGeometryChange}
+                onFrontChange={handleWorkingFrontGeometryChange}
+              />
+            )}
+          </div>
+
+          <div className="px-4 py-3 bg-workbench-raised">
+            <Timeline
+              moments={moments}
+              selectedIndex={captureIndex}
+              onSelect={idx => {
+                if (isCalibrating) handleCancelCalibration();
+                if (isEditingMeasurement) handleCancelMeasurementEdit();
+                setCaptureIndex(idx);
+              }}
+            />
+          </div>
         </div>
 
-        <aside className="analysis-sidebar">
+        <aside className="inspector-panel">
           <Inspector
             camera={camera}
             sideMeasurements={sideMeasurements}
