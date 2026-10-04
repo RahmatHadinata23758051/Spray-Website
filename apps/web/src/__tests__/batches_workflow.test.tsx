@@ -22,13 +22,13 @@ describe('Phase D1 - Canonical Batch Workflow & Persistence', () => {
 
     // Verify Batches heading
     await waitFor(() => {
-      expect(screen.getAllByRole('heading', { name: 'Batches' }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('heading', { name: 'Batch' }).length).toBeGreaterThan(0);
     });
 
     // Check table headers
-    expect(screen.getByText('Batch ID')).toBeInTheDocument();
-    expect(screen.getByText('Sample ID')).toBeInTheDocument();
-    expect(screen.getByText('Primary Capture')).toBeInTheDocument();
+    expect(screen.getByText('ID Batch')).toBeInTheDocument();
+    expect(screen.getByText('ID Sampel')).toBeInTheDocument();
+    expect(screen.getByText('Tangkapan Utama')).toBeInTheDocument();
   });
 
   it('3. /batches/new renders New Batch form with product and recipe selection', async () => {
@@ -39,15 +39,15 @@ describe('Phase D1 - Canonical Batch Workflow & Persistence', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getAllByRole('heading', { name: 'New Batch' }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('heading', { name: 'Batch Baru' }).length).toBeGreaterThan(0);
     });
 
-    expect(screen.getByText('Product Identity')).toBeInTheDocument();
-    expect(screen.getByText('Requested Test Parameters')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Create Batch Draft' })).toBeInTheDocument();
+    expect(screen.getByText('Identitas Produk')).toBeInTheDocument();
+    expect(screen.getByText('Parameter Pengujian Diminta')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Buat Draf Batch' })).toBeInTheDocument();
   });
 
-  it('4, 5, 6, 7, 10, 11. Creating Batch produces DRAFT with generated Batch ID, Sample ID on prepare, session operator, and persists Product Lot', async () => {
+  it('4, 5, 6, 7, 10, 11. Creating Batch produces DRAFT with generated ID Batch, ID Sampel on prepare, session operator, and persists Product Lot', async () => {
     const products = await productRepository.listProducts();
     const product = products[0];
     const recipes = await productRepository.listRecipes(product.id);
@@ -72,7 +72,7 @@ describe('Phase D1 - Canonical Batch Workflow & Persistence', () => {
 
     // 4. Status is DRAFT
     expect(draft.status).toBe('DRAFT');
-    // 5. Batch ID is generated
+    // 5. ID Batch is generated
     expect(draft.id).toMatch(/^BAT-/);
     // 7. Operator is bound to session identity
     expect(draft.setupDraft?.operatorName).toBe('Nadia Putri');
@@ -96,7 +96,7 @@ describe('Phase D1 - Canonical Batch Workflow & Persistence', () => {
     const ready = await batchRepository.prepareBatch(draft.id);
     expect(ready.status).toBe('READY');
 
-    // 6. Sample ID generated upon prepare
+    // 6. ID Sampel generated upon prepare
     expect(ready.setupSnapshot?.sampleId).toMatch(/^SMP-/);
 
     // 15. READY contains frozen BatchSetupSnapshot
@@ -147,7 +147,7 @@ describe('Phase D1 - Canonical Batch Workflow & Persistence', () => {
     await productRepository.updateRecipe(recipe.id, { forceSetpointN: recipe.forceSetpointN });
   });
 
-  it('19 & 20. /batches/:id renders Batch Detail and unknown ID shows Batch Not Found', async () => {
+  it('19 & 20. /batches/:id renders Batch Detail and unknown ID shows Batch Tidak Ditemukan', async () => {
     // Unknown ID
     render(
       <MemoryRouter initialEntries={['/batches/DOES-NOT-EXIST']}>
@@ -156,8 +156,8 @@ describe('Phase D1 - Canonical Batch Workflow & Persistence', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Batch Not Found' })).toBeInTheDocument();
-      expect(screen.getByText(/does not exist or has been removed/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Batch Tidak Ditemukan' })).toBeInTheDocument();
+      expect(screen.getByText(/tidak ada atau telah dihapus/i)).toBeInTheDocument();
     });
   });
 
@@ -169,7 +169,7 @@ describe('Phase D1 - Canonical Batch Workflow & Persistence', () => {
     );
 
     // Sidebar navigation check
-    expect(screen.getByRole('button', { name: 'Batches' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Batch' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'New Test' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'History' })).toBeNull();
   });

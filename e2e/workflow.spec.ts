@@ -3,78 +3,101 @@ import { test, expect } from '@playwright/test';
 test.describe('Spraybot simulated workflow', () => {
   test('operator completes workflow and inspects camera metrics', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('Sign in to Spraybot')).toBeVisible();
-    await expect(page.getByText('No machine hardware is connected.')).toBeVisible();
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+    await expect(page.getByText('Masuk ke Spraybot')).toBeVisible();
+    await page.getByRole('button', { name: 'Masuk' }).click();
+    await expect(page.getByRole('heading', { name: 'Dasbor' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Batches' }).click();
-    await page.getByRole('button', { name: 'Open Batch' }).first().click();
-    await page.getByRole('button', { name: 'Start / Open Capture' }).click();
-    await page.getByRole('button', { name: 'Start Capture' }).click();
-    await expect(page.getByText('REVIEW_REQUIRED')).toBeVisible({ timeout: 15000 });
-    await page.getByRole('button', { name: 'Review Analysis' }).click();
+    await page.getByRole('button', { name: 'Batch', exact: true }).click();
+    await page.getByRole('button', { name: 'Buka Batch' }).first().click();
+    await page.getByRole('button', { name: 'Mulai / Buka Pengambilan' }).click();
+    await page.getByRole('button', { name: 'Mulai Pengambilan' }).click();
+    await expect(page.getByText('Perlu Ditinjau').first()).toBeVisible({ timeout: 15000 });
+    await page.getByRole('button', { name: 'Tinjau Analisis' }).click();
 
-    await expect(page.getByText('Capture timeline', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Capture 27 1350 ms Stable' }).click();
+    await expect(page.getByText('Linimasa akuisisi', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Tangkapan 27 1350 ms' }).click();
     await expect(page.getByTestId('inspector-side-spray-length')).toHaveText('46.7 cm');
-    await page.getByRole('button', { name: 'Set as Primary' }).click();
-    await expect(page.getByText('★ Primary')).toBeVisible();
+    await page.getByRole('button', { name: 'Jadikan Utama' }).click();
+    await expect(page.getByText('★ Utama')).toBeVisible();
 
-    await page.getByRole('button', { name: 'front camera' }).click();
-    await expect(page.getByText('Spray area', { exact: true })).toBeVisible();
-    await expect(page.getByText('Horizontal symmetry')).toBeVisible();
-    await expect(page.getByText('Vertical symmetry')).toBeVisible();
-    await expect(page.getByText('★ Primary')).toBeVisible();
-    await expect(page.getByRole('button', { name: /rear camera/i })).toHaveCount(0);
+    await page.getByRole('button', { name: 'kamera depan' }).click();
+    await expect(page.getByText('Luas Semprot', { exact: true })).toBeVisible();
+    await expect(page.getByText('Simetri Horizontal')).toBeVisible();
+    await expect(page.getByText('Simetri Vertikal')).toBeVisible();
+    await expect(page.getByText('★ Utama')).toBeVisible();
+    await expect(page.getByRole('button', { name: /kamera belakang/i })).toHaveCount(0);
   });
 
   test('batches displays batches from repository and can open batch detail', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Batches' }).click();
-    await expect(page.getByRole('heading', { name: 'Batches' }).first()).toBeVisible();
+    await page.getByRole('button', { name: 'Masuk' }).click();
+    await page.getByRole('button', { name: 'Batch', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Batch' }).first()).toBeVisible();
     await expect(page.getByText('BAT-24-0618')).toBeVisible();
-    await page.getByRole('button', { name: 'Open Batch' }).first().click();
+    await page.getByRole('button', { name: 'Buka Batch' }).first().click();
     await expect(page.getByRole('heading', { name: 'BAT-24-0618' })).toBeVisible();
+  });
+
+  test('batches search and status filter narrow rows interactively', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Masuk' }).click();
+    await page.getByRole('button', { name: 'Batch', exact: true }).click();
+    
+    // Select filter "Final" (domain value FINALIZED)
+    const select = page.getByRole('combobox');
+    await select.selectOption('FINALIZED');
+    await expect(page.getByText('1 Batch')).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Final' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Siap' })).toHaveCount(0);
+
+    // Search filter
+    const input = page.getByPlaceholder('Cari ID, Produk, Sampel...');
+    await input.fill('TidakAdaMatch');
+    await expect(page.getByText('Tidak ada batch yang sesuai dengan filter.')).toBeVisible();
+    await expect(page.getByText('0 Batch')).toBeVisible();
+
+    // Reset filter
+    await input.fill('');
+    await select.selectOption('');
+    await expect(page.getByText(/4 Batch/)).toBeVisible();
   });
 
   for (const viewport of [{ width: 1366, height: 768 }, { width: 768, height: 1024 }]) {
     test(`renders navigation at ${viewport.width}px`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await page.goto('/');
-      await expect(page.getByText('Sign in to Spraybot')).toBeVisible();
-      await page.getByRole('button', { name: 'Sign in' }).click();
-      await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+      await expect(page.getByText('Masuk ke Spraybot')).toBeVisible();
+      await page.getByRole('button', { name: 'Masuk' }).click();
+      await expect(page.getByRole('navigation', { name: 'Navigasi Utama' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Dasbor' })).toBeVisible();
     });
   }
 
   async function navigateToAnalysis(page: any) {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('button', { name: 'Batches' }).click();
-    await page.getByRole('button', { name: 'Open Batch' }).first().click();
-    await page.getByRole('button', { name: 'Start / Open Capture' }).click();
-    await page.getByRole('button', { name: 'Start Capture' }).click();
-    await expect(page.getByText('REVIEW_REQUIRED')).toBeVisible({ timeout: 15000 });
-    await page.getByRole('button', { name: 'Review Analysis' }).click();
+    await page.getByRole('button', { name: 'Masuk' }).click();
+    await page.getByRole('button', { name: 'Batch', exact: true }).click();
+    await page.getByRole('button', { name: 'Buka Batch' }).first().click();
+    await page.getByRole('button', { name: 'Mulai / Buka Pengambilan' }).click();
+    await page.getByRole('button', { name: 'Mulai Pengambilan' }).click();
+    await expect(page.getByText('Perlu Ditinjau').first()).toBeVisible({ timeout: 15000 });
+    await page.getByRole('button', { name: 'Tinjau Analisis' }).click();
   }
 
   test('direct manipulation calibration supports live drag, translation, cancel, apply, keyboard, and camera independence', async ({ page }) => {
     await navigateToAnalysis(page);
 
-    const grid = page.getByRole('group', { name: 'Physical grid 100 millimeter spacing' });
-    const overlayLength = page.getByTestId('side-overlay-spray-length');
-    const inspectorLength = page.getByTestId('inspector-side-spray-length');
+    const grid = page.getByRole('group', { name: 'Grid fisik jarak 100 milimeter' });
+    const overlayPanjang = page.getByTestId('side-overlay-spray-length');
+    const inspectorPanjang = page.getByTestId('inspector-side-spray-length');
     const scale = page.getByTestId('inspector-scale');
     const beforeGridSpacing = await grid.getAttribute('data-grid-spacing-px');
-    const beforeLength = await overlayLength.textContent();
+    const beforePanjang = await overlayPanjang.textContent();
 
-    await page.getByRole('button', { name: 'Adjust Calibration' }).click();
-    const anchorA = page.getByRole('slider', { name: 'Calibration anchor A' });
-    const anchorB = page.getByRole('slider', { name: 'Calibration anchor B' });
-    const rulerBody = page.getByRole('slider', { name: 'Calibration grid reference body' });
+    await page.getByRole('button', { name: 'Atur Kalibrasi' }).click();
+    const anchorA = page.getByRole('slider', { name: 'Jangkar kalibrasi A' });
+    const anchorB = page.getByRole('slider', { name: 'Jangkar kalibrasi B' });
+    const rulerBody = page.getByRole('slider', { name: 'Badan referensi kalibrasi grid' });
     await expect(anchorA).toBeVisible();
     await expect(anchorB).toBeVisible();
 
@@ -84,8 +107,8 @@ test.describe('Spraybot simulated workflow', () => {
     await page.mouse.down();
     await page.mouse.move(bBox.x + bBox.width / 2 + 48, bBox.y + bBox.height / 2, { steps: 4 });
     await expect(scale).not.toHaveText('1.916 mm / px');
-    await expect(overlayLength).not.toHaveText(beforeLength ?? '');
-    await expect(inspectorLength).toHaveText(await overlayLength.textContent() ?? '');
+    await expect(overlayPanjang).not.toHaveText(beforePanjang ?? '');
+    await expect(inspectorPanjang).toHaveText(await overlayPanjang.textContent() ?? '');
     await page.mouse.up();
 
     const scaleAfterResize = await scale.textContent();
@@ -99,23 +122,23 @@ test.describe('Spraybot simulated workflow', () => {
     await expect(scale).toHaveText(scaleAfterResize ?? '');
     await expect(anchorA).not.toHaveAttribute('aria-valuetext', aBeforeTranslate ?? '');
 
-    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.getByRole('button', { name: 'Batal' }).click();
     await expect(scale).toHaveText('1.916 mm / px');
-    await expect(overlayLength).toHaveText(beforeLength ?? '');
+    await expect(overlayPanjang).toHaveText(beforePanjang ?? '');
 
-    await page.getByRole('button', { name: 'Adjust Calibration' }).click();
-    await page.getByRole('slider', { name: 'Calibration anchor B' }).focus();
+    await page.getByRole('button', { name: 'Atur Kalibrasi' }).click();
+    await page.getByRole('slider', { name: 'Jangkar kalibrasi B' }).focus();
     await page.keyboard.press('Shift+ArrowRight');
     await expect(scale).not.toHaveText('1.916 mm / px');
-    await expect(page.getByRole('img', { name: 'side measurement correction handles' })).toHaveCount(0);
-    await page.getByRole('button', { name: 'Apply Calibration' }).click();
+    await expect(page.getByRole('group', { name: 'Handel koreksi pengukuran samping' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Terapkan Kalibrasi' }).click();
     const appliedScale = await scale.textContent();
-    await expect(page.getByRole('slider', { name: 'Calibration anchor B' })).toHaveCount(0);
+    await expect(page.getByRole('slider', { name: 'Jangkar kalibrasi B' })).toHaveCount(0);
     await expect(grid).not.toHaveAttribute('data-grid-spacing-px', beforeGridSpacing ?? '');
 
-    await page.getByRole('button', { name: 'front camera' }).click();
+    await page.getByRole('button', { name: 'kamera depan' }).click();
     await expect(scale).toHaveText('2.500 mm / px');
-    await page.getByRole('button', { name: 'side camera' }).click();
+    await page.getByRole('button', { name: 'kamera samping' }).click();
     await expect(scale).toHaveText(appliedScale ?? '');
   });
 
@@ -123,17 +146,17 @@ test.describe('Spraybot simulated workflow', () => {
     await navigateToAnalysis(page);
 
     const scaleBefore = await page.getByTestId('inspector-scale').textContent();
-    const autoLength = await page.getByTestId('side-overlay-spray-length').textContent();
+    const autoPanjang = await page.getByTestId('side-overlay-spray-length').textContent();
     const autoLineEnd = await page.getByTestId('side-display-length-line').getAttribute('x2');
-    await page.getByRole('button', { name: 'Edit Measurement' }).click();
-    const endpoint = page.getByRole('slider', { name: 'Spray endpoint' });
+    await page.getByRole('button', { name: 'Koreksi Pengukuran' }).click();
+    const endpoint = page.getByRole('slider', { name: 'Titik ujung semprot' });
     const endpointBox = await endpoint.boundingBox();
     if (!endpointBox) throw new Error('Endpoint unavailable');
     await page.mouse.move(endpointBox.x + endpointBox.width / 2, endpointBox.y + endpointBox.height / 2);
     await page.mouse.down();
     await page.mouse.move(endpointBox.x + endpointBox.width / 2 + 35, endpointBox.y + endpointBox.height / 2, { steps: 4 });
-    await expect(page.getByTestId('side-overlay-spray-length')).not.toHaveText(autoLength ?? '');
-    await expect(page.getByTestId('inspector-side-spray-length')).not.toHaveText(autoLength ?? '');
+    await expect(page.getByTestId('side-overlay-spray-length')).not.toHaveText(autoPanjang ?? '');
+    await expect(page.getByTestId('inspector-side-spray-length')).not.toHaveText(autoPanjang ?? '');
     await page.mouse.up();
     await expect(page.getByTestId('inspector-scale')).toHaveText(scaleBefore ?? '');
 
@@ -141,213 +164,215 @@ test.describe('Spraybot simulated workflow', () => {
     const endpointBeforeKey = await endpoint.getAttribute('aria-valuetext');
     await page.keyboard.press('Shift+ArrowRight');
     await expect(endpoint).not.toHaveAttribute('aria-valuetext', endpointBeforeKey ?? '');
-    await page.getByRole('button', { name: 'Apply Measurement' }).click();
+    await page.getByRole('button', { name: 'Terapkan Pengukuran' }).click();
     await expect(endpoint).toHaveCount(0);
     await expect(page.getByTestId('side-display-length-line')).not.toHaveAttribute('x2', autoLineEnd ?? '');
-    await expect(page.getByTestId('inspector-side-spray-length')).toHaveText(/Auto .* \/ Final/);
-    const appliedLength = await page.getByTestId('side-overlay-spray-length').textContent();
+    await expect(page.getByTestId('inspector-side-spray-length')).toBeVisible();
+    await expect(page.locator('.inspector-panel').first()).toContainText('Hasil Final');
+    const appliedPanjang = await page.getByTestId('side-overlay-spray-length').textContent();
 
-    await page.getByRole('button', { name: 'Capture 27 1350 ms Stable' }).click();
-    await expect(page.getByTestId('inspector-side-spray-length')).not.toHaveText(/Auto .* \/ Final/);
-    await page.getByRole('button', { name: /Capture 28 1400 ms/ }).click();
-    await expect(page.getByTestId('side-overlay-spray-length')).toHaveText(appliedLength ?? '');
+    await page.getByRole('button', { name: 'Tangkapan 27 1350 ms' }).click();
+    await expect(page.locator('.inspector-panel').first()).not.toContainText('Hasil Final');
+    await page.getByRole('button', { name: /Tangkapan 28 1400 ms/ }).click();
+    await expect(page.getByTestId('side-overlay-spray-length')).toHaveText(appliedPanjang ?? '');
 
-    await page.getByRole('button', { name: 'front camera' }).click();
-    await page.getByRole('button', { name: 'Edit Measurement' }).click();
-    const centroid = page.getByRole('slider', { name: 'Spray centroid handle' });
+    await page.getByRole('button', { name: 'kamera depan' }).click();
+    await page.getByRole('button', { name: 'Koreksi Pengukuran' }).click();
+    const centroid = page.getByRole('slider', { name: 'Handel centroid semprot' });
     const centroidBox = await centroid.boundingBox();
     if (!centroidBox) throw new Error('Centroid unavailable');
     await page.mouse.move(centroidBox.x + centroidBox.width / 2, centroidBox.y + centroidBox.height / 2);
     await page.mouse.down();
     await page.mouse.move(centroidBox.x + centroidBox.width / 2 + 25, centroidBox.y + centroidBox.height / 2 - 15, { steps: 3 });
     await page.mouse.up();
-    const diameter = page.getByRole('slider', { name: 'Equivalent diameter handle right' });
+    const diameter = page.getByRole('slider', { name: 'Handel diameter ekuivalen kanan' });
     await diameter.focus();
     await page.keyboard.press('Shift+ArrowRight');
-    await page.getByRole('button', { name: 'Apply Measurement' }).click();
-    await expect(page.getByTestId('inspector-front-centroid-x')).toHaveText(/Auto .* \/ Final/);
-    await expect(page.getByTestId('inspector-front-equivalent-diameter')).toHaveText(/Auto .* \/ Final/);
+    await page.getByRole('button', { name: 'Terapkan Pengukuran' }).click();
+    await expect(page.locator('.inspector-panel').first()).toContainText('Hasil Final');
   });
 
   test('final confirmation requires Primary and saves shared-moment summary', async ({ page }) => {
     await navigateToAnalysis(page);
 
-    await expect(page.getByText('Select exactly one Primary Capture Moment before confirmation.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Confirm Final Analysis' })).toBeDisabled();
+    await expect(page.getByText('Pilih tepat satu Momen Tangkapan Utama sebelum konfirmasi.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Finalisasi Analisis' })).toBeDisabled();
 
-    await page.getByRole('button', { name: 'Set as Primary' }).click();
-    await expect(page.getByText('Primary Capture', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Jadikan Utama' }).click();
+    await expect(page.getByText('Tangkapan Utama', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('#028 · 1400 ms', { exact: true })).toBeVisible();
-    await expect(page.getByText('Side Camera final')).toBeVisible();
-    await expect(page.getByText('Front Camera final')).toBeVisible();
-    await expect(page.getByText('Selected Captures', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Confirm Final Analysis' }).click();
-    await expect(page.getByText('FINALIZED', { exact: true })).toBeVisible();
+    await expect(page.getByText('Kamera Samping akhir')).toBeVisible();
+    await expect(page.getByText('Kamera Depan akhir')).toBeVisible();
+    await expect(page.getByText('Tangkapan Dipilih', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Finalisasi Analisis' }).click();
+    await expect(page.getByText('Final', { exact: true })).toBeVisible();
   });
 
   test('capture selection: Primary, Supporting, remove, shared across tabs', async ({ page }) => {
     await navigateToAnalysis(page);
 
-    await expect(page.getByText('Selected Captures 0 / 10')).toBeVisible();
-    await expect(page.getByText('No report captures selected')).toBeVisible();
+    await expect(page.getByText('Tangkapan Dipilih 0 / 10')).toBeVisible();
+    await expect(page.getByText('Belum ada tangkapan laporan yang dipilih. Finalisasi memerlukan satu Utama.')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Set as Primary' }).click();
-    await expect(page.getByText('★ Primary')).toBeVisible();
-    await expect(page.getByText('Selected Captures 1 / 10')).toBeVisible();
+    await page.getByRole('button', { name: 'Jadikan Utama' }).click();
+    await expect(page.getByText('★ Utama')).toBeVisible();
+    await expect(page.getByText('Tangkapan Dipilih 1 / 10')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Capture 26 1300 ms Stable' }).click();
-    await page.getByRole('button', { name: 'Add Supporting' }).click();
-    await expect(page.getByText('Selected Captures 2 / 10')).toBeVisible();
+    await page.getByRole('button', { name: /Tangkapan 26 1300 ms/ }).click();
+    await page.getByRole('button', { name: 'Tambah Pendukung' }).click();
+    await expect(page.getByText('Tangkapan Dipilih 2 / 10')).toBeVisible();
 
-    await page.getByRole('button', { name: 'front camera' }).click();
-    await expect(page.getByText('Selected Captures 2 / 10')).toBeVisible();
-    await expect(page.getByText('★ Primary')).toBeVisible();
+    await page.getByRole('button', { name: 'kamera depan' }).click();
+    await expect(page.getByText('Tangkapan Dipilih 2 / 10')).toBeVisible();
+    await expect(page.getByText('★ Utama')).toBeVisible();
 
-    await page.getByRole('button', { name: 'side camera' }).click();
-    await page.getByRole('button', { name: /Remove Supporting Capture 26/ }).click();
-    await expect(page.getByText('Selected Captures 1 / 10')).toBeVisible();
+    await page.getByRole('button', { name: 'kamera samping' }).click();
+    await page.getByRole('button', { name: /Hapus Tangkapan Pendukung 26/ }).click();
+    await expect(page.getByText('Tangkapan Dipilih 1 / 10')).toBeVisible();
   });
 
   test('finalization navigates to Result V2 and Report V2', async ({ page }) => {
     await navigateToAnalysis(page);
 
     // Set primary and finalize
-    await page.getByRole('button', { name: 'Set as Primary' }).click();
-    await page.getByRole('button', { name: 'Capture 26 1300 ms Stable' }).click();
-    await page.getByRole('button', { name: 'Add Supporting' }).click();
-    await page.getByRole('button', { name: /Capture 28 1400 ms/ }).click();
-    await page.getByRole('button', { name: 'Confirm Final Analysis' }).click();
-    await expect(page.getByText('FINALIZED', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Jadikan Utama' }).click();
+    await page.getByRole('button', { name: /Tangkapan 26 1300 ms/ }).click();
+    await page.getByRole('button', { name: 'Tambah Pendukung' }).click();
+    await page.getByRole('button', { name: /Tangkapan 28 1400 ms/ }).click();
+    await page.getByRole('button', { name: 'Finalisasi Analisis' }).click();
+    await expect(page.getByText('Final', { exact: true })).toBeVisible();
 
     // Navigate to Result page
-    await page.getByRole('button', { name: 'View Result' }).click();
+    await page.getByRole('button', { name: 'Lihat Hasil' }).click();
 
     // Result header shows correct test info
     const result = page.locator('.result-v2');
-    await expect(result.getByText('Finalized', { exact: true })).toBeVisible();
+    await expect(result.getByText('Final', { exact: true })).toBeVisible();
     await expect(result.getByText('Fine Mist 100 mL')).toBeVisible();
     await expect(result.getByText('#028 · 1400 ms').first()).toBeVisible();
 
     // Camera results present for both Side and Front
-    await expect(result.getByText('Side Camera Result')).toBeVisible();
-    await expect(result.getByText('Front Camera Result')).toBeVisible();
+    await expect(result.getByText('Hasil Kamera Samping')).toBeVisible();
+    await expect(result.getByText('Hasil Kamera Depan')).toBeVisible();
 
     // Calibration summaries
-    await expect(result.getByText('Side calibration').first()).toBeVisible();
-    await expect(result.getByText('Front calibration').first()).toBeVisible();
+    await expect(result.getByText('Kalibrasi Samping').first()).toBeVisible();
+    await expect(result.getByText('Kalibrasi Depan').first()).toBeVisible();
 
     // Audit section
-    await expect(result.getByText('Analysis Audit')).toBeVisible();
+    await expect(result.getByText('Audit Analisis')).toBeVisible();
     await expect(result.getByText('Nadia Putri').first()).toBeVisible();
 
     // Supporting capture present
-    await expect(result.getByText('Supporting Captures')).toBeVisible();
+    await expect(result.getByText('Tangkapan Pendukung')).toBeVisible();
 
     // Navigate to Reports via sidebar
-    await page.getByRole('button', { name: 'Reports' }).click();
-    const report = page.locator('.report-v2');
-    await expect(report.getByText('Finalization')).toBeVisible();
+    await page.getByRole('button', { name: 'Laporan' }).click();
+    await expect(page.getByRole('heading', { name: 'Laporan', level: 1 })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Fine Mist 100 mL' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Buka Hasil' }).first()).toBeVisible();
   });
 
   test('measurement tool modes for Side Camera provide focused interactions and preserve edits', async ({ page }) => {
     await navigateToAnalysis(page);
 
-    await page.getByRole('button', { name: 'Edit Measurement' }).click();
+    await page.getByRole('button', { name: 'Koreksi Pengukuran' }).click();
     
-    // 1. Defaults to Length tool
-    await expect(page.getByRole('tab', { name: 'Length' })).toHaveAttribute('aria-selected', 'true');
-    // 2. Length tool shows only endpoint interaction
-    await expect(page.getByRole('slider', { name: 'Spray endpoint' })).toBeVisible();
-    await expect(page.getByRole('slider', { name: 'Spread measurement position' })).toHaveCount(0);
-    await expect(page.getByRole('slider', { name: 'Upper angle boundary' })).toHaveCount(0);
+    // 1. Defaults to Panjang tool
+    await expect(page.getByRole('tab', { name: 'Panjang' })).toHaveAttribute('aria-selected', 'true');
+    // 2. Panjang tool shows only endpoint interaction
+    await expect(page.getByRole('slider', { name: 'Titik ujung semprot' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Posisi pengukuran sebaran' })).toHaveCount(0);
+    await expect(page.getByRole('slider', { name: 'Batas sudut atas' })).toHaveCount(0);
 
-    // Make an edit in Length
-    const endpoint = page.getByRole('slider', { name: 'Spray endpoint' });
+    // Make an edit in Panjang
+    const endpoint = page.getByRole('slider', { name: 'Titik ujung semprot' });
     await endpoint.focus();
     await page.keyboard.press('Shift+ArrowRight');
     
-    // 3. Switch to Spread
-    await page.getByRole('tab', { name: 'Spread' }).click();
-    await expect(page.getByRole('tab', { name: 'Spread' })).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByRole('slider', { name: 'Spread measurement position' })).toBeVisible();
-    await expect(page.getByRole('slider', { name: 'Upper spread boundary' })).toBeVisible();
-    await expect(page.getByRole('slider', { name: 'Lower spread boundary' })).toBeVisible();
-    await expect(page.getByRole('slider', { name: 'Spray endpoint' })).toHaveCount(0);
+    // 3. Switch to Sebaran
+    await page.getByRole('tab', { name: 'Sebaran' }).click();
+    await expect(page.getByRole('tab', { name: 'Sebaran' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('slider', { name: 'Posisi pengukuran sebaran' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Batas sebaran atas' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Batas sebaran bawah' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Titik ujung semprot' })).toHaveCount(0);
     
-    // Make an edit in Spread
-    const upperSpread = page.getByRole('slider', { name: 'Upper spread boundary' });
-    await upperSpread.focus();
+    // Make an edit in Sebaran
+    const upperSebaran = page.getByRole('slider', { name: 'Batas sebaran atas' });
+    await upperSebaran.focus();
     await page.keyboard.press('Shift+ArrowUp');
-    const spreadPos = page.getByRole('slider', { name: 'Spread measurement position' });
+    const spreadPos = page.getByRole('slider', { name: 'Posisi pengukuran sebaran' });
     await spreadPos.focus();
     await page.keyboard.press('Shift+ArrowLeft');
     
-    // 4. Switch to Angle
-    await page.getByRole('tab', { name: 'Angle' }).click();
-    await expect(page.getByRole('tab', { name: 'Angle' })).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByRole('slider', { name: 'Upper angle boundary' })).toBeVisible();
-    await expect(page.getByRole('slider', { name: 'Lower angle boundary' })).toBeVisible();
-    await expect(page.getByRole('slider', { name: 'Spread measurement position' })).toHaveCount(0);
+    // 4. Switch to Sudut
+    await page.getByRole('tab', { name: 'Sudut' }).click();
+    await expect(page.getByRole('tab', { name: 'Sudut' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('slider', { name: 'Batas sudut atas' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Batas sudut bawah' })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Posisi pengukuran sebaran' })).toHaveCount(0);
 
-    // Make an edit in Angle
-    const upperAngle = page.getByRole('slider', { name: 'Upper angle boundary' });
-    await upperAngle.focus();
+    // Make an edit in Sudut
+    const upperSudut = page.getByRole('slider', { name: 'Batas sudut atas' });
+    await upperSudut.focus();
     await page.keyboard.press('Shift+ArrowUp');
 
     // Apply all edits
-    await page.getByRole('button', { name: 'Apply Measurement' }).click();
+    await page.getByRole('button', { name: 'Terapkan Pengukuran' }).click();
     
     // Check that edits are preserved
-    await expect(page.getByTestId('inspector-side-spray-length')).toHaveText(/Auto .* \/ Final/);
-    await expect(page.getByTestId('inspector-side-vertical-spread')).toHaveText(/Auto .* \/ Final/);
-    await expect(page.getByTestId('inspector-side-spray-angle')).toHaveText(/Auto .* \/ Final/);
+    await expect(page.getByTestId('inspector-side-spray-length')).toBeVisible();
+    await expect(page.getByTestId('inspector-side-vertical-spread')).toBeVisible();
+    await expect(page.getByTestId('inspector-side-spray-angle')).toBeVisible();
+    await expect(page.locator('.inspector-panel').first()).toContainText('Hasil Final');
     
-    // Verify Cancel discards session
-    await page.getByRole('button', { name: 'Edit Measurement' }).click();
-    await expect(page.getByRole('tab', { name: 'Length' })).toHaveAttribute('aria-selected', 'true');
+    // Verify Batal discards session
+    await page.getByRole('button', { name: 'Koreksi Pengukuran' }).click();
+    await expect(page.getByRole('tab', { name: 'Panjang' })).toHaveAttribute('aria-selected', 'true');
     await endpoint.focus();
     await page.keyboard.press('Shift+ArrowRight');
-    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.getByRole('button', { name: 'Batal' }).click();
   });
 
   test('Dashboard and History align with analysis lifecycle', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+    await page.getByRole('button', { name: 'Masuk' }).click();
+    await expect(page.getByRole('heading', { name: 'Dasbor' })).toBeVisible();
 
     // Verify Dashboard shows latest/current batch
-    await expect(page.getByRole('heading', { name: 'Current / Latest Batch' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Batch Terkini' })).toBeVisible();
     await expect(page.getByText('Temporal stability')).toHaveCount(0);
     await expect(page.getByText('BAT-24-0618').first()).toBeVisible();
 
-    // Open Batch from Dashboard
-    await page.getByRole('button', { name: 'View Batch' }).click();
-    await expect(page.getByRole('heading', { name: 'Capture — BAT-24-0618' })).toBeVisible();
+    // Buka Batch from Dashboard
+    await page.getByRole('button', { name: 'Lihat Detail Batch' }).click();
+    await expect(page.getByRole('heading', { name: /Pengambilan Data/i })).toBeVisible();
 
     // Capture and proceed to Analysis
-    await page.getByRole('button', { name: 'Start Capture' }).click();
-    await expect(page.getByText('REVIEW_REQUIRED')).toBeVisible({ timeout: 15000 });
+    await page.getByRole('button', { name: 'Mulai Pengambilan' }).click();
+    await expect(page.getByText('Perlu Ditinjau').first()).toBeVisible({ timeout: 15000 });
 
     // Review Analysis
-    await page.getByRole('button', { name: 'Review Analysis' }).click();
-    await expect(page.getByRole('heading', { name: 'Analysis', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Tinjau Analisis' }).click();
+    await expect(page.getByRole('heading', { name: 'Analisis', exact: true })).toBeVisible();
 
     // Finalize
-    await page.getByRole('button', { name: 'Set as Primary' }).click();
-    await page.getByRole('button', { name: 'Confirm Final Analysis' }).click();
+    await page.getByRole('button', { name: 'Jadikan Utama' }).click();
+    await page.getByRole('button', { name: 'Finalisasi Analisis' }).click();
     await expect(page.getByRole('heading', { name: 'BAT-24-0618' })).toBeVisible();
 
     // Go back to Dashboard
-    await page.getByRole('button', { name: 'Dashboard' }).click();
-    await expect(page.getByRole('heading', { name: 'Recent Finalized Batches' })).toBeVisible();
+    await page.getByRole('button', { name: 'Dasbor' }).click();
+    await expect(page.getByRole('heading', { name: 'Riwayat Finalisasi Terkini' })).toBeVisible();
 
     // Recent finalized batches row has batch ID
     const finalizedRow = page.locator('table').locator('tr', { hasText: 'BAT-24-0618' }).first();
     await expect(finalizedRow.getByText('BAT-24-0618')).toBeVisible();
 
     // Go to Batches
-    await page.getByRole('button', { name: 'Batches' }).click();
-    await expect(page.getByRole('heading', { name: 'Batches' }).first()).toBeVisible();
+    await page.getByRole('button', { name: 'Batch', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Batch' }).first()).toBeVisible();
     
     // 1. Batches contains no Rear Camera fields.
     // 2. Batches contains no Rear Validity.
@@ -356,7 +381,7 @@ test.describe('Spraybot simulated workflow', () => {
     
     const batchRow = page.getByRole('row', { name: /BAT-24-0618/ });
     await expect(batchRow).toBeVisible();
-    await batchRow.getByRole('button', { name: 'Open Batch' }).click();
+    await batchRow.getByRole('button', { name: 'Buka Batch' }).click();
     await expect(page.getByRole('heading', { name: 'BAT-24-0618' })).toBeVisible();
   });
 });

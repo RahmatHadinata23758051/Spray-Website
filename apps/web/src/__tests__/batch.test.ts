@@ -144,7 +144,7 @@ describe('Phase A - Canonical Batch Domain & Persistence', () => {
     expect(loadedBatch?.setupDraft?.notes).toBe('Persistence check');
   });
 
-  it('10. Maximum 9 Supporting Captures is enforced', async () => {
+  it('10. Maximum 9 Tangkapan Pendukung is enforced', async () => {
     let batch = await repo.createBatchDraft(dummyDraftInput);
     batch = await repo.prepareBatch(batch.id);
     batch = await repo.startCapture(batch.id);
@@ -167,7 +167,7 @@ describe('Phase A - Canonical Batch Domain & Persistence', () => {
       .rejects.toThrowError(BatchValidationError);
   });
 
-  it('11. Finalization requires valid Primary Capture', async () => {
+  it('11. Finalization requires valid Tangkapan Utama', async () => {
     let batch = await repo.createBatchDraft(dummyDraftInput);
     batch = await repo.prepareBatch(batch.id);
     batch = await repo.startCapture(batch.id);
@@ -225,7 +225,7 @@ describe('Phase A - Canonical Batch Domain & Persistence', () => {
       .rejects.toThrowError(InvalidLifecycleTransitionError);
   });
 
-  it('13. Finalized report is immutable', async () => {
+  it('13. Final report is immutable', async () => {
     let batch = await repo.createBatchDraft(dummyDraftInput);
     batch = await repo.prepareBatch(batch.id);
     batch = await repo.startCapture(batch.id);

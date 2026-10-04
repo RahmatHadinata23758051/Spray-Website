@@ -20,7 +20,7 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
     const recipes = await productRepository.listRecipes(product.id);
     const recipe = recipes[0];
 
-    // Create a DRAFT batch
+    // Create a Draf batch
     const draft = await batchRepository.createBatchDraft({
       productId: product.id,
       productSnapshot: { productCode: product.productCode, productName: product.name },
@@ -31,7 +31,7 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
         pressDurationMs: recipe.pressDurationMs,
         strokeMm: recipe.strokeMm,
       },
-      productLot: 'LOT-DRAFT-01',
+      productLot: 'LOT-Draf-01',
       operatorId: 'usr-np',
       operatorName: 'Nadia Putri',
       fixture: 'nominal-01',
@@ -66,7 +66,8 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: new RegExp(`Capture — ${readyBatchId}`) })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Pengambilan Data/i })).toBeInTheDocument();
+      expect(screen.getByText(readyBatchId)).toBeInTheDocument();
     });
   });
 
@@ -78,14 +79,14 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Start Capture' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Mulai Pengambilan' })).toBeInTheDocument();
     });
 
     const b = await batchRepository.getBatch(readyBatchId);
     expect(b?.status).toBe('READY');
   });
 
-  it('3. Start Capture transitions READY → CAPTURING', async () => {
+  it('3. Start Capture transitions READY → Pengambilan Data', async () => {
     const capturing = await batchRepository.startCapture(readyBatchId);
     expect(capturing.status).toBe('CAPTURING');
     expect(capturing.captureSession).toBeDefined();
@@ -100,11 +101,11 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: new RegExp(readyBatchId) })).toBeInTheDocument();
+      expect(screen.getByText(readyBatchId)).toBeInTheDocument();
     });
   });
 
-  it('5. Unknown Batch ID is handled safely', async () => {
+  it('5. Unknown ID Batch is handled safely', async () => {
     render(
       <MemoryRouter initialEntries={['/batches/DOES-NOT-EXIST/capture']}>
         <App />
@@ -112,12 +113,12 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Capture Error' })).toBeInTheDocument();
-      expect(screen.getByText('Batch DOES-NOT-EXIST not found')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Kesalahan Akuisisi' })).toBeInTheDocument();
+      expect(screen.getByText('Batch DOES-NOT-EXIST tidak ditemukan')).toBeInTheDocument();
     });
   });
 
-  it('6. DRAFT cannot access Capture and redirects to detail', async () => {
+  it('6. Draf cannot access Capture and redirects to detail', async () => {
     render(
       <MemoryRouter initialEntries={[`/batches/${draftBatchId}/capture`]}>
         <Routes>
@@ -129,11 +130,11 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: draftBatchId })).toBeInTheDocument();
-      expect(screen.getByText('DRAFT')).toBeInTheDocument();
+      expect(screen.getByText('Draf')).toBeInTheDocument();
     });
   });
 
-  it('7. FINALIZED cannot access Capture and redirects to detail', async () => {
+  it('7. Final cannot access Capture and redirects to detail', async () => {
     // Manually mark a batch finalized
     const b = await batchRepository.getBatch(readyBatchId);
     if (b) {
@@ -152,7 +153,7 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: readyBatchId })).toBeInTheDocument();
-      expect(screen.getByText('FINALIZED')).toBeInTheDocument();
+      expect(screen.getByText('Final')).toBeInTheDocument();
     });
   });
 
@@ -178,11 +179,11 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
     expect(capturing.captureSession?.scenario).toBe('nominal-01');
   });
 
-  it('12, 13, 14, 15. Completing capture sets capturedAt, transitions CAPTURING → PROCESSING → REVIEW_REQUIRED, and freezes session', async () => {
+  it('12, 13, 14, 15. Completing capture sets capturedAt, transitions Pengambilan Data → PROCESSING → REVIEW_REQUIRED, and freezes session', async () => {
     await batchRepository.startCapture(readyBatchId);
     const processing = await batchRepository.completeCapture(readyBatchId);
     
-    // 14. CAPTURING → PROCESSING transition occurs
+    // 14. Pengambilan Data → PROCESSING transition occurs
     expect(processing.status).toBe('PROCESSING');
     
     // 12. capturedAt populated
@@ -208,8 +209,8 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Capture complete')).toBeInTheDocument();
-      expect(screen.getByText(/Analysis review required/i)).toBeInTheDocument();
+      expect(screen.getByText('Pengambilan data selesai')).toBeInTheDocument();
+      expect(screen.getByText(/Tinjauan analisis diperlukan/i)).toBeInTheDocument();
     });
   });
 
@@ -224,7 +225,7 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('CAPTURING')).toBeInTheDocument();
+      expect(screen.getAllByText('Pengambilan Data')[0]).toBeInTheDocument();
     });
 
     unmount();
@@ -237,7 +238,7 @@ describe('Phase D2 — Batch Capture Workspace Migration', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('CAPTURING')).toBeInTheDocument();
+      expect(screen.getAllByText('Pengambilan Data')[0]).toBeInTheDocument();
     });
   });
 

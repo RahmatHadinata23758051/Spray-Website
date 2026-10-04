@@ -183,7 +183,7 @@ describe('Synchronized capture selection domain', () => {
   const selectedBy = 'Nadia Putri';
   const selectedAt = '2026-09-29T14:20:00Z';
 
-  it('selects exactly one explicit Primary Capture Moment', () => {
+  it('selects exactly one explicit Tangkapan Utama Moment', () => {
     const first = setPrimaryCapture([], synchronizedFrames[28], selectedBy, selectedAt).selected;
     const second = setPrimaryCapture(first, synchronizedFrames[29], selectedBy, selectedAt).selected;
 
@@ -262,7 +262,7 @@ describe('Synchronized capture selection domain', () => {
     expect(supportingResult.error).toBe('Only synchronized capture moments may be selected');
   });
 
-  it('requires a Primary Capture Moment before finalization', () => {
+  it('requires a Tangkapan Utama Moment before finalization', () => {
     const supportingOnly = addSupportingCapture([], synchronizedFrames[27], selectedBy, selectedAt).selected;
     const withPrimary = setPrimaryCapture(supportingOnly, synchronizedFrames[28], selectedBy, selectedAt).selected;
 
@@ -791,7 +791,7 @@ describe('Task L1 — Final Report Snapshot Integrity', () => {
     expect(report.side.finalGeometry.sprayEndpointPx.x).toBe(490);
   });
 
-  it('>9 Supporting Captures is rejected rather than truncated', () => {
+  it('>9 Tangkapan Pendukung is rejected rather than truncated', () => {
     expect(() => {
       makeValidReport({
         supportingCaptureMoments: synchronizedFrames.slice(10, 25), // 15 captures
@@ -799,7 +799,7 @@ describe('Task L1 — Final Report Snapshot Integrity', () => {
     }).toThrow('Maximum 9 supporting captures allowed.');
   });
 
-  it('unsynced Primary Capture is rejected', () => {
+  it('unsynced Tangkapan Utama is rejected', () => {
     const unsyncedPrimary = { ...primary, syncStatus: 'invalid' as const };
     expect(() => {
       makeValidReport({ primaryCaptureMoment: unsyncedPrimary });
@@ -851,7 +851,7 @@ describe('Task M — Status mapping', () => {
     expect(getUserFacingTestStatus(failedTest, null)).toBe('Failed');
   });
 
-  it('reports Finalized when a matching report is present', () => {
+  it('reports Final when a matching report is present', () => {
     const completeTest = { ...tests[0], id: 'TST-FINAL', status: 'complete' as const };
     const fakeReport = { testId: 'TST-FINAL' } as unknown as Parameters<typeof getUserFacingTestStatus>[1];
     expect(getUserFacingTestStatus(completeTest, fakeReport)).toBe('Finalized');

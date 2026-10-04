@@ -68,11 +68,10 @@ describe('Phase D3 — Contextual Batch Analysis Unit & Integration Tests', () =
     );
 
     await waitFor(() => {
-      expect(screen.getByText(`Batch:`)).toBeInTheDocument();
-      expect(screen.getByText(reviewBatch.id)).toBeInTheDocument();
+      expect(screen.getByText(`Batch: ${reviewBatch.id}`)).toBeInTheDocument();
     });
-    expect(screen.getByText('Capture timeline')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Set as Primary' })).toBeInTheDocument();
+    expect(screen.getByText('Linimasa akuisisi')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Jadikan Utama' })).toBeInTheDocument();
   });
 
   it('2. Hard refresh restores persisted AnalysisDraft', async () => {
@@ -98,9 +97,9 @@ describe('Phase D3 — Contextual Batch Analysis Unit & Integration Tests', () =
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Selected Captures 2 / 10')).toBeInTheDocument();
+      expect(screen.getByText('Tangkapan Dipilih 2 / 10')).toBeInTheDocument();
     });
-    expect(screen.getByText('★ Primary')).toBeInTheDocument();
+    expect(screen.getByText('★ Utama')).toBeInTheDocument();
   });
 
   it('3 & 4. Primary and Supporting selection persists', async () => {
@@ -113,14 +112,14 @@ describe('Phase D3 — Contextual Batch Analysis Unit & Integration Tests', () =
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Set as Primary' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Jadikan Utama' })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Set as Primary' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Jadikan Utama' }));
 
     await waitFor(async () => {
       const b = await batchRepository.getBatch(reviewBatch.id);
-      expect(b?.analysisDraft?.primaryCaptureMomentId).toBe(synchronizedFrames[0].id);
+      expect(b?.analysisDraft?.primaryCaptureMomentId).toBe(synchronizedFrames[28].id);
     });
   });
 
@@ -134,10 +133,10 @@ describe('Phase D3 — Contextual Batch Analysis Unit & Integration Tests', () =
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Analysis Unavailable')).toBeInTheDocument();
+      expect(screen.getByText('Analisis Tidak Tersedia')).toBeInTheDocument();
     });
-    expect(screen.getByText(/Analysis is disabled for batch in lifecycle state/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Set as Primary' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Analisis dinonaktifkan untuk batch dalam status siklus/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Jadikan Utama' })).not.toBeInTheDocument();
   });
 
   it('15. FINALIZED Analysis is read-only', async () => {
@@ -198,11 +197,11 @@ describe('Phase D3 — Contextual Batch Analysis Unit & Integration Tests', () =
     );
 
     await waitFor(() => {
-      expect(screen.getByText('READ ONLY')).toBeInTheDocument();
+      expect(screen.getByText('Hanya Baca')).toBeInTheDocument();
     });
-    expect(screen.queryByRole('button', { name: 'Set as Primary' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Adjust Calibration' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Edit Measurement' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Jadikan Utama' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Sesuaikan Kalibrasi' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit Pengukuran' })).not.toBeInTheDocument();
   });
 
   it('18. BatchDetailPage routes correctly for REVIEW_REQUIRED and FINALIZED', async () => {
@@ -215,7 +214,7 @@ describe('Phase D3 — Contextual Batch Analysis Unit & Integration Tests', () =
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Review Analysis' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Tinjau Analisis' })).toBeInTheDocument();
     });
   });
 
@@ -229,9 +228,9 @@ describe('Phase D3 — Contextual Batch Analysis Unit & Integration Tests', () =
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'side camera' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'kamera samping' })).toBeInTheDocument();
     });
-    expect(screen.getByRole('button', { name: 'front camera' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'kamera depan' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /rear/i })).not.toBeInTheDocument();
   });
 });

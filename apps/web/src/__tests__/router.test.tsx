@@ -19,7 +19,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
         <App />
       </MemoryRouter>
     );
-    expect(screen.getByText('Sign in to Spraybot')).toBeInTheDocument();
+    expect(screen.getByText('Masuk ke Spraybot')).toBeInTheDocument();
   });
 
   it('2. /dashboard renders Dashboard page', async () => {
@@ -28,7 +28,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
         <App />
       </MemoryRouter>
     );
-    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Dasbor' })).toBeInTheDocument();
   });
 
   it('3. /products renders Products page', () => {
@@ -37,7 +37,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
         <App />
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: 'Products' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Produk' })).toBeInTheDocument();
     expect(screen.getByText('Product Master Data')).toBeInTheDocument();
   });
 
@@ -47,7 +47,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
         <App />
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: 'Reports', level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Laporan', level: 1 })).toBeInTheDocument();
   });
 
   it('5. /calibration renders Calibration page', () => {
@@ -56,8 +56,8 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
         <App />
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: 'Calibration', level: 1 })).toBeInTheDocument();
-    expect(screen.getAllByText('Mock calibration').length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: 'Kalibrasi', level: 1 })).toBeInTheDocument();
+    expect(screen.getAllByText('Terkalibrasi').length).toBeGreaterThan(0);
   });
 
   it('6. /users renders Users page', () => {
@@ -66,7 +66,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
         <App />
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: 'Users', level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pengguna', level: 1 })).toBeInTheDocument();
     expect(screen.getAllByText('Nadia Putri').length).toBeGreaterThan(0);
   });
 
@@ -76,8 +76,8 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
         <App />
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument();
-    expect(screen.getByText('Local Workstation Environment')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pengaturan', level: 1 })).toBeInTheDocument();
+    expect(screen.getByText('Lingkungan Workstation Lokal')).toBeInTheDocument();
   });
 
   it('8. Legacy /new-test route redirects to /batches/new', () => {
@@ -89,7 +89,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
       </MemoryRouter>
     );
     expect(currentPath).toBe('/batches/new');
-    expect(screen.getAllByRole('heading', { name: 'New Batch' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('heading', { name: 'Batch Baru' }).length).toBeGreaterThan(0);
   });
 
   it('9. Legacy /capture route redirects to /batches', () => {
@@ -146,14 +146,14 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Dasbor' })).toBeInTheDocument();
     expect(currentPath).toBe('/dashboard');
 
-    const productsBtn = screen.getByRole('button', { name: 'Products' });
+    const productsBtn = screen.getByRole('button', { name: 'Produk' });
     await user.click(productsBtn);
 
     expect(currentPath).toBe('/products');
-    expect(screen.getByRole('heading', { name: 'Products' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Produk' })).toBeInTheDocument();
   });
 
   it('14. Legacy /history route redirects to /batches', () => {
@@ -165,6 +165,6 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
       </MemoryRouter>
     );
     expect(currentPath).toBe('/batches');
-    expect(screen.getAllByRole('heading', { name: 'Batches' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('heading', { name: 'Batch' }).length).toBeGreaterThan(0);
   });
 });
