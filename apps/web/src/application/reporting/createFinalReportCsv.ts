@@ -1,5 +1,13 @@
 import type { FinalAnalysisReport } from '@spray-paragon/domain';
 
+function escapeCsv(value: string | number | boolean): string {
+  const str = String(value);
+  if (/[",\r\n;]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
 export function createFinalReportCsv(report: FinalAnalysisReport): string {
   const slug = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const sideMetrics = [
@@ -37,7 +45,9 @@ export function createFinalReportCsv(report: FinalAnalysisReport): string {
     fields.push([`front_${s}_auto`, metric.value.auto], [`front_${s}_final`, metric.value.final], [`front_${s}_adjusted`, metric.value.adjusted]);
   }
 
-  const headers = fields.map(([key]) => key).join(',');
-  const values = fields.map(([, value]) => String(value)).join(',');
-  return `${headers}\n${values}`;
+  const headers = fields.map(([key]) => escapeCsv(key)).join(',');
+  const values = fields.map(([, value]) => escapeCsv(value)).join(',');
+  
+  // UTF-8 BOM + Excel delimiter hint + CRLF headers + CRLF values
+  return `\uFEFFsep=,\r\n${headers}\r\n${values}`;
 }
