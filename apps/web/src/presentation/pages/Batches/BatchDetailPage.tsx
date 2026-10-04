@@ -4,6 +4,7 @@ import { batchRepository } from '../../../application/services';
 import type { Batch } from '@spray-paragon/domain';
 import { Status } from '../../components/ui/Status';
 import { Panel } from '../../components/ui/Panel';
+import { formatStatus } from '../../utils/formatters';
 
 export function BatchDetailPage() {
   const { batchId } = useParams();
@@ -61,16 +62,16 @@ export function BatchDetailPage() {
   };
 
   if (loading) {
-    return <div className="p-4 text-sm text-text-secondary">Loading batch {batchId}...</div>;
+    return <div className="p-4 text-sm text-text-secondary">Memuat batch {batchId}...</div>;
   }
 
   if (!batch) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-bold text-text-primary">Batch Not Found</h1>
-        <p className="text-sm text-text-secondary">The batch {batchId} does not exist or has been removed.</p>
+        <h1 className="text-xl font-bold text-text-primary">Batch Tidak Ditemukan</h1>
+        <p className="text-sm text-text-secondary">Batch {batchId} tidak ada atau telah dihapus.</p>
         <button onClick={() => navigate('/batches')} className="text-sm font-medium text-primary hover:underline">
-          &larr; Return to Batches
+          &larr; Kembali ke Batch
         </button>
       </div>
     );
@@ -78,19 +79,22 @@ export function BatchDetailPage() {
 
   const isDraft = batch.status === 'DRAFT';
   const setup = batch.setupSnapshot || batch.setupDraft;
-  if (!setup) return <div>Invalid batch data (missing setup)</div>;
+  if (!setup) return <div>Data batch tidak valid (setup hilang)</div>;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+      <div className="flex items-center justify-between border-b border-border-subtle pb-4">
         <div>
-          <button onClick={() => navigate('/batches')} className="text-xs font-semibold text-text-muted hover:text-text-primary mb-1 inline-block">
-            &larr; Back to Batches
+          <button 
+            onClick={() => navigate('/batches')} 
+            className="text-xs font-semibold text-text-muted hover:text-text-primary mb-1.5 flex items-center gap-1 transition-colors"
+          >
+            <span>&larr;</span> <span>Kembali ke Batch</span>
           </button>
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight text-text-primary">{batch.id}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-text-primary font-mono">{batch.id}</h1>
             <Status tone={batch.status === 'FINALIZED' ? 'success' : batch.status === 'FAILED' || batch.status === 'ABORTED' ? 'danger' : batch.status === 'DRAFT' ? 'neutral' : 'warning'}>
-              {batch.status}
+              {formatStatus(batch.status)}
             </Status>
           </div>
         </div>
@@ -98,159 +102,186 @@ export function BatchDetailPage() {
         {isDraft && (
           <button 
             onClick={handlePrepareBatch}
-            className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+            className="btn btn-primary"
           >
-            Prepare Batch
+            Siapkan Batch
           </button>
         )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="space-y-6">
-          <Panel title={isDraft ? "Editable Setup Draft" : "Setup Snapshot (Read-Only)"}>
-            <div className="p-4 space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2">
+          {/* Primary Lifecycle Next Action Card */}
+          {batch.status === 'READY' && (
+            <div className="rounded-panel border border-border-default bg-surface p-5 flex items-center justify-between shadow-sm">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider text-semantic-success flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-semantic-success" />
+                  Siap untuk akuisisi
+                </div>
+                <h3 className="text-base font-bold text-text-primary mt-1">Batch siap untuk pengambilan data</h3>
+                <p className="mt-0.5 text-xs text-text-secondary">Sistem siap. Parameter pengujian telah dikunci.</p>
+              </div>
+              <button
+                onClick={() => navigate(`/batches/${batch.id}/capture`)}
+                aria-label="Mulai / Buka Pengambilan"
+                className="btn btn-primary shrink-0"
+              >
+                Mulai / Buka Pengambilan
+              </button>
+            </div>
+          )}
+          
+          {batch.status === 'CAPTURING' && (
+            <div className="rounded-panel border border-border-default bg-surface p-5 flex items-center justify-between shadow-sm">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider text-semantic-warning flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-semantic-warning animate-pulse" />
+                  Pengambilan data berlangsung
+                </div>
+                <h3 className="text-base font-bold text-text-primary mt-1">Pengambilan Data Berlangsung</h3>
+                <p className="mt-0.5 text-xs text-text-secondary">Akuisisi data sedang berlangsung.</p>
+              </div>
+              <button
+                onClick={() => navigate(`/batches/${batch.id}/capture`)}
+                className="btn btn-primary shrink-0"
+              >
+                Lanjutkan Pengambilan
+              </button>
+            </div>
+          )}
+
+          {batch.status === 'PROCESSING' && (
+            <div className="rounded-panel border border-border-default bg-surface p-5 shadow-sm">
+              <div className="text-xs font-bold uppercase tracking-wider text-semantic-warning flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-semantic-warning animate-pulse" />
+                Pemrosesan pipeline
+              </div>
+              <h3 className="text-base font-bold text-text-primary mt-1">Memproses Data Tangkapan</h3>
+              <p className="mt-0.5 text-xs text-text-secondary">Pipeline analisis sedang menyelaraskan frame kecepatan tinggi.</p>
+            </div>
+          )}
+
+          {batch.status === 'REVIEW_REQUIRED' && (
+            <div className="rounded-panel border border-border-default bg-surface p-5 flex items-center justify-between shadow-sm">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-primary" />
+                  Perlu ditinjau
+                </div>
+                <h3 className="text-base font-bold text-text-primary mt-1">Pengambilan data selesai</h3>
+                <p className="mt-0.5 text-xs text-text-secondary">Tinjauan analisis diperlukan. Geometri spasial siap untuk verifikasi.</p>
+              </div>
+              <button
+                onClick={() => navigate(`/batches/${batch.id}/analysis`)}
+                aria-label="Tinjau Analisis"
+                className="btn btn-primary shrink-0"
+              >
+                Tinjau Analisis
+              </button>
+            </div>
+          )}
+          
+          {batch.status === 'FINALIZED' && (
+            <div className="rounded-panel border border-border-default bg-surface p-5 flex items-center justify-between shadow-sm">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider text-semantic-success flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-semantic-success" />
+                  Riwayat final
+                </div>
+                <h3 className="text-base font-bold text-text-primary mt-1">Batch telah difinalisasi</h3>
+                <p className="mt-0.5 text-xs text-text-secondary">Data engineering yang tidak dapat diubah dan pengukuran tersedia.</p>
+              </div>
+              <button
+                onClick={() => navigate(`/batches/${batch.id}/result`)}
+                aria-label="Lihat Hasil"
+                className="btn btn-primary shrink-0"
+              >
+                Lihat Hasil
+              </button>
+            </div>
+          )}
+
+          <Panel title={isDraft ? "Pengaturan Batch" : "Snapshot Setup (Hanya-Baca)"}>
+            <div className="space-y-6">
+              <div className="grid gap-6 sm:grid-cols-2">
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Product</div>
-                  <div className="mt-0.5 text-sm font-medium text-text-primary">{setup.productSnapshot?.productName}</div>
-                  <div className="text-xs text-text-secondary">{setup.productSnapshot?.productCode}</div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-text-muted">PRODUK</div>
+                  <div className="mt-1 text-base font-bold text-text-primary">{setup.productSnapshot?.productName}</div>
+                  <div className="text-xs font-semibold text-text-muted mt-0.5">{setup.productSnapshot?.productCode}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Recipe</div>
-                  <div className="mt-0.5 text-sm font-medium text-text-primary">{setup.recipeSnapshot?.name}</div>
-                  <div className="text-xs text-text-secondary">
-                    Force: {setup.recipeSnapshot?.forceSetpointN}N, {setup.recipeSnapshot?.pressDurationMs}ms, {setup.recipeSnapshot?.strokeMm}mm
+                  <div className="text-xs font-bold uppercase tracking-wider text-text-muted">Resep Pengujian</div>
+                  <div className="mt-1 text-base font-bold text-text-primary">{setup.recipeSnapshot?.name}</div>
+                  <div className="mt-0.5 text-xs font-mono font-semibold text-text-secondary">
+                    Gaya: {setup.recipeSnapshot?.forceSetpointN} N · Durasi: {setup.recipeSnapshot?.pressDurationMs} ms · Langkah: {setup.recipeSnapshot?.strokeMm} mm
                   </div>
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Product Lot</label>
+              <div className="grid gap-6 sm:grid-cols-2 border-t border-border-subtle pt-5">
+                <div className="form-group">
+                  <label className="form-label">Lot Produk</label>
                   {isDraft ? (
                     <input 
                       type="text" 
                       value={productLot} 
                       onChange={e => setProductLot(e.target.value)} 
                       onBlur={handleUpdateDraft}
-                      placeholder="Enter lot..."
-                      className="w-full max-w-[200px] block rounded-sm border border-border-subtle bg-bg-surface px-2 py-1 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                      placeholder="Masukkan lot..."
+                      className="form-input max-w-[260px]"
                     />
                   ) : (
-                    <div className="text-sm font-medium text-text-primary">{setup.productLot || '—'}</div>
+                    <div className="font-mono text-sm font-bold text-text-primary">{setup.productLot || '—'}</div>
                   )}
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Sample ID</label>
-                  <div className="text-sm font-mono text-text-primary">
-                    {'sampleId' in setup ? String((setup as { sampleId?: string }).sampleId ?? '—') : 'Generated upon prepare'}
+                <div className="form-group">
+                  <label className="form-label">Sample ID</label>
+                  <div className="font-mono text-sm font-bold text-text-primary">
+                    {'sampleId' in setup ? String((setup as { sampleId?: string }).sampleId ?? '—') : 'Belum dibuat'}
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Notes</label>
-                {isDraft ? (
-                  <textarea 
-                    value={notes} 
-                    onChange={e => setNotes(e.target.value)} 
-                    onBlur={handleUpdateDraft}
-                    rows={2}
-                    className="w-full rounded-sm border border-border-subtle bg-bg-surface px-2 py-1 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                  />
-                ) : (
-                  <div className="text-sm text-text-primary whitespace-pre-wrap">{setup.notes || '—'}</div>
-                )}
+              <div className="border-t border-border-subtle pt-5">
+                <div className="form-group">
+                  <label className="form-label">Catatan</label>
+                  {isDraft ? (
+                    <textarea 
+                      value={notes} 
+                      onChange={e => setNotes(e.target.value)} 
+                      onBlur={handleUpdateDraft}
+                      rows={3}
+                      placeholder="Tambahkan catatan..."
+                      className="form-textarea"
+                    />
+                  ) : (
+                    <div className="text-sm text-text-primary whitespace-pre-wrap">{setup.notes || '—'}</div>
+                  )}
+                </div>
               </div>
             </div>
           </Panel>
-          
-          {batch.status === 'READY' && (
-            <div className="rounded-sm border border-emerald-500/20 bg-emerald-50/50 p-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-emerald-800">Batch is ready for capture</h3>
-                <p className="mt-1 text-xs text-emerald-700">Fixture capture ready. All setup parameters are frozen in simulation mode.</p>
-              </div>
-              <button
-                onClick={() => navigate(`/batches/${batch.id}/capture`)}
-                className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-              >
-                Start / Open Capture
-              </button>
-            </div>
-          )}
-          
-          {batch.status === 'CAPTURING' && (
-            <div className="rounded-sm border border-amber-500/20 bg-amber-50/50 p-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-amber-800">Capture in Progress</h3>
-                <p className="mt-1 text-xs text-amber-700">Data acquisition is currently underway.</p>
-              </div>
-              <button
-                onClick={() => navigate(`/batches/${batch.id}/capture`)}
-                className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-              >
-                Continue Capture
-              </button>
-            </div>
-          )}
-
-          {batch.status === 'PROCESSING' && (
-            <div className="rounded-sm border border-amber-500/20 bg-amber-50/50 p-4">
-              <h3 className="text-sm font-bold text-amber-800">Processing Capture Data</h3>
-              <p className="mt-1 text-xs text-amber-700">Analysis pipeline is aligning captured high-speed frames.</p>
-            </div>
-          )}
-
-          {batch.status === 'REVIEW_REQUIRED' && (
-            <div className="rounded-sm border border-blue-500/20 bg-blue-50/50 p-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-blue-800">Capture complete</h3>
-                <p className="mt-1 text-xs text-blue-700">Analysis review required. Spatial geometry ready for verification.</p>
-              </div>
-              <button
-                onClick={() => navigate(`/batches/${batch.id}/analysis`)}
-                className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-              >
-                Review Analysis
-              </button>
-            </div>
-          )}
-          
-          {batch.status === 'FINALIZED' && (
-            <div className="rounded-sm border border-blue-500/20 bg-blue-50/50 p-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-blue-800">Batch is finalized</h3>
-                <p className="mt-1 text-xs text-blue-700">Detailed historical result available.</p>
-              </div>
-              <button
-                onClick={() => navigate(`/batches/${batch.id}/result`)}
-                className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-              >
-                View Result
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="space-y-6">
-          <Panel title="Context Summary">
-            <div className="p-4 space-y-4 text-sm">
-              <div>
-                <div className="text-text-muted text-xs">Operator</div>
-                <div className="font-medium text-text-primary">{setup.operatorName}</div>
+          <Panel title="Informasi Batch">
+            <div className="space-y-4 text-sm">
+              <div className="border-b border-border-subtle pb-3">
+                <div className="text-xs font-bold uppercase tracking-wider text-text-muted">Operator</div>
+                <div className="font-semibold text-text-primary mt-1">{setup.operatorName}</div>
               </div>
-              <div>
-                <div className="text-text-muted text-xs">Created</div>
-                <div className="text-text-primary">
-                  {new Date(batch.createdAt).toLocaleString()}
+              <div className="border-b border-border-subtle pb-3">
+                <div className="text-xs font-bold uppercase tracking-wider text-text-muted">DIBUAT</div>
+                <div className="font-semibold text-text-primary mt-1">
+                  {new Date(batch.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
               {'preparedAt' in setup && (setup as { preparedAt?: string }).preparedAt && (
                 <div>
-                  <div className="text-text-muted text-xs">Prepared</div>
-                  <div className="text-text-primary">
-                    {new Date(String((setup as { preparedAt?: string }).preparedAt)).toLocaleString()}
+                  <div className="text-xs font-bold uppercase tracking-wider text-text-muted">Prepared</div>
+                  <div className="font-semibold text-text-primary mt-1">
+                    {new Date(String((setup as { preparedAt?: string }).preparedAt)).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
               )}
