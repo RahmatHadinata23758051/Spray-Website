@@ -1,27 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import type { FinalAnalysisReport } from '@spray-paragon/domain';
+import { useNavigate } from 'react-router-dom';
+import type { Batch } from '@spray-paragon/domain';
 import { createFinalReportCsv } from '../../../application/reporting/createFinalReportCsv';
 import { batchRepository } from '../../../application/services';
-import { Status } from '../../components/ui/Status';
-import { Panel } from '../../components/ui/Panel';
-import { phaseLabel } from '../../features/analysis/utils';
-import { ResultMeasurementPanel, CalibrationSummary, AnalysisAudit, SupportingCaptures } from '../Batches/BatchResultPage';
+import { Table } from '../../components/ui/Table';
 
 export function ReportsPage() {
-  const [report, setReport] = useState<FinalAnalysisReport | null>(null);
+  const [batches, setBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
+  const [exportingId, setExportingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     let active = true;
-    batchRepository.listBatches().then(batches => {
+    batchRepository.listBatches().then(data => {
       if (!active) return;
-      const finalized = batches
+      const finalized = data
         .filter(b => b.status === 'FINALIZED' && b.finalReport)
-        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-      if (finalized.length > 0 && finalized[0].finalReport) {
-        setReport(finalized[0].finalReport);
-      }
+        .sort((a, b) => new Date(b.finalReport!.finalizedAt).getTime() - new Date(a.finalReport!.finalizedAt).getTime());
+      setBatches(finalized);
       setLoading(false);
     }).catch(e => {
       console.error(e);
@@ -30,116 +28,127 @@ export function ReportsPage() {
     return () => { active = false; };
   }, []);
 
-  const handleExport = () => {
-    if (!report) return;
-    setExporting(true);
-    const csv = createFinalReportCsv(report);
+  const handleExport = (batch: Batch) => {
+    if (!batch.finalReport) return;
+    setExportingId(batch.id);
+    const csv = createFinalReportCsv(batch.finalReport);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `spraybot-report-${Date.now()}.csv`;
+    link.download = `spraybot-report-${batch.id}-${Date.now()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    setTimeout(() => setExporting(false), 800);
+    setTimeout(() => setExportingId(null), 800);
   };
 
-  if (loading) {
-    return <div className="p-4 text-sm text-text-secondary">Loading reports...</div>;
-  }
-
-  if (!report) {
-    return (
-      <Panel title="Reports">
-        <div className="p-4">
-          <p className="text-sm text-text-secondary">No finalized analysis report is available. Finalize a Batch Analysis session to produce a report.</p>
-        </div>
-      </Panel>
-    );
-  }
-
-  const finalReport = report;
+  const filteredBatches = batches.filter(batch => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const pCode = batch.finalReport?.test.product.productCode ?? '';
+      const pName = batch.finalReport?.test.product.productName ?? '';
+      const sampleId = batch.finalReport?.test.sampleId ?? '';
+      const operator = batch.finalReport?.test.operator ?? '';
+      
+      return (
+        batch.id.toLowerCase().includes(q) ||
+        pCode.toLowerCase().includes(q) ||
+        pName.toLowerCase().includes(q) ||
+        sampleId.toLowerCase().includes(q) ||
+        operator.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
 
   return (
-    <article className="report-v2">
-      <div className="report-header surface-panel">
-        <div>
-          <div className="report-mark">
-            <Status tone="success">Finalized</Status>
-            <span className="report-disclosure">Analysis source: Simulation</span>
+    <div className="space-y-6 flex flex-col h-full pb-8">
+      {loading ? (
+        <div className="p-4 text-sm text-text-secondary">Memuat laporan...</div>
+      ) : (
+        <div className="surface-panel surface-panel-large flex flex-col flex-1">
+          <div className="flex items-center justify-between p-4 border-b border-border-subtle bg-surface">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="text-sm font-semibold text-text-primary">
+                {filteredBatches.length} Laporan
+              </div>
+              <div className="flex items-center gap-3">
+                <input 
+                  type="text" 
+                  placeholder="Cari ID, Produk, Sampel, Operator..." 
+                  className="form-input !min-h-[36px] w-[300px] text-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
-          <h2>Technical Test Report</h2>
-          <p className="font-mono">{finalReport.test.testId}</p>
+
+          <Table>
+            <thead>
+              <tr>
+                <th>ID Batch</th>
+                <th>Produk</th>
+                <th>ID Sampel</th>
+                <th>Operator</th>
+                <th>Difinalisasi</th>
+                <th>Tangkapan Utama</th>
+                <th className="text-right">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody className="bg-surface">
+              {filteredBatches.map((batch) => {
+                const report = batch.finalReport!;
+                const pCode = report.test.product.productCode;
+                const pName = report.test.product.productName;
+                const sampleId = report.test.sampleId;
+                const operator = report.test.operator;
+                const captureInfo = `#${String(report.primaryCapture.frameIndex).padStart(3, '0')}`;
+                
+                return (
+                  <tr key={batch.id}>
+                    <td className="font-mono font-bold tracking-tight text-text-primary">{batch.id}</td>
+                    <td>
+                      <div className="font-semibold text-text-primary">{pName}</div>
+                      <div className="text-xs font-semibold text-text-muted mt-0.5">{pCode}</div>
+                    </td>
+                    <td className="font-mono text-text-secondary font-semibold">{sampleId}</td>
+                    <td className="font-medium text-text-primary">{operator}</td>
+                    <td className="text-text-secondary">{new Date(report.finalizedAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                    <td className="font-mono text-primary font-bold text-xs">{captureInfo}</td>
+                    <td className="text-right flex items-center justify-end gap-2">
+                      <button 
+                        onClick={() => navigate(`/batches/${batch.id}/result`)}
+                        className="btn btn-secondary !min-h-8 !px-3 !py-1 text-xs"
+                      >
+                        Buka Hasil
+                      </button>
+                      <button 
+                        onClick={() => handleExport(batch)}
+                        disabled={exportingId === batch.id}
+                        className="btn btn-secondary !min-h-8 !px-3 !py-1 text-xs"
+                      >
+                        {exportingId === batch.id ? 'Mengekspor...' : 'Ekspor CSV'}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filteredBatches.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-xs font-medium text-text-muted">
+                    {batches.length === 0 
+                      ? 'Tidak ada laporan yang telah difinalisasi.'
+                      : 'Tidak ada laporan yang sesuai dengan filter.'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </Table>
         </div>
-        <button onClick={handleExport} disabled={exporting} className="secondary-button">
-          {exporting ? 'Exporting CSV...' : 'Export CSV'}
-        </button>
-      </div>
-
-      <section className="report-section surface-panel">
-        <div className="result-section-heading">
-          <div><span>Identification</span><h3>Test Information</h3></div>
-        </div>
-        <dl>
-          <div><dt>Test ID</dt><dd className="font-mono">{finalReport.test.testId}</dd></div>
-          <div><dt>Sample ID</dt><dd className="font-mono">{finalReport.test.sampleId}</dd></div>
-          <div><dt>Product</dt><dd>{finalReport.test.product.productName}</dd></div>
-          <div><dt>Product Code</dt><dd className="font-mono">{finalReport.test.product.productCode}</dd></div>
-          <div><dt>Recipe</dt><dd>{finalReport.test.recipe.name}</dd></div>
-          {finalReport.test.productionBatch && <div><dt>Production Batch</dt><dd className="font-mono">{finalReport.test.productionBatch}</dd></div>}
-          <div><dt>Operator</dt><dd>{finalReport.test.operator}</dd></div>
-          <div><dt>Test Timestamp</dt><dd>{new Date(finalReport.test.testTimestamp).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</dd></div>
-          <div><dt>Report Status</dt><dd><Status tone="success">{finalReport.status}</Status></dd></div>
-        </dl>
-      </section>
-
-      <section className="report-section surface-panel">
-        <div className="result-section-heading">
-          <div><span>Configuration</span><h3>Test Setpoints</h3></div>
-        </div>
-        <dl>
-          <div><dt>Force setpoint</dt><dd>{finalReport.test.setpoints.forceSetpointN} N</dd></div>
-          <div><dt>Press duration</dt><dd>{finalReport.test.setpoints.pressDurationMs} ms</dd></div>
-          <div><dt>Stroke</dt><dd>{finalReport.test.setpoints.strokeMm} mm</dd></div>
-        </dl>
-      </section>
-
-      <section className="report-section surface-panel">
-        <div className="result-section-heading">
-          <div><span>Selected capture moment</span><h3>Primary Capture</h3></div>
-        </div>
-        <dl>
-          <div><dt>Capture</dt><dd className="font-mono">#{String(finalReport.primaryCapture.frameIndex).padStart(3, '0')}</dd></div>
-          <div><dt>Timestamp</dt><dd className="font-mono">{finalReport.primaryCapture.timestampMs} ms</dd></div>
-          <div><dt>Phase</dt><dd>{phaseLabel(finalReport.primaryCapture.phase)}</dd></div>
-          <div><dt>Side Frame</dt><dd className="font-mono">{finalReport.side.frameId}</dd></div>
-          <div><dt>Front Frame</dt><dd className="font-mono">{finalReport.front.frameId}</dd></div>
-        </dl>
-      </section>
-
-      <ResultMeasurementPanel camera="side" report={finalReport} />
-      <ResultMeasurementPanel camera="front" report={finalReport} />
-
-      <section className="result-two-column">
-        <CalibrationSummary camera="Side" calibration={finalReport.side.calibration} />
-        <CalibrationSummary camera="Front" calibration={finalReport.front.calibration} />
-      </section>
-
-      <AnalysisAudit report={finalReport} />
-      <SupportingCaptures report={finalReport} />
-
-      <section className="report-section surface-panel">
-        <div className="result-section-heading">
-          <div><span>Record</span><h3>Finalization</h3></div>
-        </div>
-        <dl>
-          <div><dt>Finalized by</dt><dd>{finalReport.finalizedBy}</dd></div>
-          <div><dt>Finalized at</dt><dd>{new Date(finalReport.finalizedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</dd></div>
-          <div><dt>Analysis source</dt><dd>Simulation</dd></div>
-        </dl>
-      </section>
-    </article>
+      )}
+    </div>
   );
 }
