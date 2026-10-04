@@ -1,6 +1,6 @@
 import type { Camera as CameraType } from '@spray-paragon/domain';
 
 export const cameraCopy: Record<CameraType, { title: string; purpose: string; accent: string }> = {
-  side: { title: 'Side Profile', purpose: 'Profile geometry, spray length, direction offset, and pattern angle.', accent: '#1d8fff' },
-  front: { title: 'Front Pattern', purpose: 'Spray area, equivalent diameter, circularity, and geometric centroid.', accent: '#0D747A' },
+  side: { title: 'Profil Samping', purpose: 'Geometri profil, panjang semprot, offset arah, dan sudut semprot.', accent: '#1d8fff' },
+  front: { title: 'Pola Depan', purpose: 'Luas semprot, diameter ekuivalen, sirkularitas, dan centroid geometris.', accent: '#0D747A' },
 };

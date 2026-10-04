@@ -2,7 +2,11 @@ import type { Point, SideFinalMeasurements, FrontFinalMeasurements } from '@spra
 import type { CapturePhaseV2 } from '@spray-paragon/domain';
 
 export function phaseLabel(phase: CapturePhaseV2): string {
-  return phase === 'pre_spray' ? 'Pre-spray' : phase === 'build_up' ? 'Build-up' : phase[0].toUpperCase() + phase.slice(1);
+  if (phase === 'pre_spray') return 'Pra-spray';
+  if (phase === 'build_up') return 'Pembentukan';
+  if (phase === 'stable') return 'Fase Stabil';
+  if (phase === 'decay') return 'Peluruhan';
+  return phase;
 }
 
 export function metricSlug(label: string): string {
