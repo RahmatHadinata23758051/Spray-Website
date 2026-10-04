@@ -11,12 +11,13 @@
 - D3 Batch Analysis
 - D4 Batch Result
 - D5 Canonical Workflow Consolidation
+- R1-R8 Design System & UX Redesign (Full visual redesign per docs/DESIGN.md: Light Shell / Dark Technical Workbench, Plus Jakarta Sans & IBM Plex Mono typography, strict 3-layer architecture preserved, 100% Quality Gates passing)
 
 ## Current
-- None (Phase D5 completed)
+- None (Phase R8 Quality Gate Validation completed)
 
 ## Next
-- None (No further canonical roadmap phase defined)
+- None (UI/UX Redesign fully verified with all tests passing)
 
 ## Architecture
 - apps/web
