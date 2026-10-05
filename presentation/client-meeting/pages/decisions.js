@@ -6,7 +6,7 @@ function renderDecisionsPage(container) {
     if (typeof decisionTopics !== 'undefined') {
         decisionTopics.forEach((item, index) => {
             rowsHtml += `
-                <div class="decision-row">
+                <div class="decision-row" data-decision-index="${index}" tabindex="0" role="button" aria-label="Buka detail topik: ${item.topic}">
                     <div class="dec-col dec-topic">
                         <span class="dec-number">${(index + 1).toString().padStart(2, '0')}</span>
                         <span class="dec-topic-text">${item.topic}</span>

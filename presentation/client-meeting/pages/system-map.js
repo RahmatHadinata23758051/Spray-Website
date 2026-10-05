@@ -5,9 +5,12 @@ let mapConnections = [];
 let activeBranch = null; 
 let selectedNodeData = null;
 let mapAnimFrameId = null;
-let mapTransitionEndTime = 0;
 let mapResizeObserver = null;
 let mapPanelOpen = false;
+let mapZoomLevel = 1;
+const MAP_ZOOM_STEP = 0.1;
+const MAP_ZOOM_MIN = 0.7;
+const MAP_ZOOM_MAX = 1;
 
 function renderSystemMapPage(container) {
     container.innerHTML = `
@@ -17,6 +20,11 @@ function renderSystemMapPage(container) {
                     <span class="map-subtitle">Klik cabang untuk melihat detail.</span>
                 </div>
                 <div class="toolbar-actions">
+                    <div class="map-zoom-controls" role="group" aria-label="Zoom peta alur">
+                        <button class="btn-sub map-zoom-button" id="btn-map-zoom-out" type="button" aria-label="Perkecil peta" title="Perkecil peta">−</button>
+                        <span class="map-zoom-readout" id="map-zoom-level" aria-live="polite">100%</span>
+                        <button class="btn-sub map-zoom-button" id="btn-map-zoom-in" type="button" aria-label="Perbesar peta" title="Perbesar peta">+</button>
+                    </div>
                     <button class="btn-sub" id="btn-map-reset">Tutup Semua Cabang</button>
                     <button class="btn-sub" id="btn-map-expand-all">Buka Semua Cabang</button>
                 </div>
@@ -59,7 +67,8 @@ function initSystemMap() {
     mapConnections = [];
     activeBranch = null;
     selectedNodeData = null;
-
+    mapPanelOpen = false;
+    mapZoomLevel = 1;
     if (typeof mapData !== 'undefined') {
         enrichMapData(mapData, 'root');
         renderMapNodes();
@@ -103,18 +112,27 @@ function renderMapNodes() {
     const rootNode = createMapNode(mapData, 'root');
     colCenter.appendChild(rootNode);
 
-    // Left
-    mapData.childrenLeft.forEach(data => colLeft.appendChild(createMapBranch(data, 'left')));
-    
-    // Right
-    mapData.childrenRight.forEach(data => colRight.appendChild(createMapBranch(data, 'right')));
+    // Number branches continuously from left to right
+    mapData.childrenLeft.forEach((data, index) => colLeft.appendChild(createMapBranch(data, 'left', index)));
+    mapData.childrenRight.forEach((data, index) => {
+        const sequenceIndex = mapData.childrenLeft.length + index;
+        colRight.appendChild(createMapBranch(data, 'right', sequenceIndex));
+    });
 }
 
-function createMapNode(data, type) {
+function createMapNode(data, type, sequenceNumber = null) {
     const el = document.createElement('div');
     el.className = `node ${type}-node`;
     el.id = `node-${data.id}`;
     el.innerHTML = data.label.replace('\n', '<br>');
+
+    if (sequenceNumber) {
+        const number = document.createElement('span');
+        number.className = 'node-number';
+        number.textContent = sequenceNumber;
+        number.setAttribute('aria-hidden', 'true');
+        el.prepend(number);
+    }
     
     // Catatan button inside main/root node
     if (type === 'root' || type === 'main') {
@@ -131,7 +149,7 @@ function createMapNode(data, type) {
     el.onclick = () => {
         if (type === 'main') {
             toggleMapBranch(data.id);
-            if (mapPanelOpen) openMapNodePanel(data);
+            openMapNodePanel(data);
         } else if (type === 'root') {
             activeBranch = null;
             [...mapData.childrenLeft, ...mapData.childrenRight].forEach(m => setMapBranchExpanded(m.id, false));
@@ -145,12 +163,13 @@ function createMapNode(data, type) {
     return el;
 }
 
-function createMapBranch(data, side) {
+function createMapBranch(data, side, sequenceIndex) {
     const wrapper = document.createElement('div');
     wrapper.className = 'branch-wrapper';
     wrapper.id = `branch-${data.id}`;
 
-    const mainNode = createMapNode(data, 'main');
+    const branchNumber = String(sequenceIndex + 1).padStart(2, '0');
+    const mainNode = createMapNode(data, 'main', branchNumber);
     wrapper.appendChild(mainNode);
 
     const svgLayer = document.getElementById('svg-layer');
@@ -168,8 +187,9 @@ function createMapBranch(data, side) {
         const inner = document.createElement('div');
         inner.className = 'children-inner';
 
-        data.children.forEach(child => {
-            const childNode = createMapNode(child, 'leaf');
+        data.children.forEach((child, index) => {
+            const childNumber = `${branchNumber}.${String(index + 1).padStart(2, '0')}`;
+            const childNode = createMapNode(child, 'leaf', childNumber);
             inner.appendChild(childNode);
 
             const cPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -270,16 +290,15 @@ function updateMapVisualFocus() {
 }
 
 function getMapLocalCenter(el, mapWorld) {
-    let top = 0, left = 0;
-    const width = el.offsetWidth;
-    const height = el.offsetHeight;
-    let curr = el;
-    while (curr && curr !== mapWorld) {
-        top += curr.offsetTop;
-        left += curr.offsetLeft;
-        curr = curr.offsetParent;
-    }
-    return { y: top + height / 2, left, right: left + width };
+    const worldRect = mapWorld.getBoundingClientRect();
+    const rect = el.getBoundingClientRect();
+    const scaleX = worldRect.width / mapWorld.offsetWidth || 1;
+    const scaleY = worldRect.height / mapWorld.offsetHeight || 1;
+    return {
+        y: (rect.top - worldRect.top + rect.height / 2) / scaleY,
+        left: (rect.left - worldRect.left) / scaleX,
+        right: (rect.right - worldRect.left) / scaleX
+    };
 }
 
 function updateMapConnectors() {
@@ -293,33 +312,45 @@ function updateMapConnectors() {
     mapConnections.forEach(conn => {
         const fromEl = document.getElementById(conn.from);
         const toEl = document.getElementById(conn.to);
-        
-        if (!fromEl || !toEl || toEl.offsetHeight === 0) {
+        if (!fromEl || !toEl) {
+            conn.pathEl.style.opacity = '0';
+            return;
+        }
+
+        const isChildConnector = Boolean(conn.parentBranchId);
+        const children = isChildConnector ? document.getElementById(`children-${conn.parentBranchId}`) : null;
+        if (isChildConnector && (!children?.classList.contains('expanded') || toEl.offsetHeight === 0)) {
             conn.pathEl.style.opacity = '0';
             return;
         }
         conn.pathEl.style.opacity = '1';
 
-        const fLoc = getMapLocalCenter(fromEl, mapWorld);
-        const tLoc = getMapLocalCenter(toEl, mapWorld);
+        const from = getMapLocalCenter(fromEl, mapWorld);
+        const to = getMapLocalCenter(toEl, mapWorld);
+        let startX;
+        let endX;
+        let direction;
 
-        const fY = fLoc.y;
-        const tY = tLoc.y;
-        let fX, tX;
-        
-        if (conn.side === 'left') {
-            fX = fLoc.left - 2; 
-            tX = tLoc.right + 2;
+        if (isChildConnector) {
+            // Child nodes sit outside their parent node on each respective side.
+            startX = conn.side === 'left' ? from.left : from.right;
+            endX = conn.side === 'left' ? to.right : to.left;
+            direction = conn.side === 'left' ? -1 : 1;
         } else {
-            fX = fLoc.right + 2;
-            tX = tLoc.left - 2;
+            // Root connectors always flow outward from the central root.
+            startX = conn.side === 'left' ? to.right : from.right;
+            endX = conn.side === 'left' ? from.left : to.left;
+            direction = 1;
         }
 
-        const cpDist = Math.max(Math.abs(tX - fX) * 0.45, 25);
-        const cp1X = conn.side === 'left' ? fX - cpDist : fX + cpDist;
-        const cp2X = conn.side === 'left' ? tX + cpDist : tX - cpDist;
+        const startY = isChildConnector ? from.y : (conn.side === 'left' ? to.y : from.y);
+        const endY = isChildConnector ? to.y : (conn.side === 'left' ? from.y : to.y);
+        const distance = Math.abs(endX - startX);
+        const controlDistance = Math.min(Math.max(distance * 0.42, 24), 96);
+        const control1X = startX + direction * controlDistance;
+        const control2X = endX - direction * controlDistance;
 
-        conn.pathEl.setAttribute('d', `M ${fX} ${fY} C ${cp1X} ${fY}, ${cp2X} ${tY}, ${tX} ${tY}`);
+        conn.pathEl.setAttribute('d', `M ${startX} ${startY} C ${control1X} ${startY}, ${control2X} ${endY}, ${endX} ${endY}`);
     });
 }
 
@@ -327,19 +358,35 @@ function fitMapToView() {
     const container = document.getElementById('canvas-container');
     const mapWorld = document.getElementById('map-world');
     if (!container || !mapWorld) return;
-    
-    const availableW = container.offsetWidth - 80;
-    const availableH = container.offsetHeight - 60;
 
-    const mW = mapWorld.offsetWidth;
-    const mH = mapWorld.offsetHeight;
+    const hasOpenPanel = document.getElementById('map-node-panel')?.classList.contains('open') ?? false;
+    const hasExpandedBranch = [...mapData.childrenLeft, ...mapData.childrenRight].some(branch =>
+        document.getElementById(`children-${branch.id}`)?.classList.contains('expanded')
+    );
+    document.querySelector('.system-map-workspace')?.classList.toggle('has-open-map-panel', hasOpenPanel);
+    container.classList.toggle('has-expanded-map', hasExpandedBranch);
 
-    if (mW === 0 || mH === 0) return;
+    const horizontalPadding = hasExpandedBranch ? 56 : 64;
+    const verticalPadding = hasExpandedBranch ? 48 : 64;
+    const availableW = Math.max(1, container.clientWidth - horizontalPadding);
+    const availableH = Math.max(1, container.clientHeight - verticalPadding);
+    const mapWidth = mapWorld.offsetWidth;
+    const mapHeight = mapWorld.offsetHeight;
+    if (!mapWidth || !mapHeight) return;
 
-    let scale = Math.min(availableW / mW, availableH / mH);
-    scale = Math.max(0.65, Math.min(1.05, scale)); 
-
+    const fitScale = hasExpandedBranch
+        ? Math.min(1, availableW / mapWidth)
+        : Math.min(1, availableW / mapWidth, availableH / mapHeight);
+    const scale = fitScale * mapZoomLevel;
+    const scaledWidth = mapWidth * scale;
+    const canCenterHorizontally = scaledWidth < availableW;
     mapWorld.style.transform = `scale(${scale})`;
+    mapWorld.style.transformOrigin = canCenterHorizontally ? 'center top' : 'left top';
+
+    document.getElementById('btn-map-zoom-out')?.toggleAttribute('disabled', mapZoomLevel <= MAP_ZOOM_MIN);
+    document.getElementById('btn-map-zoom-in')?.toggleAttribute('disabled', mapZoomLevel >= MAP_ZOOM_MAX);
+    const readout = document.getElementById('map-zoom-level');
+    if (readout) readout.textContent = `${Math.round(mapZoomLevel * 100)}%`;
 }
 
 function triggerMapLayoutRecalc() {
@@ -417,7 +464,18 @@ function closeMapNodePanel() {
 function setupMapEvents() {
     const btnClose = document.getElementById('btn-close-map-panel');
     if (btnClose) btnClose.onclick = closeMapNodePanel;
-    
+
+    const btnZoomOut = document.getElementById('btn-map-zoom-out');
+    if (btnZoomOut) btnZoomOut.onclick = () => {
+        mapZoomLevel = Math.max(MAP_ZOOM_MIN, Math.round((mapZoomLevel - MAP_ZOOM_STEP) * 100) / 100);
+        triggerMapLayoutRecalc();
+    };
+
+    const btnZoomIn = document.getElementById('btn-map-zoom-in');
+    if (btnZoomIn) btnZoomIn.onclick = () => {
+        mapZoomLevel = Math.min(MAP_ZOOM_MAX, Math.round((mapZoomLevel + MAP_ZOOM_STEP) * 100) / 100);
+        triggerMapLayoutRecalc();
+    };
     const btnReset = document.getElementById('btn-map-reset');
     if (btnReset) {
         btnReset.onclick = () => {
@@ -435,6 +493,10 @@ function setupMapEvents() {
             [...mapData.childrenLeft, ...mapData.childrenRight].forEach(m => setMapBranchExpanded(m.id, true));
             updateMapVisualFocus();
             triggerMapLayoutRecalc();
+            requestAnimationFrame(() => {
+                const canvas = document.getElementById('canvas-container');
+                if (canvas) canvas.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            });
         };
     }
 }

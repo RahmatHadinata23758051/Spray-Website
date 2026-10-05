@@ -12,7 +12,7 @@
         <!-- Top Presentation Shell Header -->
         <header id="shell-header">
             <div class="brand">
-                <div class="logo">SB</div>
+                <img class="logo-image" src="assets/images/spraybot-logo.jpg" alt="Logo Spraybot">
                 <div class="brand-text">
                     <span class="brand-title">Spraybot</span>
                     <span class="brand-subtitle">Presentasi Sistem</span>
@@ -45,8 +45,14 @@
                     <button class="btn-close" id="btn-close-notes" title="Tutup">✕</button>
                 </div>
                 <div class="panel-body">
-                    <p class="notes-hint">Catatan presenter tersimpan otomatis di browser untuk halaman ini.</p>
-                    <textarea id="shell-note-textarea" placeholder="Tuliskan poin penting yang ingin disampaikan pada topik ini..."></textarea>
+                    <div id="topic-detail" class="topic-detail" hidden>
+                        <h4 id="topic-detail-title"></h4>
+                        <p id="topic-detail-current"></p>
+                        <div class="topic-detail-question-label">Pertanyaan konfirmasi</div>
+                        <p id="topic-detail-question"></p>
+                    </div>
+                    <label class="notes-label" for="shell-note-textarea">Catatan presenter</label>
+                    <textarea id="shell-note-textarea" placeholder="Tuliskan catatan presenter..."></textarea>
                 </div>
             </aside>
         </main>

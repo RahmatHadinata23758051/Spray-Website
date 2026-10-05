@@ -138,10 +138,30 @@ function updateContextConnectors() {
 
     Object.entries(configs).forEach(([name, config]) => {
         const path = diagram.querySelector(`[data-connection="${name}"]`);
+        const label = diagram.querySelector(`.label-${name}`);
         if (!path) return;
         const distance = Math.abs(config.to.x - config.from.x);
         const control = Math.max(30, distance * 0.42);
         path.setAttribute('d', `M ${config.from.x} ${config.from.y} C ${config.from.x + control} ${config.from.y}, ${config.to.x - control} ${config.to.y}, ${config.to.x} ${config.to.y}`);
         path.setAttribute('marker-end', `url(#${config.marker})`);
+
+        if (label) {
+            const laneWidth = Math.abs(config.to.x - config.from.x);
+            const preferredWidth = name === 'paragon' ? 202 : name === 'operator' ? 144 : name === 'actuator' ? 126 : 110;
+            const labelWidth = Math.max(84, Math.min(preferredWidth, laneWidth - 24));
+            label.style.width = `${labelWidth}px`;
+            label.style.maxWidth = `${labelWidth}px`;
+            label.style.whiteSpace = 'normal';
+            label.style.textAlign = 'center';
+            const measuredWidth = label.offsetWidth;
+            const labelHeight = label.offsetHeight;
+            const midpointX = (config.from.x + config.to.x) / 2;
+            const midpointY = (config.from.y + config.to.y) / 2;
+            const labelLeft = midpointX - measuredWidth / 2;
+            const labelTop = midpointY - labelHeight / 2;
+            label.style.left = `${Math.max(4, Math.min(diagram.clientWidth - measuredWidth - 4, labelLeft))}px`;
+            label.style.top = `${Math.max(4, Math.min(diagram.clientHeight - labelHeight - 4, labelTop))}px`;
+            label.style.right = 'auto';
+        }
     });
 }

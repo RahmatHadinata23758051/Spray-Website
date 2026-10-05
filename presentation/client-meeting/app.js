@@ -2,7 +2,32 @@
 
 let currentPageId = '';
 let shellNotesOpen = false;
+const noteStorageKey = 'spraybot_client_meeting_notes';
+let presenterNotes = JSON.parse(localStorage.getItem(noteStorageKey) || '{}');
 
+function savePresenterNotes() {
+    localStorage.setItem(noteStorageKey, JSON.stringify(presenterNotes));
+}
+
+function showDecisionDetail(index) {
+    const item = decisionTopics[index];
+    if (!item) return;
+    selectedDecisionIndex = index;
+    const detail = document.getElementById('topic-detail');
+    detail.hidden = false;
+    document.getElementById('topic-detail-title').textContent = `${String(index + 1).padStart(2, '0')} · ${item.topic}`;
+    document.getElementById('topic-detail-current').textContent = item.current;
+    document.getElementById('topic-detail-question').textContent = item.confirm;
+    document.querySelectorAll('.decision-row').forEach((row, rowIndex) => row.classList.toggle('selected', rowIndex === index));
+    updateShellNotes('decisions', `decision-${index + 1}`);
+    openShellNotes();
+}
+
+function openShellNotes() {
+    shellNotesOpen = true;
+    document.getElementById('shell-note-panel')?.classList.add('open');
+    document.getElementById('btn-toggle-notes')?.classList.add('active');
+}
 function initApp() {
     window.addEventListener('hashchange', handleRouteChange);
     
@@ -25,9 +50,15 @@ function handleRouteChange() {
         return;
     }
 
+    shellNotesOpen = false;
+    document.getElementById('shell-note-panel')?.classList.remove('open');
+    document.getElementById('btn-toggle-notes')?.classList.remove('active');
+    const topicDetail = document.getElementById('topic-detail');
+    if (topicDetail) topicDetail.hidden = true;
+    document.querySelectorAll('.decision-row.selected').forEach(row => row.classList.remove('selected'));
+    selectedDecisionIndex = null;
     const page = presentationPages[pageIndex];
     currentPageId = page.id;
-    
     renderShell(page, pageIndex);
     loadPageContent(page.id);
     updateShellNotes(page.id);
@@ -98,25 +129,34 @@ function goNext() {
 }
 
 function toggleShellNotes() {
-    shellNotesOpen = !shellNotesOpen;
-    const panel = document.getElementById('shell-note-panel');
-    const btn = document.getElementById('btn-toggle-notes');
     if (shellNotesOpen) {
-        panel.classList.add('open');
-        btn.classList.add('active');
-    } else {
-        panel.classList.remove('open');
-        btn.classList.remove('active');
+        shellNotesOpen = false;
+        document.getElementById('shell-note-panel')?.classList.remove('open');
+        document.getElementById('btn-toggle-notes')?.classList.remove('active');
+        return;
     }
+    openShellNotes();
 }
 
-function updateShellNotes(pageId) {
+function updateShellNotes(pageId, noteId = null) {
     const textarea = document.getElementById('shell-note-textarea');
-    if (textarea) {
-        const key = `spraybot_client_meeting_note_${pageId.replace('-', '_')}`;
-        textarea.value = localStorage.getItem(key) || '';
-        textarea.oninput = (e) => localStorage.setItem(key, e.target.value);
+    const label = document.querySelector('.notes-label');
+    if (!textarea) return;
+
+    const key = noteId ? `${pageId}:${noteId}` : pageId;
+    if (label) {
+        if (noteId?.startsWith('decision-')) label.textContent = `Catatan topik ${noteId.slice('decision-'.length)}`;
+        else if (noteId?.startsWith('step-')) {
+            const stepNames = ['Persiapan', 'Pengambilan Data', 'Analisis', 'Hasil', 'Laporan'];
+            const stepIndex = Number(noteId.slice('step-'.length)) - 1;
+            label.textContent = `Catatan alur ${stepIndex + 1} · ${stepNames[stepIndex] || ''}`;
+        } else label.textContent = 'Catatan presenter';
     }
+    textarea.value = presenterNotes[key] || '';
+    textarea.oninput = () => {
+        presenterNotes[key] = textarea.value;
+        savePresenterNotes();
+    };
 }
 
 function setupShellEvents() {
@@ -125,14 +165,34 @@ function setupShellEvents() {
     document.getElementById('btn-toggle-notes')?.addEventListener('click', toggleShellNotes);
     document.getElementById('btn-close-notes')?.addEventListener('click', () => {
         shellNotesOpen = false;
-        document.getElementById('shell-note-panel').classList.remove('open');
-        document.getElementById('btn-toggle-notes').classList.remove('active');
+        document.getElementById('shell-note-panel')?.classList.remove('open');
+        document.getElementById('btn-toggle-notes')?.classList.remove('active');
     });
+    document.getElementById('page-container')?.addEventListener('click', (event) => {
+        const row = event.target.closest('.decision-row[data-decision-index]');
+        if (row && currentPageId === 'decisions') showDecisionDetail(Number(row.dataset.decisionIndex));
 
+        const step = event.target.closest('.flow-step[data-overview-note]');
+        if (step && currentPageId === 'overview') {
+            document.querySelectorAll('.flow-step').forEach(node => node.classList.toggle('selected', node === step));
+            updateShellNotes('overview', step.dataset.overviewNote);
+            openShellNotes();
+        }
+    });
+    document.getElementById('page-container')?.addEventListener('keydown', (event) => {
+        const row = event.target.closest('.decision-row[data-decision-index]');
+        if (row && currentPageId === 'decisions' && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            showDecisionDetail(Number(row.dataset.decisionIndex));
+        }
+        const step = event.target.closest('.flow-step[data-overview-note]');
+        if (step && currentPageId === 'overview' && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            step.click();
+        }
+    });
     document.addEventListener('keydown', (e) => {
-        // Do not intercept if typing in textarea
-        if (e.target.tagName.toLowerCase() === 'textarea') return;
-
+        if (e.target.tagName?.toLowerCase() === 'textarea') return;
         if (e.key === 'ArrowRight' || e.key === ' ') {
             e.preventDefault();
             goNext();
@@ -142,5 +202,4 @@ function setupShellEvents() {
         }
     });
 }
-
 window.addEventListener('DOMContentLoaded', initApp);
