@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spraybot — Presentasi Sistem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Top Presentation Shell Header -->
+        <header id="shell-header">
+            <div class="brand">
+                <div class="logo">SB</div>
+                <div class="brand-text">
+                    <span class="brand-title">Spraybot</span>
+                    <span class="brand-subtitle">Presentasi Sistem</span>
+                </div>
+            </div>
+
+            <nav id="shell-nav">
+                <a href="#/overview" class="nav-link" data-route="overview">Gambaran</a>
+                <a href="#/system-map" class="nav-link" data-route="system-map">Alur Sistem</a>
+                <a href="#/system-context" class="nav-link" data-route="system-context">Konteks Sistem</a>
+                <a href="#/architecture" class="nav-link" data-route="architecture">Arsitektur</a>
+                <a href="#/decisions" class="nav-link" data-route="decisions">Hal yang Perlu Disepakati</a>
+            </nav>
+
+            <div class="header-actions">
+                <button class="btn" id="btn-toggle-notes" title="Buka Catatan Halaman Ini">Catatan Saya</button>
+            </div>
+        </header>
+
+        <!-- Main Display Canvas -->
+        <main id="shell-main">
+            <div id="page-container" class="page-container">
+                <!-- Dynamically rendered page view -->
+            </div>
+
+            <!-- Slide-out Presenter Notes Panel -->
+            <aside id="shell-note-panel" class="shell-note-panel">
+                <div class="panel-header">
+                    <h3>Catatan Saya</h3>
+                    <button class="btn-close" id="btn-close-notes" title="Tutup">✕</button>
+                </div>
+                <div class="panel-body">
+                    <p class="notes-hint">Catatan presenter tersimpan otomatis di browser untuk halaman ini.</p>
+                    <textarea id="shell-note-textarea" placeholder="Tuliskan poin penting yang ingin disampaikan pada topik ini..."></textarea>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Bottom Presentation Controls Bar -->
+        <footer id="shell-footer">
+            <button class="btn-nav" id="btn-prev" title="Sebelumnya (ArrowLeft)">← Sebelumnya</button>
+            <div class="footer-info">
+                <span id="pres-step">01 / 05</span>
+            </div>
+            <button class="btn-nav" id="btn-next" title="Berikutnya (ArrowRight / Space)">Berikutnya →</button>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="data.js"></script>
+    <script src="pages/overview.js"></script>
+    <script src="pages/system-map.js"></script>
+    <script src="pages/system-context.js"></script>
+    <script src="pages/architecture.js"></script>
+    <script src="pages/decisions.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
