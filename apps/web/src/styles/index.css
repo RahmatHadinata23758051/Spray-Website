@@ -229,6 +229,483 @@ button:active:not(:disabled) { transform: translateY(1px); }
   .inspector-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 12px; display: block; }
 }
 
+.camera-test-page {
+  min-height: 100dvh;
+  padding: 32px clamp(20px, 4vw, 64px) 48px;
+  background: var(--bg-canvas);
+}
+
+.camera-test-page > * {
+  width: min(1180px, 100%);
+  margin-inline: auto;
+}
+
+.camera-test-intro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.camera-test-kicker,
+.camera-test-section-label {
+  color: var(--primary);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.camera-test-intro h1 {
+  margin: 8px 0 4px;
+  color: var(--text-primary);
+  font-size: clamp(28px, 4vw, 42px);
+  letter-spacing: -0.045em;
+  line-height: 1.1;
+}
+
+.camera-test-intro p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.camera-test-api-note,
+.camera-test-hardware-note,
+.camera-test-time {
+  color: var(--text-secondary);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+}
+
+.camera-test-api-note {
+  border-left: 2px solid var(--primary);
+  padding-left: 10px;
+  white-space: nowrap;
+}
+
+.camera-test-panel {
+  margin-top: 16px;
+  padding: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  box-shadow: 0 5px 18px rgba(16, 42, 67, 0.035);
+}
+
+.camera-test-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.camera-test-panel-heading.compact {
+  align-items: center;
+}
+
+.camera-test-panel-heading h2 {
+  margin: 5px 0 0;
+  color: var(--text-primary);
+  font-size: 18px;
+  letter-spacing: -0.025em;
+}
+
+.camera-test-mode-switch {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.camera-test-mode-switch > span {
+  width: 100%;
+  color: var(--text-muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.camera-test-mode-switch button {
+  min-height: 34px;
+  padding: 7px 11px;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.camera-test-mode-switch button.is-selected {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  font-weight: 700;
+}
+
+.camera-test-shared-assignment {
+  display: grid;
+  gap: 7px;
+  max-width: 520px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.camera-test-shared-assignment p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.camera-test-assignment-grid,
+.camera-test-preview-grid,
+.camera-test-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.camera-test-assignment {
+  display: grid;
+  gap: 7px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.camera-test-assignment small {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.camera-test-error {
+  margin: -6px 0 16px;
+  padding: 10px 12px;
+  color: #a63d3d;
+  background: var(--danger-soft);
+  border-left: 3px solid var(--danger);
+  font-size: 12px;
+}
+
+.camera-test-single-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.camera-test-single-summary > div {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--bg-subtle);
+  border-left: 2px solid var(--border-default);
+}
+
+.camera-test-single-summary span,
+.camera-test-frame-results-heading,
+.camera-test-frame small {
+  color: var(--text-muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.camera-test-single-summary strong {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.camera-test-frame-results {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.camera-test-frame-results-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.camera-test-frame-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.camera-test-frame {
+  min-width: 0;
+  padding: 5px;
+  color: var(--text-primary);
+  text-align: left;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.camera-test-frame:hover,
+.camera-test-frame:focus-visible {
+  border-color: var(--primary);
+}
+
+.camera-test-frame img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  display: block;
+  object-fit: cover;
+  background: #101b28;
+  border-radius: 3px;
+}
+
+.camera-test-frame > span {
+  display: block;
+  margin-top: 5px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.camera-test-frame small {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  text-transform: none;
+}
+
+.camera-test-frame-detail {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(9, 19, 30, 0.72);
+}
+
+.camera-test-frame-detail > div {
+  width: min(760px, 100%);
+  padding: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+}
+
+.camera-test-frame-detail img {
+  width: 100%;
+  display: block;
+  background: #101b28;
+}
+
+.camera-test-pair-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.camera-test-pair {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  color: var(--text-primary);
+  text-align: left;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.camera-test-pair:hover,
+.camera-test-pair:focus-visible {
+  border-color: var(--primary);
+}
+
+.camera-test-pair > div {
+  display: grid;
+  gap: 3px;
+}
+
+.camera-test-pair small {
+  color: var(--text-muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+}
+
+.camera-test-pair > span,
+.camera-test-pair-detail-images {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.camera-test-pair img,
+.camera-test-pair-detail-images img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #101b28;
+  border-radius: 3px;
+}
+
+.camera-test-frame-detail p {
+  margin: 10px 0 14px;
+  color: var(--text-secondary);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+}
+
+.camera-test-preview {
+  min-width: 0;
+  padding: 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+}
+
+.camera-test-preview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.camera-test-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-family: "Plus Jakarta Sans Variable", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.camera-test-status i {
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.camera-test-status.status-ready i { background: var(--success); }
+.camera-test-status.status-failed i,
+.camera-test-status.status-disconnected i { background: var(--danger); }
+.camera-test-status.status-unavailable i { background: var(--warning); }
+
+.camera-test-video-frame {
+  position: relative;
+  display: grid;
+  aspect-ratio: 16 / 9;
+  place-items: center;
+  overflow: hidden;
+  background: #101b28;
+  border: 1px solid #26384a;
+  border-radius: 7px;
+}
+
+.camera-test-video-frame video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.camera-test-video-placeholder {
+  position: absolute;
+  color: #91a5b8;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+}
+
+.camera-test-action-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.camera-test-action-row > span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.camera-test-snapshot-grid figure {
+  min-width: 0;
+  margin: 0;
+  padding: 10px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+}
+
+.camera-test-snapshot-grid figcaption {
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.camera-test-snapshot-grid img {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #101b28;
+  border-radius: 5px;
+}
+
+.camera-test-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 100px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .camera-test-page { padding: 24px 14px 32px; }
+  .camera-test-intro,
+  .camera-test-panel-heading,
+  .camera-test-action-row { align-items: stretch; flex-direction: column; }
+  .camera-test-api-note { align-self: flex-start; }
+  .camera-test-assignment-grid,
+  .camera-test-preview-grid,
+  .camera-test-snapshot-grid,
+  .camera-test-single-summary { grid-template-columns: 1fr; }
+  .camera-test-panel { padding: 16px; }
+}
+
 @media (max-width: 1280px) {
   .app-shell { grid-template-columns: 248px minmax(0, 1fr); padding: 12px; gap: 12px; }
   .app-shell.app-shell-collapsed { grid-template-columns: 76px minmax(0, 1fr); }
