@@ -20,6 +20,7 @@ import { BatchDetailPage } from './presentation/pages/Batches/BatchDetailPage';
 import { BatchCapturePage } from './presentation/pages/Batches/BatchCapturePage';
 import { BatchAnalysisPage } from './presentation/pages/Batches/BatchAnalysisPage';
 import { BatchResultPage } from './presentation/pages/Batches/BatchResultPage';
+import { CameraTestPage } from './presentation/pages/CameraTest/CameraTestPage';
 
 export { createFinalReportCsv } from './application/reporting/createFinalReportCsv';
 
@@ -27,6 +28,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/camera-test" element={<CameraTestPage />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
       
       {/* Shell-wrapped application routes */}

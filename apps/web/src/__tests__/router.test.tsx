@@ -22,7 +22,18 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
     expect(screen.getByText('Masuk ke Spraybot')).toBeInTheDocument();
   });
 
-  it('2. /dashboard renders Dashboard page', async () => {
+  it('2. /camera-test renders the isolated dual-camera PoC without the application shell', () => {
+    render(
+      <MemoryRouter initialEntries={['/camera-test']}>
+        <App />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('heading', { name: 'Uji Dual Kamera' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Aktifkan Kamera/ })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Navigasi Utama' })).not.toBeInTheDocument();
+  });
+
+  it('3. /dashboard renders Dashboard page', async () => {
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
         <App />
@@ -31,7 +42,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
     expect(await screen.findByRole('heading', { name: 'Dasbor' })).toBeInTheDocument();
   });
 
-  it('3. /products renders Products page', () => {
+  it('4. /products renders Products page', () => {
     render(
       <MemoryRouter initialEntries={['/products']}>
         <App />
@@ -41,7 +52,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
     expect(screen.getByText('Product Master Data')).toBeInTheDocument();
   });
 
-  it('4. /reports renders Reports page', () => {
+  it('5. /reports renders Reports page', () => {
     render(
       <MemoryRouter initialEntries={['/reports']}>
         <App />
@@ -50,7 +61,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
     expect(screen.getByRole('heading', { name: 'Laporan', level: 1 })).toBeInTheDocument();
   });
 
-  it('5. /calibration renders Calibration page', () => {
+  it('6. /calibration renders Calibration page', () => {
     render(
       <MemoryRouter initialEntries={['/calibration']}>
         <App />
@@ -60,7 +71,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
     expect(screen.getAllByText('Terkalibrasi').length).toBeGreaterThan(0);
   });
 
-  it('6. /users renders Users page', () => {
+  it('7. /users renders Users page', () => {
     render(
       <MemoryRouter initialEntries={['/users']}>
         <App />
@@ -70,7 +81,7 @@ describe('Phase C - React Router Infrastructure & Navigation Bridge', () => {
     expect(screen.getAllByText('Nadia Putri').length).toBeGreaterThan(0);
   });
 
-  it('7. /settings renders Settings page', () => {
+  it('8. /settings renders Settings page', () => {
     render(
       <MemoryRouter initialEntries={['/settings']}>
         <App />
