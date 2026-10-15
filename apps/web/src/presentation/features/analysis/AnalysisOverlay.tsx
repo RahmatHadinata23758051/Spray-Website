@@ -1,6 +1,6 @@
 import type { Camera as CameraType, Frame } from '@spray-paragon/domain';
 import type { CalibrationSnapshot, SidePixelGeometry, FrontPixelGeometry, SideFinalMeasurements, FrontFinalMeasurements } from '@spray-paragon/domain';
-import { calibratedGridSpacingPx, selectMeasurementValue } from '@spray-paragon/domain';
+import { calibratedGridSpacingPx, resolveSideOrientation, selectMeasurementValue } from '@spray-paragon/domain';
 import { fmt } from '../../utils/formatters';
 import type { ViewMode } from './types';
 
@@ -35,6 +35,15 @@ export function AnalysisOverlay({
   const mist = frontMistPoints;
   const sidePath = `M112 204 C158 ${190 - seedShift}, 198 154, 252 147 C314 120, 371 136, 421 122 C487 112, 536 137, 594 151 C622 158, 642 175, 653 194 C632 213, 605 223, 574 226 C518 244, 473 235, 419 246 C350 259, 300 235, 245 237 C188 229, 146 218, 112 204 Z`;
   const frontPath = `M357 78 C401 72, 435 95, 460 122 C493 133, 503 168, 492 198 C513 231, 482 262, 451 276 C428 310, 383 315, 350 299 C312 316, 272 296, 253 267 C214 253, 205 215, 223 185 C207 148, 233 116, 269 106 C291 78, 326 70, 357 78 Z`;
+  const sideOrientation = resolveSideOrientation(calibration);
+  const sideIsMirrored = sideOrientation === 'nozzleRight';
+  const mirrorTransform = sideIsMirrored ? 'translate(720 0) scale(-1 1)' : undefined;
+  const sideDirectionEndX = sideIsMirrored ? 70 : 650;
+  const sideAngleLabelX = sideIsMirrored ? 508 : 212;
+  const sideLengthLabelX = sideIsMirrored ? 390 : 330;
+  const sideSpreadLabelX = sideIsMirrored
+    ? Math.max(8, sideGeometry.verticalSpreadTopPx.x - 48)
+    : Math.min(680, sideGeometry.verticalSpreadTopPx.x + 8);
 
   const spacingMm = camera === 'side' ? 100 : 50;
   const gridSpacingPx = calibratedGridSpacingPx(spacingMm, calibration);
@@ -66,24 +75,24 @@ export function AnalysisOverlay({
 
     {camera === 'side' && <>
       <image href={mode === 'Mask' ? '/fixtures/side-mask.png' : '/fixtures/side-original.png'} x="0" y="0" width="720" height="360" preserveAspectRatio="xMidYMid slice" opacity={mode === 'Mask' ? 1 : density} />
-      {mode !== 'Mask' && <g>
+      {mode !== 'Mask' && <g transform={mirrorTransform}>
         <path d="M38 178 h68 l18 18 v18 l-18 18 H38z" fill="#27323c" stroke="#5e6d79" />
         <rect x="94" y="191" width="27" height="26" rx="2" fill="#87939d" />
         <circle cx="113" cy="204" r="4" fill="#c5d0d8" />
       </g>}
       {physicalGrid}
       {mode === 'Overlay' && <g>
-        <path d={sidePath} fill="#1d8fff" fillOpacity="0.07" stroke="#1d8fff" strokeWidth="2" />
+        <g transform={mirrorTransform}><path d={sidePath} fill="#1d8fff" fillOpacity="0.07" stroke="#1d8fff" strokeWidth="2" /></g>
         <circle cx={sideGeometry.nozzleOriginPx.x} cy={sideGeometry.nozzleOriginPx.y} r="5" fill="#1d8fff" stroke="#dce8f1" strokeWidth="2" />
-        <line x1={sideGeometry.nozzleOriginPx.x} y1={sideGeometry.nozzleOriginPx.y} x2="650" y2="198" stroke="#8fa3b8" strokeWidth="1.5" strokeDasharray="6 5" />
+        <line data-testid="side-direction-line" x1={sideGeometry.nozzleOriginPx.x} y1={sideGeometry.nozzleOriginPx.y} x2={sideDirectionEndX} y2="198" stroke="#8fa3b8" strokeWidth="1.5" strokeDasharray="6 5" />
         <line x1={sideGeometry.nozzleOriginPx.x} y1={sideGeometry.nozzleOriginPx.y} x2={sideGeometry.upperBoundaryPx.x} y2={sideGeometry.upperBoundaryPx.y} stroke="#1d8fff" strokeWidth="1.4" />
         <line x1={sideGeometry.nozzleOriginPx.x} y1={sideGeometry.nozzleOriginPx.y} x2={sideGeometry.lowerBoundaryPx.x} y2={sideGeometry.lowerBoundaryPx.y} stroke="#1d8fff" strokeWidth="1.4" />
-        <path d="M202 193 A90 90 0 0 1 201 216" fill="none" stroke="#ffb020" strokeWidth="2" />
-        <text x="212" y="211" fill="#ffb020" fontSize="12" fontFamily="IBM Plex Mono">{fmt.deg(selectMeasurementValue(sideMeasurements.sprayAngle))}</text>
+        <g transform={mirrorTransform}><path d="M202 193 A90 90 0 0 1 201 216" fill="none" stroke="#ffb020" strokeWidth="2" /></g>
+        <text x={sideAngleLabelX} y="211" fill="#ffb020" fontSize="12" fontFamily="IBM Plex Mono">{fmt.deg(selectMeasurementValue(sideMeasurements.sprayAngle))}</text>
         <line data-testid="side-display-length-line" x1={sideGeometry.nozzleOriginPx.x} y1="312" x2={sideGeometry.sprayEndpointPx.x} y2="312" stroke="#ffb020" strokeWidth="2" /><line x1={sideGeometry.nozzleOriginPx.x} y1="304" x2={sideGeometry.nozzleOriginPx.x} y2="320" stroke="#ffb020" strokeWidth="2" /><line x1={sideGeometry.sprayEndpointPx.x} y1="304" x2={sideGeometry.sprayEndpointPx.x} y2="320" stroke="#ffb020" strokeWidth="2" />
-        <text data-testid="side-overlay-spray-length" x="330" y="304" fill="#ffb020" fontSize="12" fontFamily="IBM Plex Mono">{fmt.cm(selectMeasurementValue(sideMeasurements.sprayLength))}</text>
+        <text data-testid="side-overlay-spray-length" x={sideLengthLabelX} y="304" fill="#ffb020" fontSize="12" fontFamily="IBM Plex Mono">{fmt.cm(selectMeasurementValue(sideMeasurements.sprayLength))}</text>
         <line x1={sideGeometry.verticalSpreadTopPx.x} y1={sideGeometry.verticalSpreadTopPx.y} x2={sideGeometry.verticalSpreadBottomPx.x} y2={sideGeometry.verticalSpreadBottomPx.y} stroke="#ffb020" strokeWidth="2" />
-        <text x={Math.min(680, sideGeometry.verticalSpreadTopPx.x + 8)} y={(sideGeometry.verticalSpreadTopPx.y + sideGeometry.verticalSpreadBottomPx.y) / 2} fill="#ffb020" fontSize="11" fontFamily="IBM Plex Mono">{fmt.mm(selectMeasurementValue(sideMeasurements.verticalSpread))}</text>
+        <text x={sideSpreadLabelX} y={(sideGeometry.verticalSpreadTopPx.y + sideGeometry.verticalSpreadBottomPx.y) / 2} fill="#ffb020" fontSize="11" fontFamily="IBM Plex Mono">{fmt.mm(selectMeasurementValue(sideMeasurements.verticalSpread))}</text>
       </g>}
     </>}
 
