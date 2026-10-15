@@ -12,6 +12,10 @@ export function NewBatchPage() {
   const [productId, setProductId] = useState('');
   const [recipeId, setRecipeId] = useState('');
   const [productLot, setProductLot] = useState('');
+  const [storageCondition, setStorageCondition] = useState('');
+  const [bottlePosition, setBottlePosition] = useState('');
+  const [testPeriod, setTestPeriod] = useState('');
+  const [repetition, setRepetition] = useState('');
   const [notes, setNotes] = useState('');
   
   const [fixture, setFixture] = useState<FixtureScenario>('nominal-01');
@@ -52,6 +56,10 @@ export function NewBatchPage() {
         recipeId: recipe.id,
         recipeSnapshot: { name: recipe.name, forceSetpointN: recipe.forceSetpointN, pressDurationMs: recipe.pressDurationMs, strokeMm: recipe.strokeMm },
         productLot,
+        storageCondition: storageCondition || undefined,
+        bottlePosition: bottlePosition || undefined,
+        testPeriod: testPeriod || undefined,
+        repetition: repetition.trim() ? Number(repetition) : undefined,
         operatorId: 'usr-np',
         operatorName: 'Nadia Putri',
         fixture,
@@ -95,6 +103,29 @@ export function NewBatchPage() {
                     placeholder="mis. LOT-24A-09"
                     className="form-input w-full"
                   />
+                </div>
+              </div>
+            </section>
+
+            {/* Test Context */}
+            <section className="space-y-4">
+              <h3 className="text-sm font-bold text-text-primary border-b border-border-subtle pb-2">Konteks Pengujian</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="form-group space-y-1.5">
+                  <label className="form-label" htmlFor="storage-condition">Kondisi Penyimpanan</label>
+                  <input id="storage-condition" type="text" value={storageCondition} onChange={e => setStorageCondition(e.target.value)} placeholder="mis. 25°C / ambient" className="form-input w-full" />
+                </div>
+                <div className="form-group space-y-1.5">
+                  <label className="form-label" htmlFor="bottle-position">Posisi Botol</label>
+                  <input id="bottle-position" type="text" value={bottlePosition} onChange={e => setBottlePosition(e.target.value)} placeholder="mis. tegak" className="form-input w-full" />
+                </div>
+                <div className="form-group space-y-1.5">
+                  <label className="form-label" htmlFor="test-period">Periode Pengujian</label>
+                  <input id="test-period" type="text" value={testPeriod} onChange={e => setTestPeriod(e.target.value)} placeholder="mis. Minggu ke-2" className="form-input w-full" />
+                </div>
+                <div className="form-group space-y-1.5">
+                  <label className="form-label" htmlFor="repetition">Pengulangan Ke-</label>
+                  <input id="repetition" type="number" min="1" step="1" value={repetition} onChange={e => setRepetition(e.target.value)} placeholder="mis. 1" className="form-input w-full" />
                 </div>
               </div>
             </section>
@@ -217,6 +248,17 @@ export function NewBatchPage() {
               <div className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-1">Lot Produk</div>
               <div className="text-sm font-medium text-text-primary">{productLot || 'Belum diisi'}</div>
             </div>
+            {(storageCondition || bottlePosition || testPeriod || repetition) && (
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-1">Konteks Uji</div>
+                <div className="text-xs font-medium text-text-secondary space-y-0.5">
+                  {storageCondition && <div>Penyimpanan: {storageCondition}</div>}
+                  {bottlePosition && <div>Posisi: {bottlePosition}</div>}
+                  {testPeriod && <div>Periode: {testPeriod}</div>}
+                  {repetition && <div>Pengulangan: Ke-{repetition}</div>}
+                </div>
+              </div>
+            )}
             <div className="border-t border-border-subtle pt-5">
               <div className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-1">Resep</div>
               <div className="text-sm font-bold text-text-primary">{recipe ? recipe.name : '—'}</div>
