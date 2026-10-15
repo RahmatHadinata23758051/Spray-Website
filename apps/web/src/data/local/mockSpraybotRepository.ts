@@ -1,6 +1,6 @@
 import type { Test, Frame, Analysis, FixtureScenario, Camera, CapturePhaseV2, SynchronizedAnalysisFrame } from '@spray-paragon/domain';
-import type { SidePixelGeometry, FrontPixelGeometry } from '@spray-paragon/domain';
-import { testSchema, analysisSchema, synchronizedAnalysisFrameSchema } from '@spray-paragon/domain';
+import type { SidePixelGeometry, FrontPixelGeometry, SideOrientation } from '@spray-paragon/domain';
+import { mirrorSideGeometry, testSchema, analysisSchema, synchronizedAnalysisFrameSchema } from '@spray-paragon/domain';
 
 export interface TestRepository {
   getAll(): Promise<Test[]>;
@@ -234,8 +234,16 @@ function frontGeometry(frameIndex: number, scenario: FixtureScenario): FrontPixe
   };
 }
 
-export function getPixelGeometry(frameIndex: number, scenario: FixtureScenario): { side: SidePixelGeometry; front: FrontPixelGeometry } {
-  return { side: sideGeometry(frameIndex, scenario), front: frontGeometry(frameIndex, scenario) };
+export function getPixelGeometry(
+  frameIndex: number,
+  scenario: FixtureScenario,
+  sideOrientation: SideOrientation = 'nozzleLeft',
+): { side: SidePixelGeometry; front: FrontPixelGeometry } {
+  const side = sideGeometry(frameIndex, scenario);
+  return {
+    side: sideOrientation === 'nozzleRight' ? mirrorSideGeometry(side) : side,
+    front: frontGeometry(frameIndex, scenario),
+  };
 }
 
 export const fmt = {
