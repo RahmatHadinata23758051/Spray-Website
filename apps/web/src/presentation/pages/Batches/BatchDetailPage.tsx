@@ -14,6 +14,10 @@ export function BatchDetailPage() {
   
   // Edit draft state
   const [productLot, setProductLot] = useState('');
+  const [storageCondition, setStorageCondition] = useState('');
+  const [bottlePosition, setBottlePosition] = useState('');
+  const [testPeriod, setTestPeriod] = useState('');
+  const [repetition, setRepetition] = useState('');
   const [notes, setNotes] = useState('');
   
   const loadBatch = useCallback(async () => {
@@ -23,6 +27,10 @@ export function BatchDetailPage() {
       setBatch(b);
       if (b && b.status === 'DRAFT' && b.setupDraft) {
         setProductLot(b.setupDraft.productLot || '');
+        setStorageCondition(b.setupDraft.storageCondition || '');
+        setBottlePosition(b.setupDraft.bottlePosition || '');
+        setTestPeriod(b.setupDraft.testPeriod || '');
+        setRepetition(b.setupDraft.repetition !== undefined ? String(b.setupDraft.repetition) : '');
         setNotes(b.setupDraft.notes || '');
       }
     } catch (e) {
@@ -39,10 +47,19 @@ export function BatchDetailPage() {
     return () => { active = false; };
   }, [loadBatch]);
 
+  const contextPatch = () => ({
+    productLot,
+    storageCondition: storageCondition || undefined,
+    bottlePosition: bottlePosition || undefined,
+    testPeriod: testPeriod || undefined,
+    repetition: repetition.trim() ? Number(repetition) : undefined,
+    notes,
+  });
+
   const handleUpdateDraft = async () => {
     if (!batch || batch.status !== 'DRAFT') return;
     try {
-      await batchRepository.updateBatchSetupDraft(batch.id, { productLot, notes });
+      await batchRepository.updateBatchSetupDraft(batch.id, contextPatch());
       await loadBatch();
     } catch (e) {
       console.error("Failed to update draft", e);
@@ -53,7 +70,7 @@ export function BatchDetailPage() {
     if (!batch || batch.status !== 'DRAFT') return;
     try {
       // Ensure latest changes are saved first
-      await batchRepository.updateBatchSetupDraft(batch.id, { productLot, notes });
+      await batchRepository.updateBatchSetupDraft(batch.id, contextPatch());
       const readyBatch = await batchRepository.prepareBatch(batch.id);
       setBatch(readyBatch);
     } catch (e) {
@@ -221,16 +238,9 @@ export function BatchDetailPage() {
 
               <div className="grid gap-6 sm:grid-cols-2 border-t border-border-subtle pt-5">
                 <div className="form-group">
-                  <label className="form-label">Lot Produk</label>
+                  <label className="form-label">Lot Produk / Referensi Material</label>
                   {isDraft ? (
-                    <input 
-                      type="text" 
-                      value={productLot} 
-                      onChange={e => setProductLot(e.target.value)} 
-                      onBlur={handleUpdateDraft}
-                      placeholder="Masukkan lot..."
-                      className="form-input max-w-[260px]"
-                    />
+                    <input type="text" value={productLot} onChange={e => setProductLot(e.target.value)} onBlur={handleUpdateDraft} placeholder="Masukkan lot..." className="form-input max-w-[260px]" />
                   ) : (
                     <div className="font-mono text-sm font-bold text-text-primary">{setup.productLot || '—'}</div>
                   )}
@@ -240,6 +250,31 @@ export function BatchDetailPage() {
                   <div className="font-mono text-sm font-bold text-text-primary">
                     {'sampleId' in setup ? String((setup as { sampleId?: string }).sampleId ?? '—') : 'Belum dibuat'}
                   </div>
+                </div>
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-2 border-t border-border-subtle pt-5">
+                {[
+                  ['storageCondition', 'Kondisi Penyimpanan', storageCondition, setStorageCondition, setup.storageCondition],
+                  ['bottlePosition', 'Posisi Botol', bottlePosition, setBottlePosition, setup.bottlePosition],
+                  ['testPeriod', 'Periode Pengujian', testPeriod, setTestPeriod, setup.testPeriod],
+                ].map(([key, label, value, setter, snapshotValue]) => (
+                  <div className="form-group" key={key as string}>
+                    <label className="form-label">{label as string}</label>
+                    {isDraft ? (
+                      <input type="text" value={value as string} onChange={e => (setter as React.Dispatch<React.SetStateAction<string>>)(e.target.value)} onBlur={handleUpdateDraft} className="form-input" />
+                    ) : (
+                      <div className="text-sm font-bold text-text-primary">{(snapshotValue as string) || '—'}</div>
+                    )}
+                  </div>
+                ))}
+                <div className="form-group">
+                  <label className="form-label">Pengulangan Ke-</label>
+                  {isDraft ? (
+                    <input type="number" min="1" step="1" value={repetition} onChange={e => setRepetition(e.target.value)} onBlur={handleUpdateDraft} className="form-input" />
+                  ) : (
+                    <div className="text-sm font-bold text-text-primary">{setup.repetition ? `Ke-${setup.repetition}` : '—'}</div>
+                  )}
                 </div>
               </div>
 
