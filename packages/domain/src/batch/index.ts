@@ -1,4 +1,4 @@
-import type { FixtureScenario, SynchronizedAnalysisFrame } from '../types';
+import type { FixtureScenario, SynchronizedAnalysisFrame, RealSideCaptureFrameMetadata } from '../types';
 import type { CalibrationSnapshot, FinalAnalysisReport, FrontPixelGeometry, SidePixelGeometry } from '../analysis';
 
 export class InvalidLifecycleTransitionError extends Error {
@@ -32,6 +32,10 @@ export interface BatchSetupDraft {
   recipeSnapshot?: { name: string; forceSetpointN: number; pressDurationMs: number; strokeMm: number };
   setpoints?: { forceSetpointN: number; pressDurationMs: number; strokeMm: number };
   productLot?: string;
+  storageCondition?: string;
+  bottlePosition?: string;
+  testPeriod?: string;
+  repetition?: number;
   operatorId: string;
   operatorName: string;
   fixture: FixtureScenario;
@@ -47,6 +51,10 @@ export interface BatchSetupSnapshot {
   recipeSnapshot: { name: string; forceSetpointN: number; pressDurationMs: number; strokeMm: number };
   setpoints: { forceSetpointN: number; pressDurationMs: number; strokeMm: number };
   productLot?: string;
+  storageCondition?: string;
+  bottlePosition?: string;
+  testPeriod?: string;
+  repetition?: number;
   operatorId: string;
   operatorName: string;
   fixture: FixtureScenario;
@@ -60,6 +68,8 @@ export interface CaptureSession {
   synchronizedMoments: SynchronizedAnalysisFrame[];
   startedAt: string;
   capturedAt?: string;
+  captureMode?: 'simulation' | 'real';
+  realSideFrames?: RealSideCaptureFrameMetadata[];
 }
 
 export interface BatchAnalysisDraft {
@@ -95,13 +105,24 @@ export interface CreateBatchDraftInput {
   recipeSnapshot: { name: string; forceSetpointN: number; pressDurationMs: number; strokeMm: number };
   setpoints?: { forceSetpointN: number; pressDurationMs: number; strokeMm: number };
   productLot?: string;
+  storageCondition?: string;
+  bottlePosition?: string;
+  testPeriod?: string;
+  repetition?: number;
   operatorId: string;
   operatorName: string;
   fixture: FixtureScenario;
   notes?: string;
 }
 
+function validateRepetition(repetition: number | undefined): void {
+  if (repetition !== undefined && (!Number.isInteger(repetition) || repetition < 1)) {
+    throw new BatchValidationError('Repetition must be a positive integer when provided.');
+  }
+}
+
 export function createBatchDraft(input: CreateBatchDraftInput, now = new Date().toISOString()): Batch {
+  validateRepetition(input.repetition);
   const id = input.id || `BAT-${now.slice(2, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
   const setupDraft: BatchSetupDraft = {
     productId: input.productId,
@@ -116,6 +137,10 @@ export function createBatchDraft(input: CreateBatchDraftInput, now = new Date().
           strokeMm: input.recipeSnapshot.strokeMm,
         },
     productLot: input.productLot,
+    storageCondition: input.storageCondition,
+    bottlePosition: input.bottlePosition,
+    testPeriod: input.testPeriod,
+    repetition: input.repetition,
     operatorId: input.operatorId,
     operatorName: input.operatorName,
     fixture: input.fixture,
@@ -132,6 +157,7 @@ export function createBatchDraft(input: CreateBatchDraftInput, now = new Date().
 }
 
 export function updateBatchSetupDraft(batch: Batch, patch: Partial<BatchSetupDraft>, now = new Date().toISOString()): Batch {
+  validateRepetition(patch.repetition);
   if (batch.status !== 'DRAFT') {
     throw new InvalidLifecycleTransitionError(`Cannot update setup draft: batch ${batch.id} is in status ${batch.status}, expected DRAFT.`);
   }
@@ -181,6 +207,10 @@ export function prepareBatch(batch: Batch, now = new Date().toISOString()): Batc
     recipeSnapshot: { ...batch.setupDraft.recipeSnapshot },
     setpoints: { ...setpoints },
     productLot: batch.setupDraft.productLot,
+    storageCondition: batch.setupDraft.storageCondition,
+    bottlePosition: batch.setupDraft.bottlePosition,
+    testPeriod: batch.setupDraft.testPeriod,
+    repetition: batch.setupDraft.repetition,
     operatorId: batch.setupDraft.operatorId,
     operatorName: batch.setupDraft.operatorName,
     fixture: batch.setupDraft.fixture,
@@ -234,6 +264,33 @@ export function updateCaptureSession(batch: Batch, moments: SynchronizedAnalysis
     captureSession: {
       ...batch.captureSession,
       synchronizedMoments: moments,
+      captureMode: 'simulation',
+    },
+    updatedAt: now,
+  };
+}
+
+export function updateRealCaptureSession(batch: Batch, frames: RealSideCaptureFrameMetadata[], now = new Date().toISOString()): Batch {
+  if (batch.status !== 'CAPTURING') {
+    throw new InvalidLifecycleTransitionError(`Cannot update real capture session: batch ${batch.id} is in status ${batch.status}, expected CAPTURING.`);
+  }
+  if (!batch.captureSession) {
+    throw new BatchValidationError(`Batch ${batch.id} has no capture session to update.`);
+  }
+  if (frames.some((frame, index) => frame.camera !== 'side' || frame.frameIndex !== index || frame.elapsedMs < 0)) {
+    throw new BatchValidationError('Real capture frames must be Side frames with contiguous indexes and non-negative elapsed times.');
+  }
+  if (frames.some((frame, index) => index > 0 && frame.elapsedMs < frames[index - 1].elapsedMs)) {
+    throw new BatchValidationError('Real capture frame timestamps must be monotonic.');
+  }
+
+  return {
+    ...batch,
+    captureSession: {
+      ...batch.captureSession,
+      synchronizedMoments: [],
+      captureMode: 'real',
+      realSideFrames: frames.map((frame) => ({ ...frame })),
     },
     updatedAt: now,
   };
@@ -385,8 +442,8 @@ export function markFailed(batch: Batch, reason: string, now = new Date().toISOS
 }
 
 export function abortBatch(batch: Batch, reason?: string, now = new Date().toISOString()): Batch {
-  if (batch.status !== 'DRAFT' && batch.status !== 'READY') {
-    throw new InvalidLifecycleTransitionError(`Cannot abort batch: batch ${batch.id} is in status ${batch.status}, expected DRAFT or READY.`);
+  if (batch.status !== 'DRAFT' && batch.status !== 'READY' && batch.status !== 'CAPTURING') {
+    throw new InvalidLifecycleTransitionError(`Cannot abort batch: batch ${batch.id} is in status ${batch.status}, expected DRAFT, READY, or CAPTURING.`);
   }
 
   return {
