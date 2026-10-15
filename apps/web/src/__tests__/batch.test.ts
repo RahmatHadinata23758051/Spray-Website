@@ -46,6 +46,23 @@ describe('Phase A - Canonical Batch Domain & Persistence', () => {
     expect(batch.setupSnapshot).toBeUndefined();
   });
 
+  it('1a. Test context metadata persists and is frozen when prepared', async () => {
+    const batch = await repo.createBatchDraft({
+      ...dummyDraftInput,
+      storageCondition: 'ambient 25C',
+      bottlePosition: 'upright',
+      testPeriod: 'week-1',
+      repetition: 2,
+    });
+
+    expect(batch.setupDraft?.storageCondition).toBe('ambient 25C');
+    const ready = await repo.prepareBatch(batch.id);
+    expect(ready.setupSnapshot?.storageCondition).toBe('ambient 25C');
+    expect(ready.setupSnapshot?.bottlePosition).toBe('upright');
+    expect(ready.setupSnapshot?.testPeriod).toBe('week-1');
+    expect(ready.setupSnapshot?.repetition).toBe(2);
+  });
+
   it('2. Setup draft mutation while DRAFT is permitted', async () => {
     let batch = await repo.createBatchDraft(dummyDraftInput);
     batch = await repo.updateBatchSetupDraft(batch.id, { productLot: 'NEW-LOT' });
