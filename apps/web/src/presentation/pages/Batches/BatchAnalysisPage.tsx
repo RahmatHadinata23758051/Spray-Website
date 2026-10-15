@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Batch, Camera as CameraType, CalibrationSnapshot, SelectedCaptureMoment, SideMeasurementCorrection, FrontMeasurementCorrection, SidePixelGeometry, FrontPixelGeometry, SideFinalMeasurements, FrontFinalMeasurements, SynchronizedAnalysisFrame, BatchAnalysisDraft } from '@spray-paragon/domain';
-import { createCalibrationSnapshot, getSideDisplayGeometry, getFrontDisplayGeometry, deriveSideMeasurementsFromGeometry, deriveFrontMeasurementsFromGeometry, setPrimaryCapture, addSupportingCapture, removeSupportingCapture, adjustCalibration, moveCalibrationAnchor, cloneSideGeometry, cloneFrontGeometry, moveFrontMeasurementHandle, getPrimary, createBatchFinalAnalysisReport } from '@spray-paragon/domain';
+import { createCalibrationSnapshot, getSideDisplayGeometry, getFrontDisplayGeometry, deriveSideMeasurementsFromGeometry, deriveFrontMeasurementsFromGeometry, setPrimaryCapture, addSupportingCapture, removeSupportingCapture, adjustCalibration, moveCalibrationAnchor, cloneSideGeometry, cloneFrontGeometry, moveFrontMeasurementHandle, getPrimary, createBatchFinalAnalysisReport, resolveSideOrientation, DEFAULT_SIDE_ORIENTATION } from '@spray-paragon/domain';
 import { batchRepository, simulationService } from '../../../application/services';
 import { cameraCopy } from '../../features/analysis/cameraCopy';
 import { Status } from '../../components/ui/Status';
@@ -21,7 +21,7 @@ const frames = simulationService.getFrames();
 const getPixelGeometry = simulationService.getPixelGeometry;
 
 const initialCalibration: Record<CameraType, CalibrationSnapshot> = {
-  side: createCalibrationSnapshot({ camera: 'side', referenceDistanceMm: 1000, anchorA: { x: 112, y: 296 }, anchorB: { x: 634, y: 296 } }),
+  side: createCalibrationSnapshot({ camera: 'side', sideOrientation: DEFAULT_SIDE_ORIENTATION, referenceDistanceMm: 1000, anchorA: { x: 112, y: 296 }, anchorB: { x: 634, y: 296 } }),
   front: createCalibrationSnapshot({ camera: 'front', referenceDistanceMm: 500, anchorA: { x: 265, y: 85 }, anchorB: { x: 465, y: 85 } }),
 };
 
@@ -192,8 +192,8 @@ export function BatchAnalysisPage() {
   const currentFrame = currentMoment[camera];
   const isStable = currentMoment.phase === 'stable';
   
-  const currentGeometry = getPixelGeometry(currentMoment.frameIndex, batch.setupSnapshot?.fixture || 'nominal-01');
   const activeCalibrations = isCalibrating ? workingCalibrations : calibrations;
+  const currentGeometry = getPixelGeometry(currentMoment.frameIndex, batch.setupSnapshot?.fixture || 'nominal-01', resolveSideOrientation(activeCalibrations.side));
   
   const savedSideGeometry = getSideDisplayGeometry(currentGeometry.side, sideCorrectionsByMoment[currentMoment.id]);
   const savedFrontGeometry = getFrontDisplayGeometry(currentGeometry.front, frontCorrectionsByMoment[currentMoment.id]);
@@ -277,15 +277,30 @@ export function BatchAnalysisPage() {
   const handleApplyCalibration = () => {
     const applied = adjustCalibration(workingCalibrations[camera], {}, 'Operator', new Date().toISOString());
     const newCals = { ...calibrations, [camera]: applied };
+    const orientationFlipped = camera === 'side' && resolveSideOrientation(calibrations.side) !== resolveSideOrientation(applied);
     setCalibrations(newCals);
     setWorkingCalibrations(newCals);
+    if (orientationFlipped) {
+      setSideCorrectionsByMoment({});
+      persistDraft({ calibration: newCals, sideCorrections: {} });
+    } else {
+      persistDraft({ calibration: newCals });
+    }
     setIsCalibrating(false);
     setMode('Overlay');
-    persistDraft({ calibration: newCals });
   };
 
   const handleWorkingCalibrationChange = (next: CalibrationSnapshot) => {
     setWorkingCalibrations(previous => ({ ...previous, [camera]: next }));
+  };
+
+  const handleSideOrientationChange = (sideOrientation: 'nozzleLeft' | 'nozzleRight') => {
+    if (isReadOnly || camera !== 'side') return;
+    const nextSideCalibration = createCalibrationSnapshot({
+      ...workingCalibrations.side,
+      sideOrientation,
+    });
+    setWorkingCalibrations(previous => ({ ...previous, side: nextSideCalibration }));
   };
 
   const handleAdjustCalibration = (deltaPx: number) => {
@@ -362,7 +377,7 @@ export function BatchAnalysisPage() {
   const primaryMoment = primarySelection ? moments.find(moment => moment.id === primarySelection.captureFrameId) : undefined;
   
   const getSideMeasurementsForMoment = (moment: SynchronizedAnalysisFrame): SideFinalMeasurements => {
-    const geom = getPixelGeometry(moment.frameIndex, batch.setupSnapshot?.fixture || 'nominal-01').side;
+    const geom = getPixelGeometry(moment.frameIndex, batch.setupSnapshot?.fixture || 'nominal-01', resolveSideOrientation(calibrations.side)).side;
     return deriveSideMeasurementsFromGeometry(geom, calibrations.side, sideCorrectionsByMoment[moment.id]);
   };
   const getFrontMeasurementsForMoment = (moment: SynchronizedAnalysisFrame): FrontFinalMeasurements => {
@@ -383,7 +398,7 @@ export function BatchAnalysisPage() {
       .map(selection => moments.find(moment => moment.id === selection.captureFrameId))
       .filter((moment): moment is SynchronizedAnalysisFrame => Boolean(moment));
       
-    const primaryGeometry = getPixelGeometry(primaryMoment.frameIndex, batch.setupSnapshot?.fixture || 'nominal-01');
+    const primaryGeometry = getPixelGeometry(primaryMoment.frameIndex, batch.setupSnapshot?.fixture || 'nominal-01', resolveSideOrientation(calibrations.side));
     const primarySideFinalGeometry = getSideDisplayGeometry(primaryGeometry.side, sideCorrectionsByMoment[primaryMoment.id]);
     const primaryFrontFinalGeometry = getFrontDisplayGeometry(primaryGeometry.front, frontCorrectionsByMoment[primaryMoment.id]);
     
@@ -530,6 +545,7 @@ export function BatchAnalysisPage() {
                 workingSideGeometry={workingSideGeometry ?? savedSideGeometry}
                 autoFrontGeometry={currentGeometry.front}
                 workingFrontGeometry={workingFrontGeometry ?? savedFrontGeometry}
+                sideOrientation={activeCalibrations.side.sideOrientation}
                 onSideChange={handleWorkingSideGeometryChange}
                 onFrontChange={handleWorkingFrontGeometryChange}
               />
@@ -563,6 +579,7 @@ export function BatchAnalysisPage() {
             onCancelCalibration={handleCancelCalibration}
             onApplyCalibration={handleApplyCalibration}
             onAdjustCalibration={handleAdjustCalibration}
+            onSideOrientationChange={handleSideOrientationChange}
             onStartMeasurementEdit={handleStartMeasurementEdit}
             onCancelMeasurementEdit={handleCancelMeasurementEdit}
             onApplyMeasurementEdit={handleApplyMeasurementEdit}
