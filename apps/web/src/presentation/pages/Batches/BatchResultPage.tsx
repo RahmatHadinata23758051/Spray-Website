@@ -12,7 +12,7 @@ import type {
   Camera as CameraType,
   Frame
 } from '@spray-paragon/domain';
-import { createSideMeasurements, createFrontMeasurements } from '@spray-paragon/domain';
+import { createSideMeasurements, createFrontMeasurements, resolveSideOrientation } from '@spray-paragon/domain';
 import { createFinalReportCsv } from '../../../application/reporting/createFinalReportCsv';
 import { batchRepository } from '../../../application/services';
 import { fmt, formatStatus } from '../../utils/formatters';
@@ -383,6 +383,12 @@ export function CalibrationSummary({ camera, calibration }: { camera: 'Side' | '
           <span className="text-[10px] font-medium text-text-muted block">Skala</span>
           <span className="font-mono font-bold text-primary">{calibration.scaleMmPerPx.toFixed(3)} mm/px</span>
         </div>
+        {camera === 'Side' && (
+          <div>
+            <span className="text-[10px] font-medium text-text-muted block">Orientasi</span>
+            <span className="font-mono font-semibold text-text-primary">{resolveSideOrientation(calibration) === 'nozzleRight' ? 'Nozzle kanan' : 'Nozzle kiri'}</span>
+          </div>
+        )}
       </div>
     </section>
   );
