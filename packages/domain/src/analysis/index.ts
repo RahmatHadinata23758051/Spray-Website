@@ -14,6 +14,25 @@ export type Point = {
   y: number;
 };
 
+/**
+ * Physical placement of the spray nozzle as seen by the Side camera.
+ * Client data shows the nozzle can sit on either side, so analysis and
+ * overlays must not assume nozzle-left -> spray-right.
+ */
+export type SideOrientation = 'nozzleLeft' | 'nozzleRight';
+
+/** Backward-compatible default: existing fixtures place the nozzle on the left. */
+export const DEFAULT_SIDE_ORIENTATION: SideOrientation = 'nozzleLeft';
+
+/** Direction the spray travels away from the nozzle along x: +1 right, -1 left. */
+export function sideSprayDirection(orientation: SideOrientation | undefined): 1 | -1 {
+  return orientation === 'nozzleRight' ? -1 : 1;
+}
+
+export function resolveSideOrientation(source: { sideOrientation?: SideOrientation } | undefined): SideOrientation {
+  return source?.sideOrientation ?? DEFAULT_SIDE_ORIENTATION;
+}
+
 export type SidePixelGeometry = {
   nozzleOriginPx: Point;
   sprayEndpointPx: Point;
@@ -69,6 +88,24 @@ export function cloneSideGeometry(geometry: SidePixelGeometry): SidePixelGeometr
   };
 }
 
+/**
+ * Horizontally mirrors Side geometry within the frame. Distances, angles and
+ * |Δx| measurements are invariant under mirroring, so measurement values are
+ * unchanged; only the rendered side of the nozzle moves.
+ */
+export function mirrorSideGeometry(geometry: SidePixelGeometry, frameWidth = 720): SidePixelGeometry {
+  const mirror = (point: Point): Point => ({ x: frameWidth - point.x, y: point.y });
+  return {
+    nozzleOriginPx: mirror(geometry.nozzleOriginPx),
+    sprayEndpointPx: mirror(geometry.sprayEndpointPx),
+    upperBoundaryPx: mirror(geometry.upperBoundaryPx),
+    lowerBoundaryPx: mirror(geometry.lowerBoundaryPx),
+    verticalSpreadTopPx: mirror(geometry.verticalSpreadTopPx),
+    verticalSpreadBottomPx: mirror(geometry.verticalSpreadBottomPx),
+    directionReferencePx: mirror(geometry.directionReferencePx),
+  };
+}
+
 export function cloneFrontGeometry(geometry: FrontPixelGeometry): FrontPixelGeometry {
   return {
     ...geometry,
@@ -91,22 +128,28 @@ export function moveSideMeasurementHandle(
   handle: 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'upperAngle' | 'lowerAngle' | 'spreadPosition',
   target: Point,
   bounds: { width: number; height: number },
+  orientation: SideOrientation = DEFAULT_SIDE_ORIENTATION,
 ): SidePixelGeometry {
   const clamped = clampPoint(target, bounds);
   const cloned = cloneSideGeometry(geometry);
+  const direction = sideSprayDirection(orientation);
+  const downstreamX = (x: number) => x + direction * 10;
+  const constrainDownstreamX = (x: number) => direction === 1
+    ? Math.max(downstreamX(cloned.nozzleOriginPx.x), x)
+    : Math.min(downstreamX(cloned.nozzleOriginPx.x), x);
   switch (handle) {
     case 'sprayEndpoint': {
-      const minX = cloned.nozzleOriginPx.x + 10;
       cloned.sprayEndpointPx = {
-        x: Math.max(minX, clamped.x),
+        x: constrainDownstreamX(clamped.x),
         y: clamped.y,
       };
       break;
     }
     case 'spreadPosition': {
-      const minX = cloned.nozzleOriginPx.x + 10;
-      const maxX = bounds.width - 10;
-      const newX = Math.min(maxX, Math.max(minX, clamped.x));
+      const downstreamLimit = downstreamX(cloned.nozzleOriginPx.x);
+      const newX = direction === 1
+        ? Math.min(bounds.width - 10, Math.max(downstreamLimit, clamped.x))
+        : Math.max(10, Math.min(downstreamLimit, clamped.x));
       cloned.verticalSpreadTopPx = { x: newX, y: cloned.verticalSpreadTopPx.y };
       cloned.verticalSpreadBottomPx = { x: newX, y: cloned.verticalSpreadBottomPx.y };
       break;
@@ -125,14 +168,14 @@ export function moveSideMeasurementHandle(
     }
     case 'upperAngle': {
       cloned.upperBoundaryPx = {
-        x: Math.max(cloned.nozzleOriginPx.x + 10, clamped.x),
+        x: constrainDownstreamX(clamped.x),
         y: Math.min(cloned.nozzleOriginPx.y - 4, clamped.y),
       };
       break;
     }
     case 'lowerAngle': {
       cloned.lowerBoundaryPx = {
-        x: Math.max(cloned.nozzleOriginPx.x + 10, clamped.x),
+        x: constrainDownstreamX(clamped.x),
         y: Math.max(cloned.nozzleOriginPx.y + 4, clamped.y),
       };
       break;
@@ -171,6 +214,8 @@ export function moveFrontMeasurementHandle(
 
 export type CalibrationSnapshot = {
   camera: Camera;
+  /** Side-camera-only physical orientation; omitted legacy records resolve to nozzleLeft. */
+  sideOrientation?: SideOrientation;
   referenceDistanceMm: number;
   anchorA: Point;
   anchorB: Point;
@@ -458,6 +503,7 @@ export function deriveFrontMeasurementsFromGeometry(
 
 export function createCalibrationSnapshot(input: {
   camera: Camera;
+  sideOrientation?: SideOrientation;
   referenceDistanceMm: number;
   anchorA: Point;
   anchorB: Point;
@@ -467,6 +513,7 @@ export function createCalibrationSnapshot(input: {
 }): CalibrationSnapshot {
   return {
     camera: input.camera,
+    sideOrientation: input.sideOrientation,
     referenceDistanceMm: input.referenceDistanceMm,
     anchorA: { ...input.anchorA },
     anchorB: { ...input.anchorB },
@@ -496,6 +543,7 @@ export function updateCalibrationGeometry(
   const referenceDistanceMm = updates.referenceDistanceMm ?? calibration.referenceDistanceMm;
   return createCalibrationSnapshot({
     camera: calibration.camera,
+    sideOrientation: calibration.sideOrientation,
     anchorA,
     anchorB,
     referenceDistanceMm,
@@ -556,6 +604,7 @@ export function adjustCalibration(
   const updated = updateCalibrationGeometry(calibration, updates);
   return createCalibrationSnapshot({
     camera: updated.camera,
+    sideOrientation: updated.sideOrientation,
     anchorA: updated.anchorA,
     anchorB: updated.anchorB,
     referenceDistanceMm: updated.referenceDistanceMm,
