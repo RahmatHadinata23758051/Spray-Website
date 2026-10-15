@@ -52,4 +52,23 @@ describe('@spray-paragon/contracts: Validation', () => {
     
     expect(result.success).toBe(true);
   });
+
+  it('validates batch draft creation with test context metadata', () => {
+    const result = CreateBatchDraftRequestDTO.safeParse({
+      productId: 'p-1',
+      productSnapshot: { productCode: 'PC1', productName: 'Prod 1' },
+      recipeId: 'r-1',
+      recipeSnapshot: { name: 'R1', forceSetpointN: 10, pressDurationMs: 100, strokeMm: 5 },
+      operatorId: 'o-1',
+      operatorName: 'Op 1',
+      fixture: 'nominal-01',
+      productLot: 'LOT-99',
+      storageCondition: 'ambient 25C',
+      bottlePosition: 'upright',
+      testPeriod: 'week-1',
+      repetition: 1,
+    });
+
+    expect(result.success).toBe(true);
+  });
 });
