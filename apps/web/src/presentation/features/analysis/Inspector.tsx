@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Camera as CameraType, Analysis as AnalysisData, SynchronizedAnalysisFrame } from '@spray-paragon/domain';
-import type { CalibrationSnapshot, SideFinalMeasurements, FrontFinalMeasurements, MeasurementValue } from '@spray-paragon/domain';
-import { selectMeasurementValue } from '@spray-paragon/domain';
+import type { CalibrationSnapshot, SideFinalMeasurements, FrontFinalMeasurements, MeasurementValue, SideOrientation } from '@spray-paragon/domain';
+import { resolveSideOrientation, selectMeasurementValue } from '@spray-paragon/domain';
 import { fmt } from '../../utils/formatters';
 import { formatPointPx, metricSlug, phaseLabel } from './utils';
 import type { ActiveSideTool } from './types';
@@ -15,7 +15,8 @@ export function Inspector({
   onStartCalibration, 
   onCancelCalibration, 
   onApplyCalibration, 
-  onAdjustCalibration, 
+  onAdjustCalibration,
+  onSideOrientationChange,
   isEditingMeasurement, 
   activeSideTool, 
   onSetActiveSideTool, 
@@ -37,6 +38,7 @@ export function Inspector({
   onCancelCalibration?: () => void;
   onApplyCalibration?: () => void;
   onAdjustCalibration?: (deltaPx: number) => void;
+  onSideOrientationChange?: (orientation: SideOrientation) => void;
   isEditingMeasurement?: boolean;
   activeSideTool?: ActiveSideTool;
   onSetActiveSideTool?: (tool: ActiveSideTool) => void;
@@ -221,6 +223,21 @@ export function Inspector({
             <div className="flex justify-between"><dt className="text-text-muted">Status skala</dt><dd className="text-semantic-success font-semibold text-right">Terkalibrasi</dd></div>
             <div className="flex justify-between"><dt className="text-text-muted">Mode koordinat</dt><dd className="text-text-primary font-semibold text-right">Fisik (mm)</dd></div>
           </dl>
+        )}
+        {camera === 'side' && calibration && onSideOrientationChange && (
+          <label className="flex items-center justify-between gap-3 text-xs pt-1">
+            <span className="text-text-muted">Posisi nozzle</span>
+            <select
+              aria-label="Posisi nozzle kamera samping"
+              className="field-input !w-auto !py-1 text-xs"
+              value={resolveSideOrientation(calibration)}
+              onChange={event => onSideOrientationChange(event.target.value as SideOrientation)}
+              disabled={readOnly || !isCalibrating}
+            >
+              <option value="nozzleLeft">Kiri · semprot → kanan</option>
+              <option value="nozzleRight">Kanan · semprot → kiri</option>
+            </select>
+          </label>
         )}
         {!readOnly && (onStartCalibration || onApplyCalibration || onCancelCalibration) && (
           <div className="pt-2">
