@@ -33,6 +33,10 @@ export const CreateBatchDraftRequestDTO = z.object({
     })
     .optional(),
   productLot: z.string().optional(),
+  storageCondition: z.string().optional(),
+  bottlePosition: z.string().optional(),
+  testPeriod: z.string().optional(),
+  repetition: z.number().int().positive().optional(),
   operatorId: z.string(),
   operatorName: z.string(),
   fixture: z.enum([
@@ -52,6 +56,10 @@ export const BatchResponseDTO = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   productLot: z.string().optional(),
+  storageCondition: z.string().optional(),
+  bottlePosition: z.string().optional(),
+  testPeriod: z.string().optional(),
+  repetition: z.number().int().positive().optional(),
   operatorName: z.string().optional(),
 });
 
