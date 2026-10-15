@@ -1,3 +1,4 @@
+import 'fake-indexeddb/auto';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
@@ -5,6 +6,7 @@ import '@testing-library/jest-dom';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { batchRepository } from '../data';
 import { productRepository } from '../data';
+import { captureAssetStore } from '../application/services';
 import { BatchCapturePage } from '../presentation/pages/Batches/BatchCapturePage';
 
 function makeVideoStream() {
@@ -106,21 +108,37 @@ describe('Phase 3 — Real Side capture flow', () => {
     const stopButton = await screen.findByRole('button', { name: 'Selesaikan Capture' });
     fireEvent.click(stopButton);
 
+    let persistedFrameCount = 0;
     await waitFor(async () => {
       const stored = await batchRepository.getBatch(readyBatchId);
       const session = stored?.captureSession;
       expect(session?.captureMode).toBe('real');
       expect(session?.synchronizedMoments).toEqual([]);
+      expect(session?.realSideBaseline?.selectionMethod).toBe('initial-window');
+      expect(session?.realSideBaseline?.frames.length).toBeGreaterThan(0);
       const frames = session?.realSideFrames ?? [];
+      persistedFrameCount = frames.length;
       frames.forEach((frame, index) => {
         expect(frame.camera).toBe('side');
         expect(frame.frameIndex).toBe(index);
         expect(frame.elapsedMs).toBeGreaterThanOrEqual(0);
+        // Metadata references the binary by stable asset key, never by binary or URL.
+        expect(frame.assetId).toBe(`${readyBatchId}:side:${String(index).padStart(3, '0')}`);
+        expect(JSON.stringify(frame)).not.toContain('blob:');
       });
       for (let i = 1; i < frames.length; i += 1) {
         expect(frames[i].elapsedMs).toBeGreaterThanOrEqual(frames[i - 1].elapsedMs);
       }
     });
+
+    // The binary itself is durable, so navigation/reload can restore previews.
+    expect(persistedFrameCount).toBeGreaterThan(0);
+    const storedBlob = await captureAssetStore.get(`${readyBatchId}:side:000`);
+    expect(storedBlob).not.toBeNull();
+    // localStorage must never carry binary or ObjectURL payloads.
+    const rawStorage = window.localStorage.getItem('spraybot.batches.v1') ?? '';
+    expect(rawStorage).not.toContain('data:image/');
+    expect(rawStorage).not.toContain('blob:');
 
     // Successful completion keeps previews usable: no ObjectURL is revoked yet.
     expect(revoked).toHaveLength(0);
@@ -155,8 +173,8 @@ describe('Phase 3 — Real Side capture flow', () => {
     // Persist a real, Side-only capture session with metadata already stored.
     await batchRepository.startCapture(readyBatchId);
     await batchRepository.updateRealCaptureSession!(readyBatchId, [
-      { id: 'real-side-000', frameIndex: 0, capturedAt: new Date().toISOString(), elapsedMs: 0, camera: 'side' },
-      { id: 'real-side-001', frameIndex: 1, capturedAt: new Date().toISOString(), elapsedMs: 100, camera: 'side' },
+      { id: 'real-side-000', frameIndex: 0, capturedAt: new Date().toISOString(), elapsedMs: 0, camera: 'side', assetId: `${readyBatchId}:side:000` },
+      { id: 'real-side-001', frameIndex: 1, capturedAt: new Date().toISOString(), elapsedMs: 100, camera: 'side', assetId: `${readyBatchId}:side:001` },
     ]);
 
     render(
@@ -249,5 +267,209 @@ describe('Phase 3 — Real Side capture flow', () => {
     });
 
     expect(getUserMedia).not.toHaveBeenCalled();
+  });
+});
+
+describe('Phase 4 — capture asset persistence bridge', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  async function makeReadyBatch(batchId: string, productLot: string) {
+    const product = (await productRepository.listProducts())[0];
+    const recipe = (await productRepository.listRecipes(product.id))[0];
+    const draft = await batchRepository.createBatchDraft({
+      id: batchId,
+      productId: product.id,
+      productSnapshot: { productCode: product.productCode, productName: product.name },
+      recipeId: recipe.id,
+      recipeSnapshot: {
+        name: recipe.name,
+        forceSetpointN: recipe.forceSetpointN,
+        pressDurationMs: recipe.pressDurationMs,
+        strokeMm: recipe.strokeMm,
+      },
+      productLot,
+      operatorId: 'usr-np',
+      operatorName: 'Nadia Putri',
+      fixture: 'nominal-01',
+    });
+    return batchRepository.prepareBatch(draft.id);
+  }
+
+  function stubRealCaptureEnvironment(revoked: string[]) {
+    const { stream, stop } = makeVideoStream();
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia } });
+    Object.defineProperty(HTMLMediaElement.prototype, 'play', { configurable: true, value: vi.fn().mockResolvedValue(undefined) });
+    Object.defineProperty(HTMLVideoElement.prototype, 'videoWidth', { configurable: true, value: 640 });
+    Object.defineProperty(HTMLVideoElement.prototype, 'videoHeight', { configurable: true, value: 480 });
+
+    let urlSeq = 0;
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => `blob:p4-${urlSeq++}`) });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn((url: string) => revoked.push(url)) });
+
+    const canvas = document.createElement('canvas');
+    const nativeCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => (tag === 'canvas' ? canvas : nativeCreateElement(tag)));
+    vi.spyOn(canvas, 'getContext').mockReturnValue({ drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(canvas, 'toBlob').mockImplementation((callback: BlobCallback) => callback(new Blob(['phase4-frame'], { type: 'image/jpeg' })));
+
+    return { getUserMedia, stop };
+  }
+
+  function renderAt(batchId: string) {
+    return render(
+      <MemoryRouter initialEntries={[`/batches/${batchId}/capture`]}>
+        <Routes>
+          <Route path="/batches/:batchId/capture" element={<BatchCapturePage />} />
+          <Route path="/batches/:batchId" element={<div>detail</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+
+  it('restores frame previews from persisted binaries after a reload', async () => {
+    const batchId = 'BAT-P4-RESTORE';
+    await makeReadyBatch(batchId, 'LOT-P4-RESTORE');
+    const revoked: string[] = [];
+    stubRealCaptureEnvironment(revoked);
+
+    const first = renderAt(batchId);
+    fireEvent.click(await screen.findByRole('button', { name: 'Mulai Pengambilan' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Selesaikan Capture' }));
+
+    await waitFor(async () => {
+      expect(await captureAssetStore.get(`${batchId}:side:000`)).not.toBeNull();
+    });
+    const stored = await batchRepository.getBatch(batchId);
+    expect(stored?.captureSession?.realSideBaseline?.selectionMethod).toBe('initial-window');
+    expect(stored?.captureSession?.realSideBaseline?.frames[0]?.assetId).toBe(`${batchId}:side:000`);
+
+    // Unmount stands in for navigating away: URLs die, binaries stay.
+    first.unmount();
+    expect(revoked.length).toBeGreaterThan(0);
+    expect(await captureAssetStore.get(`${batchId}:side:000`)).not.toBeNull();
+
+    renderAt(batchId);
+    const restoredImage = await screen.findByAltText(/^Frame Side 0 pada /);
+    expect(restoredImage).toHaveAttribute('src', expect.stringContaining('blob:'));
+  });
+
+  it('does not start the simulation loop or fabricate moments for a restored real session', async () => {
+    const batchId = 'BAT-P4-SESSION';
+    await makeReadyBatch(batchId, 'LOT-P4-SESSION');
+    await batchRepository.startCapture(batchId);
+    await batchRepository.updateRealCaptureSession!(batchId, [
+      { id: 'real-side-000', frameIndex: 0, capturedAt: new Date().toISOString(), elapsedMs: 0, camera: 'side', assetId: `${batchId}:side:000` },
+    ]);
+    const revoked: string[] = [];
+    stubRealCaptureEnvironment(revoked);
+
+    const stored = await batchRepository.getBatch(batchId);
+    expect(stored?.status).toBe('CAPTURING');
+    renderAt(batchId);
+
+    // Metadata survives; the binary was never written for this asset, so the
+    // preview degrades instead of crashing.
+    await waitFor(() => {
+      expect(screen.getByText('1 frame Side · metadata tersimpan')).toBeInTheDocument();
+    });
+    expect(screen.queryByAltText(/^Frame Side/)).toBeNull();
+    const afterRender = await batchRepository.getBatch(batchId);
+    expect(afterRender?.status).toBe('CAPTURING');
+    expect(afterRender?.captureSession?.synchronizedMoments).toEqual([]);
+  });
+
+  it('deletes persisted batch assets when the capture is aborted', async () => {
+    const batchId = 'BAT-P4-ABORT';
+    await makeReadyBatch(batchId, 'LOT-P4-ABORT');
+    await captureAssetStore.save(`${batchId}:side:000`, batchId, new Blob(['orphan'], { type: 'image/jpeg' }));
+    const revoked: string[] = [];
+    stubRealCaptureEnvironment(revoked);
+
+    renderAt(batchId);
+    fireEvent.click(await screen.findByRole('button', { name: 'Mulai Pengambilan' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Batalkan Akuisisi' }));
+
+    await waitFor(async () => {
+      expect((await batchRepository.getBatch(batchId))?.status).toBe('ABORTED');
+    });
+    expect(await captureAssetStore.get(`${batchId}:side:000`)).toBeNull();
+  });
+
+  it('purges superseded assets when a replacement real capture starts', async () => {
+    const batchId = 'BAT-P4-REPLACE';
+    await makeReadyBatch(batchId, 'LOT-P4-REPLACE');
+    await captureAssetStore.save(`${batchId}:side:000`, batchId, new Blob(['superseded'], { type: 'image/jpeg' }));
+    const revoked: string[] = [];
+    stubRealCaptureEnvironment(revoked);
+
+    renderAt(batchId);
+    fireEvent.click(await screen.findByRole('button', { name: 'Mulai Pengambilan' }));
+
+    await waitFor(async () => {
+      expect(await captureAssetStore.get(`${batchId}:side:000`)).toBeNull();
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Selesaikan Capture' }));
+    await waitFor(async () => {
+      expect(await captureAssetStore.get(`${batchId}:side:000`)).not.toBeNull();
+    });
+  });
+
+  describe('Phase 5 — pre-spray baseline selection and adjustment', () => {
+    it('renders baseline info, timeline indicators, and supports manual reselection', async () => {
+      const batchId = 'BAT-P5-BASELINE';
+      await makeReadyBatch(batchId, 'LOT-P5-BASELINE');
+      const revoked: string[] = [];
+      stubRealCaptureEnvironment(revoked);
+
+      renderAt(batchId);
+      fireEvent.click(await screen.findByRole('button', { name: 'Mulai Pengambilan' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Selesaikan Capture' }));
+
+      // Baseline panel renders after capture finishes
+      await screen.findByLabelText('Baseline pra-spray Side');
+      expect(screen.getByText('Baseline pra-spray Side')).toBeInTheDocument();
+      expect(screen.getByText(/Window waktu capture, bukan sinkronisasi trigger spray fisik/)).toBeInTheDocument();
+
+      // Timeline frame has (Baseline) indicator in aria-label
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Side frame 0.*\(Baseline\)/)).toBeInTheDocument();
+      });
+
+      // Operator can reselect via initial window input
+      const windowInput = screen.getByLabelText('Window baseline awal (ms)');
+      fireEvent.change(windowInput, { target: { value: '300' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Pilih Window Awal' }));
+
+      await waitFor(async () => {
+        const stored = await batchRepository.getBatch(batchId);
+        expect(stored?.captureSession?.realSideBaseline?.configuredWindowMs).toBe(300);
+      });
+
+      // Operator can reselect via manual range inputs, bounded by the captured span.
+      const captured = await batchRepository.getBatch(batchId);
+      const capturedFrames = captured?.captureSession?.realSideFrames ?? [];
+      const lastElapsedMs = capturedFrames[capturedFrames.length - 1].elapsedMs;
+      const startInput = screen.getByLabelText('Mulai baseline manual (ms)');
+      const endInput = screen.getByLabelText('Selesai baseline manual (ms)');
+      fireEvent.change(startInput, { target: { value: '0' } });
+      fireEvent.change(endInput, { target: { value: String(lastElapsedMs) } });
+      fireEvent.click(screen.getByRole('button', { name: 'Terapkan Rentang Manual' }));
+
+      await waitFor(async () => {
+        const stored = await batchRepository.getBatch(batchId);
+        const baseline = stored?.captureSession?.realSideBaseline;
+        expect(baseline?.selectionMethod).toBe('manual-range');
+        expect(baseline?.startElapsedMs).toBe(0);
+        expect(baseline?.endElapsedMs).toBe(lastElapsedMs);
+      });
+    });
   });
 });

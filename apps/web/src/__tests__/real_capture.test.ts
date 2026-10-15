@@ -38,15 +38,15 @@ describe('real side capture foundation', () => {
     vi.spyOn(canvas, 'toBlob').mockImplementation((callback) => callback(blob));
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:side-001');
 
-    const frame = await captureRealSideFrame(video, 0, 100, '2026-01-01T00:00:00.000Z', 140);
-    expect(frame).toMatchObject({ id: 'real-side-000', frameIndex: 0, camera: 'side', elapsedMs: 40, imageUrl: 'blob:side-001' });
+    const frame = await captureRealSideFrame(video, 0, 100, 'BAT-001', '2026-01-01T00:00:00.000Z', 140);
+    expect(frame).toMatchObject({ id: 'real-side-000', frameIndex: 0, camera: 'side', elapsedMs: 40, imageUrl: 'blob:side-001', assetId: 'BAT-001:side:000' });
     expect(frame.blob).toBe(blob);
   });
 
   it('releases object URLs and media tracks', () => {
     const revoke = vi.fn();
     releaseRealCaptureFrames([
-      { id: 'a', frameIndex: 0, capturedAt: '', elapsedMs: 0, camera: 'side', blob: new Blob(), imageUrl: 'blob:a' },
+      { id: 'a', frameIndex: 0, capturedAt: '', elapsedMs: 0, camera: 'side', assetId: 'a', blob: new Blob(), imageUrl: 'blob:a' },
     ], revoke);
     const stop = vi.fn();
     stopRealCaptureStream({ getTracks: () => [{ stop }] } as unknown as MediaStream);

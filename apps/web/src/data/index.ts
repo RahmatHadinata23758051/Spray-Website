@@ -3,3 +3,4 @@ export * from './local/batchRepositoryInstance';
 export * from './local/productRepository';
 export * from './local/mockSpraybotRepository';
 export { mockSpraybotService } from './local/mockSpraybotRepository';
+export * from './local/indexedDbCaptureAssetStore';

@@ -9,6 +9,8 @@ export interface BatchRepository {
   startCapture(id: string, scenario?: FixtureScenario): Promise<Batch>;
   updateCaptureSession(id: string, moments: SynchronizedAnalysisFrame[]): Promise<Batch>;
   updateRealCaptureSession?(id: string, frames: RealSideCaptureFrameMetadata[]): Promise<Batch>;
+  setRealSideBaselineFromWindow?(id: string, windowMs?: number): Promise<Batch>;
+  selectRealSideBaselineRange?(id: string, startElapsedMs: number, endElapsedMs: number): Promise<Batch>;
   completeCapture(id: string): Promise<Batch>;
   markReviewRequired(id: string, initialDraft?: BatchAnalysisDraft): Promise<Batch>;
   updateAnalysisDraft(id: string, draft: BatchAnalysisDraft): Promise<Batch>;

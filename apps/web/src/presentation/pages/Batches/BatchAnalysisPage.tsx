@@ -13,6 +13,7 @@ import { MeasurementCorrectionOverlay } from '../../features/analysis/Measuremen
 import { CaptureSelection } from '../../features/analysis/CaptureSelection';
 import { Inspector } from '../../features/analysis/Inspector';
 import { FinalAnalysisConfirmation } from '../../features/analysis/FinalAnalysisConfirmation';
+import { RealSideAnalysisWorkspace } from '../../features/analysis/RealSideAnalysisWorkspace';
 import { phaseLabel } from '../../features/analysis/utils';
 import { formatStatus } from '../../utils/formatters';
 
@@ -164,6 +165,10 @@ export function BatchAnalysisPage() {
         </button>
       </div>
     );
+  }
+
+  if (batch.captureSession?.captureMode === 'real') {
+    return <RealSideAnalysisWorkspace batch={batch} onBack={() => navigate(`/batches/${batch.id}`)} />;
   }
 
   if (batch.status !== 'REVIEW_REQUIRED' && batch.status !== 'FINALIZED') {

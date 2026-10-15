@@ -159,12 +159,23 @@ export function BatchDetailPage() {
                 <h3 className="text-base font-bold text-text-primary mt-1">Pengambilan Data Berlangsung</h3>
                 <p className="mt-0.5 text-xs text-text-secondary">Akuisisi data sedang berlangsung.</p>
               </div>
-              <button
-                onClick={() => navigate(`/batches/${batch.id}/capture`)}
-                className="btn btn-primary shrink-0"
-              >
-                Lanjutkan Pengambilan
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {batch.captureSession?.captureMode === 'real' && (batch.captureSession.realSideFrames?.length ?? 0) > 0 && (
+                  <button
+                    onClick={() => navigate(`/batches/${batch.id}/analysis`)}
+                    aria-label="Tinjau Analisis Samping"
+                    className="btn btn-secondary"
+                  >
+                    Tinjau Analisis Samping
+                  </button>
+                )}
+                <button
+                  onClick={() => navigate(`/batches/${batch.id}/capture`)}
+                  className="btn btn-primary"
+                >
+                  Lanjutkan Pengambilan
+                </button>
+              </div>
             </div>
           )}
 

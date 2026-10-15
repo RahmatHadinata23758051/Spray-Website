@@ -1,4 +1,4 @@
-import type { FixtureScenario, SynchronizedAnalysisFrame, RealSideCaptureFrameMetadata } from '../types';
+import type { FixtureScenario, SynchronizedAnalysisFrame, RealSideCaptureFrameMetadata, RealSideBaselineSelection, RealSideBaselineSelectionMethod } from '../types';
 import type { CalibrationSnapshot, FinalAnalysisReport, FrontPixelGeometry, SidePixelGeometry } from '../analysis';
 
 export class InvalidLifecycleTransitionError extends Error {
@@ -70,6 +70,7 @@ export interface CaptureSession {
   capturedAt?: string;
   captureMode?: 'simulation' | 'real';
   realSideFrames?: RealSideCaptureFrameMetadata[];
+  realSideBaseline?: RealSideBaselineSelection;
 }
 
 export interface BatchAnalysisDraft {
@@ -265,6 +266,8 @@ export function updateCaptureSession(batch: Batch, moments: SynchronizedAnalysis
       ...batch.captureSession,
       synchronizedMoments: moments,
       captureMode: 'simulation',
+      realSideFrames: undefined,
+      realSideBaseline: undefined,
     },
     updatedAt: now,
   };
@@ -280,17 +283,140 @@ export function updateRealCaptureSession(batch: Batch, frames: RealSideCaptureFr
   if (frames.some((frame, index) => frame.camera !== 'side' || frame.frameIndex !== index || frame.elapsedMs < 0)) {
     throw new BatchValidationError('Real capture frames must be Side frames with contiguous indexes and non-negative elapsed times.');
   }
+  if (frames.some((frame) => frame.assetId?.startsWith('blob:') || frame.assetId?.startsWith('data:'))) {
+    throw new BatchValidationError('Real capture asset references must be stable asset keys, not ObjectURLs or data URLs.');
+  }
   if (frames.some((frame, index) => index > 0 && frame.elapsedMs < frames[index - 1].elapsedMs)) {
     throw new BatchValidationError('Real capture frame timestamps must be monotonic.');
   }
 
-  return {
+  const updated: Batch = {
     ...batch,
     captureSession: {
       ...batch.captureSession,
       synchronizedMoments: [],
       captureMode: 'real',
       realSideFrames: frames.map((frame) => ({ ...frame })),
+      // Frame identities changed, so any previous baseline reference is stale.
+      realSideBaseline: undefined,
+    },
+    updatedAt: now,
+  };
+
+  // New Phase 5 captures receive an initial baseline atomically with their
+  // metadata. Legacy Phase 3 metadata without asset references remains valid.
+  return frames.length > 0 && frames.every((frame) => Boolean(frame.assetId))
+    ? setRealSideBaselineFromWindow(updated, undefined, now)
+    : updated;
+}
+
+/**
+ * Initial software-MVP baseline window. This is a configuration default, not a
+ * claim about the physical spray event: no actuator trigger exists yet.
+ */
+export const DEFAULT_REAL_SIDE_BASELINE_WINDOW_MS = 500;
+
+function readRealSideFramesForBaseline(batch: Batch): RealSideCaptureFrameMetadata[] {
+  if (batch.status !== 'CAPTURING') {
+    throw new InvalidLifecycleTransitionError(`Cannot select a Side baseline: batch ${batch.id} is in status ${batch.status}, expected CAPTURING.`);
+  }
+  if (!batch.captureSession) {
+    throw new BatchValidationError(`Batch ${batch.id} has no capture session.`);
+  }
+  if (batch.captureSession.captureMode !== 'real') {
+    throw new BatchValidationError('A Side baseline can only be selected for a real capture session; simulation phases are unrelated.');
+  }
+  const frames = batch.captureSession.realSideFrames ?? [];
+  if (frames.length === 0) {
+    throw new BatchValidationError('A Side baseline requires at least one persisted real Side frame.');
+  }
+  return frames;
+}
+
+function buildRealSideBaseline(
+  frames: RealSideCaptureFrameMetadata[],
+  startElapsedMs: number,
+  endElapsedMs: number,
+  selectionMethod: RealSideBaselineSelectionMethod,
+  configuredWindowMs: number,
+  now: string,
+): RealSideBaselineSelection {
+  const selected = frames.filter((frame) => frame.elapsedMs >= startElapsedMs && frame.elapsedMs <= endElapsedMs);
+  if (selected.length === 0) {
+    throw new BatchValidationError(`No real Side frame falls inside ${startElapsedMs}–${endElapsedMs} ms.`);
+  }
+  if (selected.some((frame) => !frame.assetId)) {
+    throw new BatchValidationError('Baseline frames must reference a persisted asset. Re-capture before selecting a baseline.');
+  }
+  return {
+    selectionMethod,
+    configuredWindowMs,
+    startElapsedMs,
+    endElapsedMs,
+    frames: selected.map((frame) => ({
+      frameId: frame.id,
+      frameIndex: frame.frameIndex,
+      elapsedMs: frame.elapsedMs,
+      assetId: frame.assetId as string,
+    })),
+    selectedAt: now,
+  };
+}
+
+/**
+ * Designates the configured initial capture window as the baseline, clamped to
+ * the captured span so a short capture still yields a valid selection.
+ * Overwrites any previous selection for the same capture.
+ */
+export function setRealSideBaselineFromWindow(
+  batch: Batch,
+  windowMs: number = DEFAULT_REAL_SIDE_BASELINE_WINDOW_MS,
+  now = new Date().toISOString(),
+): Batch {
+  const frames = readRealSideFramesForBaseline(batch);
+  if (!Number.isFinite(windowMs) || windowMs <= 0) {
+    throw new BatchValidationError('Baseline window must be a positive number of milliseconds.');
+  }
+  const capturedSpanMs = frames[frames.length - 1].elapsedMs;
+  const appliedWindowMs = Math.min(windowMs, capturedSpanMs);
+
+  return {
+    ...batch,
+    captureSession: {
+      ...batch.captureSession!,
+      realSideBaseline: buildRealSideBaseline(frames, 0, appliedWindowMs, 'initial-window', windowMs, now),
+    },
+    updatedAt: now,
+  };
+}
+
+/**
+ * Replaces the baseline with an operator-chosen range. Unlike the configured
+ * window this is exact: an out-of-range request is rejected, not clamped.
+ */
+export function selectRealSideBaselineRange(
+  batch: Batch,
+  startElapsedMs: number,
+  endElapsedMs: number,
+  now = new Date().toISOString(),
+): Batch {
+  const frames = readRealSideFramesForBaseline(batch);
+  if (!Number.isFinite(startElapsedMs) || !Number.isFinite(endElapsedMs) || startElapsedMs < 0) {
+    throw new BatchValidationError('Baseline range must be finite and start at or after 0 ms.');
+  }
+  if (endElapsedMs < startElapsedMs) {
+    throw new BatchValidationError('Baseline range end must not precede its start.');
+  }
+  const capturedSpanMs = frames[frames.length - 1].elapsedMs;
+  if (endElapsedMs > capturedSpanMs) {
+    throw new BatchValidationError(`Baseline range ${startElapsedMs}–${endElapsedMs} ms exceeds the captured span of ${capturedSpanMs} ms.`);
+  }
+
+  return {
+    ...batch,
+    captureSession: {
+      ...batch.captureSession!,
+      realSideBaseline: buildRealSideBaseline(frames, startElapsedMs, endElapsedMs, 'manual-range', endElapsedMs - startElapsedMs, now),
     },
     updatedAt: now,
   };

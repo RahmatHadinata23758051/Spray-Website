@@ -128,6 +128,26 @@ export interface RealSideCaptureFrameMetadata {
   capturedAt: string;
   elapsedMs: number;
   camera: 'side';
+  /** Stable reference to the persisted frame binary. Absent on legacy Phase 3 captures. */
+  assetId?: string;
+}
+
+export type RealSideBaselineSelectionMethod = 'initial-window' | 'manual-range';
+
+export interface RealSideBaselineFrameRef {
+  frameId: string;
+  frameIndex: number;
+  elapsedMs: number;
+  assetId: string;
+}
+
+export interface RealSideBaselineSelection {
+  selectionMethod: RealSideBaselineSelectionMethod;
+  configuredWindowMs: number;
+  startElapsedMs: number;
+  endElapsedMs: number;
+  frames: RealSideBaselineFrameRef[];
+  selectedAt: string;
 }
 
 export interface AnalysisFrame {

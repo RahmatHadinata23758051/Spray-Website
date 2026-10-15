@@ -1,4 +1,4 @@
-import type { Camera, SynchronizedAnalysisFrame, Test } from '../types/index';
+import type { Camera, RealSideBaselineSelection, SynchronizedAnalysisFrame, Test } from '../types/index';
 import type { Batch } from '../batch/index';
 
 export type MeasurementValue = {
@@ -238,6 +238,127 @@ export type SelectionResult = {
   selected: SelectedCaptureMoment[];
   error?: string;
 };
+
+/** A future external analysis result may reference derived assets without embedding binary data. */
+export type ExternalSideAnalysisResult = {
+  sourceFrame: { frameId: string; frameIndex: number; elapsedMs: number; assetId: string };
+  maskAssetId?: string;
+  measurements?: SideFinalMeasurements;
+  quality?: { confidence?: number; qcStatus?: 'pending' | 'passed' | 'failed'; issues?: string[] };
+  analysisMethod: string;
+  analysisVersion: string;
+};
+
+/**
+ * Real Side analysis input. This replaces the synchronized-moment assumption
+ * for real captures: there is no Front frame and no fabricated sync metadata.
+ * It references persisted binaries by assetId only; no Blob or ObjectURL.
+ */
+export type RealSideAnalysisFrameRef = {
+  frameId: string;
+  frameIndex: number;
+  elapsedMs: number;
+  assetId: string;
+};
+
+export type RealSideAnalysisInput = {
+  batchId: string;
+  captureMode: 'real';
+  frames: RealSideAnalysisFrameRef[];
+  baseline: RealSideBaselineSelection | null;
+  sideOrientation: SideOrientation;
+  /** Side calibration copied from the analysis draft when one exists. */
+  calibration: CalibrationSnapshot | null;
+};
+
+export type BuildRealSideAnalysisInputResult =
+  | { ok: true; input: RealSideAnalysisInput }
+  | { ok: false; error: string };
+
+/**
+ * Builds the real Side analysis contract from a batch. Fails loudly for
+ * simulation sessions, missing metadata, or frames without persisted assets.
+ */
+export function buildRealSideAnalysisInput(batch: Batch): BuildRealSideAnalysisInputResult {
+  const session = batch.captureSession;
+  if (!session) return { ok: false, error: `Batch ${batch.id} has no capture session.` };
+  if (session.captureMode !== 'real') return { ok: false, error: 'Real Side analysis requires a real capture session; simulation uses synchronized moments.' };
+
+  const frames = session.realSideFrames ?? [];
+  if (frames.length === 0) return { ok: false, error: 'Real Side analysis requires at least one captured Side frame.' };
+  if (frames.some((frame, index) => frame.frameIndex !== index || !frame.id || !frame.assetId)) {
+    return { ok: false, error: 'Real Side frames must have contiguous indexes, frame IDs, and persisted asset references.' };
+  }
+  if (frames.some((frame, index) => index > 0 && frame.elapsedMs < frames[index - 1].elapsedMs)) {
+    return { ok: false, error: 'Real Side frame timestamps must be ordered by elapsed time.' };
+  }
+
+  const baseline = session.realSideBaseline;
+  if (!baseline) return { ok: false, error: 'A persisted Side baseline selection is required before analysis preparation.' };
+  const frameById = new Map(frames.map((frame) => [frame.id, frame]));
+  for (const baselineFrame of baseline.frames) {
+    const capturedFrame = frameById.get(baselineFrame.frameId);
+    if (!capturedFrame || capturedFrame.frameIndex !== baselineFrame.frameIndex || capturedFrame.assetId !== baselineFrame.assetId) {
+      return { ok: false, error: `Baseline frame ${baselineFrame.frameId} does not reference the persisted Side capture.` };
+    }
+  }
+
+  const sideOrientation = resolveSideOrientation(batch.analysisDraft?.calibration.side);
+
+  return {
+    ok: true,
+    input: {
+      batchId: batch.id,
+      captureMode: 'real',
+      frames: frames.map((frame) => ({ frameId: frame.id, frameIndex: frame.frameIndex, elapsedMs: frame.elapsedMs, assetId: frame.assetId as string })),
+      baseline: session.realSideBaseline ? structuredClone(session.realSideBaseline) : null,
+      sideOrientation,
+      calibration: batch.analysisDraft ? { ...batch.analysisDraft.calibration.side } : null,
+    },
+  };
+}
+
+/**
+ * Real Side captures do not have synchronized moments. They still use the
+ * same primary/supporting selection semantics without inventing a Front frame.
+ */
+export function setPrimaryAnalysisCapture(
+  current: SelectedCaptureMoment[],
+  captureFrameId: string,
+  selectedBy: string,
+  selectedAt: string,
+): SelectionResult {
+  const existingSelection = current.find(selection => selection.captureFrameId === captureFrameId);
+  const oldPrimary = current.find(selection => selection.role === 'primary');
+  if (existingSelection?.role === 'primary') return { selected: current };
+  if (existingSelection?.role === 'supporting') {
+    return {
+      selected: current.map(selection => {
+        if (selection.captureFrameId === captureFrameId) return { ...selection, role: 'primary' as const, selectedBy, selectedAt };
+        if (selection.captureFrameId === oldPrimary?.captureFrameId) return { ...selection, role: 'supporting' as const };
+        return selection;
+      }),
+    };
+  }
+  if (current.length >= MAX_SELECTED_CAPTURE_MOMENTS) return { selected: current, error: 'Maximum 10 captures selected. Remove a supporting capture first.' };
+  return {
+    selected: [
+      ...current.map(selection => selection.captureFrameId === oldPrimary?.captureFrameId ? { ...selection, role: 'supporting' as const } : selection),
+      { captureFrameId, role: 'primary', selectedBy, selectedAt },
+    ],
+  };
+}
+
+export function addSupportingAnalysisCapture(
+  current: SelectedCaptureMoment[],
+  captureFrameId: string,
+  selectedBy: string,
+  selectedAt: string,
+): SelectionResult {
+  if (current.some(selection => selection.captureFrameId === captureFrameId)) return { selected: current, error: 'Capture frame already selected' };
+  if (current.length >= MAX_SELECTED_CAPTURE_MOMENTS) return { selected: current, error: 'Maximum 10 capture moments already selected' };
+  return { selected: [...current, { captureFrameId, role: 'supporting', selectedBy, selectedAt }] };
+}
 
 export type SideFinalMeasurements = {
   sprayLength: MeasurementValue;
@@ -616,59 +737,26 @@ export function adjustCalibration(
 
 export function setPrimaryCapture(
   current: SelectedCaptureMoment[],
-  moment: SynchronizedAnalysisFrame,
+  moment: SynchronizedAnalysisFrame | { id: string; syncStatus?: 'synced' | 'partial' | 'invalid' },
   selectedBy: string,
   selectedAt: string,
 ): SelectionResult {
-  if (moment.syncStatus !== 'synced') {
+  if ('syncStatus' in moment && moment.syncStatus && moment.syncStatus !== 'synced') {
     return { selected: current, error: 'Only synchronized capture moments may be selected' };
   }
-
-  const existingSelection = current.find(s => s.captureFrameId === moment.id);
-  const oldPrimary = current.find(s => s.role === 'primary');
-
-  if (existingSelection?.role === 'primary') {
-    return { selected: current };
-  }
-
-  if (existingSelection?.role === 'supporting') {
-    return {
-      selected: current.map(selection => {
-        if (selection.captureFrameId === moment.id) return { ...selection, role: 'primary' as const, selectedBy, selectedAt };
-        if (selection.captureFrameId === oldPrimary?.captureFrameId) return { ...selection, role: 'supporting' as const };
-        return selection;
-      }),
-    };
-  }
-
-  if (current.length >= MAX_SELECTED_CAPTURE_MOMENTS) {
-    return { selected: current, error: 'Maximum 10 captures selected. Remove a supporting capture first.' };
-  }
-
-  return {
-    selected: [
-      ...current.map(selection => selection.captureFrameId === oldPrimary?.captureFrameId ? { ...selection, role: 'supporting' as const } : selection),
-      { captureFrameId: moment.id, role: 'primary', selectedBy, selectedAt },
-    ],
-  };
+  return setPrimaryAnalysisCapture(current, moment.id, selectedBy, selectedAt);
 }
 
 export function addSupportingCapture(
   current: SelectedCaptureMoment[],
-  moment: SynchronizedAnalysisFrame,
+  moment: SynchronizedAnalysisFrame | { id: string; syncStatus?: 'synced' | 'partial' | 'invalid' },
   selectedBy: string,
   selectedAt: string,
 ): SelectionResult {
-  if (moment.syncStatus !== 'synced') {
+  if ('syncStatus' in moment && moment.syncStatus && moment.syncStatus !== 'synced') {
     return { selected: current, error: 'Only synchronized capture moments may be selected' };
   }
-  if (current.some(s => s.captureFrameId === moment.id)) {
-    return { selected: current, error: 'Capture moment already selected' };
-  }
-  if (current.length >= MAX_SELECTED_CAPTURE_MOMENTS) {
-    return { selected: current, error: 'Maximum 10 capture moments already selected' };
-  }
-  return { selected: [...current, { captureFrameId: moment.id, role: 'supporting', selectedBy, selectedAt }] };
+  return addSupportingAnalysisCapture(current, moment.id, selectedBy, selectedAt);
 }
 
 export function removeSupportingCapture(
