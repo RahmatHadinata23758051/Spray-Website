@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import type { Camera as CameraType } from '@spray-paragon/domain';
-import type { SidePixelGeometry, FrontPixelGeometry, Point } from '@spray-paragon/domain';
+import type { SidePixelGeometry, FrontPixelGeometry, Point, SideOrientation } from '@spray-paragon/domain';
 import { moveSideMeasurementHandle, moveFrontMeasurementHandle } from '@spray-paragon/domain';
 import type { ActiveSideTool } from './types';
 
@@ -13,6 +13,7 @@ export function MeasurementCorrectionOverlay({
   workingSideGeometry, 
   autoFrontGeometry, 
   workingFrontGeometry, 
+  sideOrientation,
   onSideChange, 
   onFrontChange 
 }: {
@@ -22,6 +23,7 @@ export function MeasurementCorrectionOverlay({
   workingSideGeometry: SidePixelGeometry;
   autoFrontGeometry: FrontPixelGeometry;
   workingFrontGeometry: FrontPixelGeometry;
+  sideOrientation?: SideOrientation;
   onSideChange: (geometry: SidePixelGeometry) => void;
   onFrontChange: (geometry: FrontPixelGeometry) => void;
 }) {
@@ -37,7 +39,7 @@ export function MeasurementCorrectionOverlay({
 
   const updateHandle = (handle: MeasurementHandle, point: Point) => {
     if (camera === 'side') {
-      onSideChange(moveSideMeasurementHandle(workingSideGeometry, handle as 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'spreadPosition' | 'upperAngle' | 'lowerAngle', point, { width: 720, height: 360 }));
+      onSideChange(moveSideMeasurementHandle(workingSideGeometry, handle as 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'spreadPosition' | 'upperAngle' | 'lowerAngle', point, { width: 720, height: 360 }, sideOrientation));
     } else {
       onFrontChange(moveFrontMeasurementHandle(workingFrontGeometry, handle as 'centroid' | 'diameterLeft' | 'diameterRight', point, { width: 720, height: 360 }));
     }
