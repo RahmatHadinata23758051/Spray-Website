@@ -3,6 +3,7 @@ import {
   createBatchDraft,
   prepareBatch,
   startCapture,
+  updateRealCaptureSession,
   completeCapture,
   markReviewRequired,
   updateAnalysisDraft,
@@ -53,6 +54,45 @@ describe('@spray-paragon/domain: Pure Domain Invariants', () => {
     expect(ready.status).toBe('READY');
     expect(ready.setupSnapshot).toBeDefined();
     expect(ready.setupSnapshot?.sampleId).toBe(`SMP-${ready.id.replace(/^BAT-/, '')}`);
+  });
+
+  it('rejects invalid repetition values at the domain boundary', () => {
+    expect(() => createBatchDraft({
+      productId: 'p1',
+      productSnapshot: dummyProduct,
+      recipeId: 'r1',
+      recipeSnapshot: dummyRecipe,
+      operatorId: 'op1',
+      operatorName: 'Operator Name',
+      fixture: 'nominal-01',
+      repetition: 0,
+    })).toThrow(/positive integer/);
+  });
+
+  it('carries test-context metadata from draft into frozen setup snapshot', () => {
+    const draft = createBatchDraft({
+      productId: 'p1',
+      productSnapshot: dummyProduct,
+      recipeId: 'r1',
+      recipeSnapshot: dummyRecipe,
+      operatorId: 'op1',
+      operatorName: 'Operator Name',
+      fixture: 'nominal-01',
+      productLot: 'LOT-42',
+      storageCondition: '25C ambient',
+      bottlePosition: 'upright',
+      testPeriod: 'week-2',
+      repetition: 3,
+    });
+
+    expect(draft.setupDraft?.storageCondition).toBe('25C ambient');
+    expect(draft.setupDraft?.repetition).toBe(3);
+
+    const ready = prepareBatch(draft);
+    expect(ready.setupSnapshot?.storageCondition).toBe('25C ambient');
+    expect(ready.setupSnapshot?.bottlePosition).toBe('upright');
+    expect(ready.setupSnapshot?.testPeriod).toBe('week-2');
+    expect(ready.setupSnapshot?.repetition).toBe(3);
   });
 
   it('disallows preparation on non-DRAFT batch', () => {
@@ -254,6 +294,43 @@ describe('@spray-paragon/domain: Pure Domain Invariants', () => {
           updatedAt: new Date().toISOString(),
         })
       ).toThrow();
+    });
+
+    it('records ordered real Side capture frames with monotonic timestamps', () => {
+      const draft = createBatchDraft({
+        productId: 'p1',
+        productSnapshot: dummyProduct,
+        recipeId: 'r1',
+        recipeSnapshot: dummyRecipe,
+        operatorId: 'op1',
+        operatorName: 'Operator Name',
+        fixture: 'nominal-01',
+      });
+      const ready = prepareBatch(draft);
+      const capturing = startCapture(ready);
+
+      const frames = [
+        { id: 'f-0', frameIndex: 0, camera: 'side' as const, capturedAt: '2026-10-15T10:00:00.000Z', elapsedMs: 0 },
+        { id: 'f-1', frameIndex: 1, camera: 'side' as const, capturedAt: '2026-10-15T10:00:00.100Z', elapsedMs: 100 },
+        { id: 'f-2', frameIndex: 2, camera: 'side' as const, capturedAt: '2026-10-15T10:00:00.200Z', elapsedMs: 200 },
+      ];
+
+      const updated = updateRealCaptureSession(capturing, frames);
+      expect(updated.captureSession?.captureMode).toBe('real');
+      expect(updated.captureSession?.synchronizedMoments).toEqual([]);
+      expect(updated.captureSession?.realSideFrames).toHaveLength(3);
+      expect(updated.captureSession?.realSideFrames?.[1].elapsedMs).toBe(100);
+
+      // Rejects non-monotonic
+      expect(() => updateRealCaptureSession(capturing, [
+        { id: 'f-0', frameIndex: 0, camera: 'side' as const, capturedAt: '2026-10-15T10:00:00.000Z', elapsedMs: 150 },
+        { id: 'f-1', frameIndex: 1, camera: 'side' as const, capturedAt: '2026-10-15T10:00:00.100Z', elapsedMs: 100 },
+      ])).toThrow();
+
+      // Rejects front frame in side-only foundation
+      expect(() => updateRealCaptureSession(capturing, [
+        { id: 'f-0', frameIndex: 0, camera: 'front' as unknown as 'side', capturedAt: '2026-10-15T10:00:00.000Z', elapsedMs: 0 },
+      ])).toThrow();
     });
   });
 });
