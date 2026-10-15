@@ -4,7 +4,7 @@ import { testSchema, analysisSchema, synchronizedAnalysisFrameSchema } from '@sp
 import { FixtureProductRepository } from '../data';
 import { createTestSession, nextSampleId, nextTestId } from '@spray-paragon/domain';
 import { createFinalReportCsv } from '../App';
-import { addSupportingCapture, adjustCalibration, calculateScaleMmPerPx, calibratedGridSpacingPx, canFinalize, correctMeasurement, createCalibrationSnapshot, createFinalAnalysisReport, createFrontMeasurements, createMeasurementValue, createSideMeasurements, deriveFrontMeasurementsFromGeometry, deriveSideMeasurementsFromGeometry, getPrimary, getUserFacingTestStatus, moveCalibrationAnchor, moveFrontMeasurementHandle, moveSideMeasurementHandle, pixelDistanceToMm, pointDistanceToMm, removeSupportingCapture, selectMeasurementValue, setPrimaryCapture, translateCalibrationWithinBounds, updateCalibrationGeometry } from '@spray-paragon/domain';
+import { addSupportingCapture, adjustCalibration, calculateScaleMmPerPx, calibratedGridSpacingPx, canFinalize, correctMeasurement, createCalibrationSnapshot, createFinalAnalysisReport, createFrontMeasurements, createMeasurementValue, createSideMeasurements, deriveFrontMeasurementsFromGeometry, deriveSideMeasurementsFromGeometry, getPrimary, getUserFacingTestStatus, mirrorSideGeometry, moveCalibrationAnchor, moveFrontMeasurementHandle, moveSideMeasurementHandle, pixelDistanceToMm, pointDistanceToMm, removeSupportingCapture, selectMeasurementValue, setPrimaryCapture, translateCalibrationWithinBounds, updateCalibrationGeometry } from '@spray-paragon/domain';
 
 describe('Spraybot Core Fixtures & Formatters', () => {
   it('has deterministic test fixtures', () => {
@@ -423,6 +423,25 @@ describe('Calibrated pixel measurement pipeline', () => {
     const after = deriveSideMeasurementsFromGeometry(geometry.side, sideAfter, { geometry: corrected, adjustedBy: 'Nadia Putri', adjustedAt: '2026-09-29T14:40:00Z' });
     expect(after.sprayLength.final).not.toBeCloseTo(before.sprayLength.final);
     expect(corrected.sprayEndpointPx).toEqual({ x: 620, y: 200 });
+  });
+
+  it('supports explicit nozzle-right orientation without reversing measurements', () => {
+    const rightGeometry = mirrorSideGeometry(geometry.side);
+    const rightCalibration = createCalibrationSnapshot({
+      camera: 'side',
+      sideOrientation: 'nozzleRight',
+      referenceDistanceMm: 1000,
+      anchorA: { x: 112, y: 296 },
+      anchorB: { x: 634, y: 296 },
+    });
+    const leftValues = deriveSideMeasurementsFromGeometry(geometry.side, sideBefore);
+    const rightValues = deriveSideMeasurementsFromGeometry(rightGeometry, rightCalibration);
+    expect(rightGeometry.nozzleOriginPx.x).toBe(720 - geometry.side.nozzleOriginPx.x);
+    expect(rightGeometry.sprayEndpointPx.x).toBeLessThan(rightGeometry.nozzleOriginPx.x);
+    expect(rightValues.sprayLength.auto).toBeCloseTo(leftValues.sprayLength.auto, 8);
+    expect(rightValues.sprayAngle.auto).toBeCloseTo(leftValues.sprayAngle.auto, 8);
+    expect(moveSideMeasurementHandle(rightGeometry, 'sprayEndpoint', { x: 700, y: 200 }, { width: 720, height: 360 }, 'nozzleRight').sprayEndpointPx.x).toBe(rightGeometry.nozzleOriginPx.x - 10);
+    expect(moveSideMeasurementHandle(rightGeometry, 'sprayEndpoint', { x: 200, y: 200 }, { width: 720, height: 360 }, 'nozzleRight').sprayEndpointPx.x).toBe(200);
   });
 
   it('moves Front centroid and diameter through corrected pixel geometry', () => {
