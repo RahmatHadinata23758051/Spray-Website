@@ -122,6 +122,14 @@ export interface Frame {
   phase: CapturePhase;
 }
 
+export interface RealSideCaptureFrameMetadata {
+  id: string;
+  frameIndex: number;
+  capturedAt: string;
+  elapsedMs: number;
+  camera: 'side';
+}
+
 export interface AnalysisFrame {
   id: string;
   camera: Camera;
