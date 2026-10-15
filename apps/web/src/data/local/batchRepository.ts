@@ -1,7 +1,7 @@
 import type { BatchRepository } from '../../application/ports/batchRepository';
 import { BatchNotFoundError } from '../../application/errors/batchErrors';
-import { Batch, CreateBatchDraftInput, BatchSetupDraft, BatchAnalysisDraft, createBatchDraft, updateBatchSetupDraft, prepareBatch, startCapture, updateCaptureSession, completeCapture, markReviewRequired, updateAnalysisDraft, finalizeBatch, markFailed, abortBatch } from '@spray-paragon/domain';
-import type { FixtureScenario, SynchronizedAnalysisFrame } from '@spray-paragon/domain';
+import { Batch, CreateBatchDraftInput, BatchSetupDraft, BatchAnalysisDraft, createBatchDraft, updateBatchSetupDraft, prepareBatch, startCapture, updateCaptureSession, updateRealCaptureSession, completeCapture, markReviewRequired, updateAnalysisDraft, finalizeBatch, markFailed, abortBatch } from '@spray-paragon/domain';
+import type { FixtureScenario, SynchronizedAnalysisFrame, RealSideCaptureFrameMetadata } from '@spray-paragon/domain';
 import type { FinalAnalysisReport } from '@spray-paragon/domain';
 
 export const BATCH_STORAGE_KEY = 'spraybot.batches.v1';
@@ -113,6 +113,13 @@ export class LocalStorageBatchRepository implements BatchRepository {
     const batch = await this.getBatch(id);
     if (!batch) throw new BatchNotFoundError(id);
     const updated = updateCaptureSession(batch, moments);
+    return this.saveMutated(updated);
+  }
+
+  async updateRealCaptureSession(id: string, frames: RealSideCaptureFrameMetadata[]): Promise<Batch> {
+    const batch = await this.getBatch(id);
+    if (!batch) throw new BatchNotFoundError(id);
+    const updated = updateRealCaptureSession(batch, frames);
     return this.saveMutated(updated);
   }
 
