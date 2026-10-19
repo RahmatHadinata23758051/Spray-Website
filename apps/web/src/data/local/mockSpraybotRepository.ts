@@ -234,15 +234,30 @@ function frontGeometry(frameIndex: number, scenario: FixtureScenario): FrontPixe
   };
 }
 
+const fixtureScenarios: readonly FixtureScenario[] = [
+  'nominal-01',
+  'direction-offset-01',
+  'pattern-asymmetry-01',
+  'alignment-review-01',
+];
+
+function resolveFixtureScenario(value: FixtureScenario): FixtureScenario {
+  if (fixtureScenarios.includes(value)) return value;
+  // ponytail: legacy localStorage values fall back to the nominal fixture; add a persisted-schema migration when fixture versions diverge.
+  console.warn(`Unknown fixture scenario "${String(value)}"; using nominal-01 geometry.`);
+  return 'nominal-01';
+}
+
 export function getPixelGeometry(
   frameIndex: number,
   scenario: FixtureScenario,
   sideOrientation: SideOrientation = 'nozzleLeft',
 ): { side: SidePixelGeometry; front: FrontPixelGeometry } {
-  const side = sideGeometry(frameIndex, scenario);
+  const resolvedScenario = resolveFixtureScenario(scenario);
+  const side = sideGeometry(frameIndex, resolvedScenario);
   return {
     side: sideOrientation === 'nozzleRight' ? mirrorSideGeometry(side) : side,
-    front: frontGeometry(frameIndex, scenario),
+    front: frontGeometry(frameIndex, resolvedScenario),
   };
 }
 

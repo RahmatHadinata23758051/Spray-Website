@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { tests, analyses, synchronizedFrames, fmt, FixtureTestRepository, FixtureAnalysisRepository, getPixelGeometry } from '../data';
-import { testSchema, analysisSchema, synchronizedAnalysisFrameSchema } from '@spray-paragon/domain';
+import { testSchema, analysisSchema, synchronizedAnalysisFrameSchema, type FixtureScenario } from '@spray-paragon/domain';
 import { FixtureProductRepository } from '../data';
 import { createTestSession, nextSampleId, nextTestId } from '@spray-paragon/domain';
 import { createFinalReportCsv } from '../App';
@@ -303,6 +303,14 @@ describe('Calibrated pixel measurement pipeline', () => {
   const sideAfterValues = deriveSideMeasurementsFromGeometry(geometry.side, sideAfter);
   const frontBeforeValues = deriveFrontMeasurementsFromGeometry(geometry.front, frontBefore);
   const frontAfterValues = deriveFrontMeasurementsFromGeometry(geometry.front, frontAfter);
+
+  it('safely falls back to nominal-01 geometry when fixture scenario is unrecognized', () => {
+    // Legacy batches or malformed snapshots must not crash with undefined nozzleOriginPx
+    const fallback = getPixelGeometry(28, 'legacy-scenario-01' as unknown as FixtureScenario);
+    expect(fallback.side.nozzleOriginPx).toBeDefined();
+    expect(fallback.side.nozzleOriginPx.x).toBe(112);
+    expect(fallback.front.contourPx).toBeDefined();
+  });
 
   it('converts pixel and point distances through the current calibration', () => {
     expect(pixelDistanceToMm(100, sideBefore.scaleMmPerPx)).toBeCloseTo(191.57, 2);
