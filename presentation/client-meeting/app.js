@@ -99,6 +99,7 @@ function loadPageContent(pageId) {
         else if (pageId === 'system-map') renderSystemMapPage(container);
         else if (pageId === 'system-context') renderSystemContextPage(container);
         else if (pageId === 'architecture') renderArchitecturePage(container);
+        else if (pageId === 'cv-progress') renderCvProgressPage(container);
         else if (pageId === 'decisions') renderDecisionsPage(container);
 
         // Sub-page specific initialization

@@ -5,7 +5,8 @@ const presentationPages = [
     { id: 'system-map', title: 'Alur Sistem', num: '02' },
     { id: 'system-context', title: 'Konteks Sistem', num: '03' },
     { id: 'architecture', title: 'Arsitektur', num: '04' },
-    { id: 'decisions', title: 'Hal yang Perlu Disepakati', num: '05' }
+    { id: 'cv-progress', title: 'Analisis Citra', num: '05' },
+    { id: 'decisions', title: 'Hal yang Perlu Disepakati', num: '06' }
 ];
 
 const decisionTopics = [
