@@ -110,18 +110,18 @@ export function Inspector({
 
         {isEditingMeasurement && camera === 'side' && sideMeasurements && activeSideTool && onSetActiveSideTool && (
           <>
-            <div className="grid grid-cols-3 gap-1 bg-surface-subtle p-1 rounded-lg border border-border-default" role="tablist" aria-label="Alat pengukuran">
-              {(['Length', 'Spread', 'Angle'] as ActiveSideTool[]).map(tool => (
+            <div className="grid grid-cols-4 gap-1 bg-surface-subtle p-1 rounded-lg border border-border-default" role="tablist" aria-label="Alat pengukuran">
+              {(['Length', 'Spread', 'Angle', 'Direction'] as ActiveSideTool[]).map(tool => (
                 <button
                   key={tool}
                   type="button"
                   role="tab"
-                  aria-label={tool === 'Length' ? 'Panjang' : tool === 'Spread' ? 'Sebaran' : 'Sudut'}
+                  aria-label={tool === 'Length' ? 'Panjang' : tool === 'Spread' ? 'Sebaran' : tool === 'Angle' ? 'Sudut' : 'Arah'}
                   aria-selected={activeSideTool === tool}
                   className={`px-2.5 py-1 text-xs font-bold rounded-md transition-colors ${activeSideTool === tool ? 'bg-primary text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
                   onClick={() => onSetActiveSideTool(tool)}
                 >
-                  {tool === 'Length' ? 'Panjang' : tool === 'Spread' ? 'Sebaran' : 'Sudut'}
+                  {tool === 'Length' ? 'Panjang' : tool === 'Spread' ? 'Sebaran' : tool === 'Angle' ? 'Sudut' : 'Arah'}
                 </button>
               ))}
             </div>
@@ -164,6 +164,18 @@ export function Inspector({
                   <div className={`flex justify-between text-xs py-1 ${sideMeasurements.sprayAngle.adjusted ? 'bg-semantic-warning-soft/50 px-2 rounded-md' : ''}`}>
                     <span className="text-text-secondary font-semibold">Pratinjau Koreksi</span>
                     <strong data-testid="inspector-side-spray-angle" className="font-mono text-primary text-sm font-bold text-right">{fmt.deg(selectMeasurementValue(sideMeasurements.sprayAngle))}</strong>
+                  </div>
+                </>
+              )}
+              {activeSideTool === 'Direction' && (
+                <>
+                  <div className="flex justify-between text-xs py-1 border-b border-border-subtle">
+                    <span className="text-text-muted font-medium">Otomatis</span>
+                    <strong className="font-mono text-text-primary text-right">{fmt.deg(sideMeasurements.directionOffset.auto)}</strong>
+                  </div>
+                  <div className={`flex justify-between text-xs py-1 ${sideMeasurements.directionOffset.adjusted ? 'bg-semantic-warning-soft/50 px-2 rounded-md' : ''}`}>
+                    <span className="text-text-secondary font-semibold">Pratinjau Koreksi</span>
+                    <strong data-testid="inspector-side-direction-offset" className="font-mono text-primary text-sm font-bold text-right">{fmt.deg(selectMeasurementValue(sideMeasurements.directionOffset))}</strong>
                   </div>
                 </>
               )}

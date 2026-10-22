@@ -1,10 +1,11 @@
 import React, { useRef, useState } from 'react';
 import type { Camera as CameraType } from '@spray-paragon/domain';
-import type { SidePixelGeometry, FrontPixelGeometry, Point, SideOrientation } from '@spray-paragon/domain';
-import { moveSideMeasurementHandle, moveFrontMeasurementHandle } from '@spray-paragon/domain';
+import type { SidePixelGeometry, FrontPixelGeometry, Point, SideOrientation, CalibrationSnapshot } from '@spray-paragon/domain';
+import { moveSideMeasurementHandle, moveFrontMeasurementHandle, resolveSideOrientation } from '@spray-paragon/domain';
+import { fmt } from '../../utils/formatters';
 import type { ActiveSideTool } from './types';
 
-type MeasurementHandle = 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'spreadPosition' | 'upperAngle' | 'lowerAngle' | 'centroid' | 'diameterLeft' | 'diameterRight';
+type MeasurementHandle = 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'spreadPosition' | 'upperAngle' | 'lowerAngle' | 'directionReference' | 'centroid' | 'diameterLeft' | 'diameterRight';
 
 export function MeasurementCorrectionOverlay({ 
   camera, 
@@ -14,6 +15,7 @@ export function MeasurementCorrectionOverlay({
   autoFrontGeometry, 
   workingFrontGeometry, 
   sideOrientation,
+  sideCalibration,
   onSideChange, 
   onFrontChange 
 }: {
@@ -24,6 +26,7 @@ export function MeasurementCorrectionOverlay({
   autoFrontGeometry: FrontPixelGeometry;
   workingFrontGeometry: FrontPixelGeometry;
   sideOrientation?: SideOrientation;
+  sideCalibration?: CalibrationSnapshot;
   onSideChange: (geometry: SidePixelGeometry) => void;
   onFrontChange: (geometry: FrontPixelGeometry) => void;
 }) {
@@ -39,7 +42,7 @@ export function MeasurementCorrectionOverlay({
 
   const updateHandle = (handle: MeasurementHandle, point: Point) => {
     if (camera === 'side') {
-      onSideChange(moveSideMeasurementHandle(workingSideGeometry, handle as 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'spreadPosition' | 'upperAngle' | 'lowerAngle', point, { width: 720, height: 360 }, sideOrientation));
+      onSideChange(moveSideMeasurementHandle(workingSideGeometry, handle as 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'spreadPosition' | 'upperAngle' | 'lowerAngle' | 'directionReference', point, { width: 720, height: 360 }, sideOrientation));
     } else {
       onFrontChange(moveFrontMeasurementHandle(workingFrontGeometry, handle as 'centroid' | 'diameterLeft' | 'diameterRight', point, { width: 720, height: 360 }));
     }
@@ -65,13 +68,33 @@ export function MeasurementCorrectionOverlay({
 
   const keyDown = (event: React.KeyboardEvent<SVGCircleElement>, handle: MeasurementHandle, point: Point) => {
     const amount = event.shiftKey ? 10 : 1;
-    const delta = event.key === 'ArrowLeft' ? { x: -amount, y: 0 } : event.key === 'ArrowRight' ? { x: amount, y: 0 } : event.key === 'ArrowUp' ? { x: 0, y: -amount } : event.key === 'ArrowDown' ? { x: 0, y: amount } : null;
+    let delta: { x: number; y: number } | null = null;
+
+    // Constrain keyboard movement based on handle type for Spread mode
+    if (activeSideTool === 'Spread' && camera === 'side') {
+      if (handle === 'spreadTop' || handle === 'spreadBottom') {
+        // Top/bottom handles: vertical only
+        if (event.key === 'ArrowUp') delta = { x: 0, y: -amount };
+        else if (event.key === 'ArrowDown') delta = { x: 0, y: amount };
+      } else if (handle === 'spreadPosition') {
+        // Center handle: horizontal only
+        if (event.key === 'ArrowLeft') delta = { x: -amount, y: 0 };
+        else if (event.key === 'ArrowRight') delta = { x: amount, y: 0 };
+      }
+    } else {
+      // Other tools: allow all directions (existing behavior)
+      if (event.key === 'ArrowLeft') delta = { x: -amount, y: 0 };
+      else if (event.key === 'ArrowRight') delta = { x: amount, y: 0 };
+      else if (event.key === 'ArrowUp') delta = { x: 0, y: -amount };
+      else if (event.key === 'ArrowDown') delta = { x: 0, y: amount };
+    }
+
     if (!delta) return;
     event.preventDefault();
     updateHandle(handle, { x: point.x + delta.x, y: point.y + delta.y });
   };
 
-  const handle = (name: MeasurementHandle, label: string, point: Point) => (
+  const handle = (name: MeasurementHandle, label: string, point: Point, orientation?: 'horizontal' | 'vertical') => (
     <circle
       cx={point.x} 
       cy={point.y} 
@@ -80,6 +103,7 @@ export function MeasurementCorrectionOverlay({
       role="slider" 
       aria-label={label} 
       aria-valuetext={`${point.x.toFixed(0)}, ${point.y.toFixed(0)} pixels`} 
+      aria-orientation={orientation}
       tabIndex={0}
       onPointerDown={event => pointerDown(event, name)} 
       onPointerMove={pointerMove} 
@@ -110,17 +134,24 @@ export function MeasurementCorrectionOverlay({
           )}
           {activeSideTool === 'Spread' && (() => {
             const midY = (workingSideGeometry.verticalSpreadTopPx.y + workingSideGeometry.verticalSpreadBottomPx.y) / 2;
+            const spreadPx = Math.abs(workingSideGeometry.verticalSpreadBottomPx.y - workingSideGeometry.verticalSpreadTopPx.y);
+            const spreadMm = sideCalibration ? (spreadPx * sideCalibration.scaleMmPerPx) : spreadPx;
+            const isMirrored = resolveSideOrientation(sideCalibration ?? { sideOrientation }) === 'nozzleRight';
+            const spreadLabelX = isMirrored
+              ? Math.max(8, workingSideGeometry.verticalSpreadTopPx.x - 52)
+              : Math.min(660, workingSideGeometry.verticalSpreadTopPx.x + 12);
             return (
               <>
                 <g className="measurement-auto-geometry" aria-label="Geometri sebaran otomatis sistem">
-                  <line x1={autoSideGeometry.verticalSpreadTopPx.x} y1={autoSideGeometry.verticalSpreadTopPx.y} x2={autoSideGeometry.verticalSpreadBottomPx.y} y2={autoSideGeometry.verticalSpreadBottomPx.y} stroke="#1d8fff" strokeDasharray="5 4" strokeWidth="1.5" />
+                  <line x1={autoSideGeometry.verticalSpreadTopPx.x} y1={autoSideGeometry.verticalSpreadTopPx.y} x2={autoSideGeometry.verticalSpreadBottomPx.x} y2={autoSideGeometry.verticalSpreadBottomPx.y} stroke="#1d8fff" strokeDasharray="5 4" strokeWidth="1.5" />
                 </g>
                 <g className="measurement-final-geometry" aria-label="Geometri sebaran akhir operator">
-                  <line x1={workingSideGeometry.verticalSpreadTopPx.x} y1={workingSideGeometry.verticalSpreadTopPx.y} x2={workingSideGeometry.verticalSpreadBottomPx.y} y2={workingSideGeometry.verticalSpreadBottomPx.y} stroke="#ff8c00" strokeWidth="2.5" />
+                  <line x1={workingSideGeometry.verticalSpreadTopPx.x} y1={workingSideGeometry.verticalSpreadTopPx.y} x2={workingSideGeometry.verticalSpreadBottomPx.x} y2={workingSideGeometry.verticalSpreadBottomPx.y} stroke="#ff8c00" strokeWidth="2.5" />
                 </g>
-                {handle('spreadPosition', 'Posisi pengukuran sebaran', { x: workingSideGeometry.verticalSpreadTopPx.x, y: midY })}
-                {handle('spreadTop', 'Batas sebaran atas', workingSideGeometry.verticalSpreadTopPx)}
-                {handle('spreadBottom', 'Batas sebaran bawah', workingSideGeometry.verticalSpreadBottomPx)}
+                <text x={spreadLabelX} y={midY} fill="#ff8c00" fontSize="11" fontFamily="IBM Plex Mono" dominantBaseline="middle">{fmt.mm(spreadMm)}</text>
+                {handle('spreadPosition', 'Posisi pengukuran sebaran', { x: workingSideGeometry.verticalSpreadTopPx.x, y: midY }, 'horizontal')}
+                {handle('spreadTop', 'Batas sebaran atas', workingSideGeometry.verticalSpreadTopPx, 'vertical')}
+                {handle('spreadBottom', 'Batas sebaran bawah', workingSideGeometry.verticalSpreadBottomPx, 'vertical')}
               </>
             );
           })()}
@@ -136,6 +167,18 @@ export function MeasurementCorrectionOverlay({
               </g>
               {handle('upperAngle', 'Batas sudut atas', workingSideGeometry.upperBoundaryPx)}
               {handle('lowerAngle', 'Batas sudut bawah', workingSideGeometry.lowerBoundaryPx)}
+            </>
+          )}
+          {activeSideTool === 'Direction' && (
+            <>
+              <g className="measurement-auto-geometry" aria-label="Geometri arah otomatis sistem">
+                <line x1={autoSideGeometry.nozzleOriginPx.x} y1={autoSideGeometry.nozzleOriginPx.y} x2={autoSideGeometry.directionReferencePx.x} y2={autoSideGeometry.directionReferencePx.y} stroke="#1d8fff" strokeDasharray="5 4" strokeWidth="1.5" />
+                <circle cx={autoSideGeometry.directionReferencePx.x} cy={autoSideGeometry.directionReferencePx.y} r="5" fill="none" stroke="#1d8fff" strokeWidth="1.5" strokeDasharray="3 2" />
+              </g>
+              <g className="measurement-final-geometry" aria-label="Geometri arah akhir operator">
+                <line x1={workingSideGeometry.nozzleOriginPx.x} y1={workingSideGeometry.nozzleOriginPx.y} x2={workingSideGeometry.directionReferencePx.x} y2={workingSideGeometry.directionReferencePx.y} stroke="#ff8c00" strokeWidth="2" />
+              </g>
+              {handle('directionReference', 'Titik referensi arah', workingSideGeometry.directionReferencePx)}
             </>
           )}
         </>

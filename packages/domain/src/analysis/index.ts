@@ -1,5 +1,7 @@
 import type { Camera, RealSideBaselineSelection, SynchronizedAnalysisFrame, Test } from '../types/index';
 import type { Batch } from '../batch/index';
+import type { KodePengujian } from '../kode-pengujian/index';
+import { getEffectiveSampleContext } from '../kode-pengujian/index';
 
 export type MeasurementValue = {
   auto: number;
@@ -125,7 +127,7 @@ export function getFrontDisplayGeometry(autoGeometry: FrontPixelGeometry, correc
 
 export function moveSideMeasurementHandle(
   geometry: SidePixelGeometry,
-  handle: 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'upperAngle' | 'lowerAngle' | 'spreadPosition',
+  handle: 'sprayEndpoint' | 'spreadTop' | 'spreadBottom' | 'upperAngle' | 'lowerAngle' | 'spreadPosition' | 'directionReference',
   target: Point,
   bounds: { width: number; height: number },
   orientation: SideOrientation = DEFAULT_SIDE_ORIENTATION,
@@ -177,6 +179,13 @@ export function moveSideMeasurementHandle(
       cloned.lowerBoundaryPx = {
         x: constrainDownstreamX(clamped.x),
         y: Math.max(cloned.nozzleOriginPx.y + 4, clamped.y),
+      };
+      break;
+    }
+    case 'directionReference': {
+      cloned.directionReferencePx = {
+        x: constrainDownstreamX(clamped.x),
+        y: clamped.y,
       };
       break;
     }
@@ -271,6 +280,34 @@ export type RealSideAnalysisInput = {
   calibration: CalibrationSnapshot | null;
 };
 
+/**
+ * TestRun-native real Side analysis input.
+ * Does NOT reference Batch; uses KodePengujian / Sample / TestRun hierarchy.
+ */
+export type TestRunRealSideAnalysisInput = {
+  kodePengujianId: string;
+  sampleId: string;
+  testRunId: string;
+  productCode: string;
+  productName: string;
+  recipeName: string;
+  setpoints: { forceSetpointN: number; pressDurationMs: number; strokeMm: number };
+  effectiveStorage: string;
+  effectiveBottlePosition: string;
+  operatorId: string;
+  operatorName: string;
+  captureMode: 'real';
+  frames: RealSideAnalysisFrameRef[];
+  baseline: RealSideBaselineSelection | null;
+  sideOrientation: SideOrientation;
+  /** Side calibration copied from the analysis draft when one exists. */
+  calibration: CalibrationSnapshot | null;
+};
+
+export type BuildTestRunRealSideAnalysisInputResult =
+  | { ok: true; input: TestRunRealSideAnalysisInput }
+  | { ok: false; error: string };
+
 export type BuildRealSideAnalysisInputResult =
   | { ok: true; input: RealSideAnalysisInput }
   | { ok: false; error: string };
@@ -314,6 +351,72 @@ export function buildRealSideAnalysisInput(batch: Batch): BuildRealSideAnalysisI
       baseline: session.realSideBaseline ? structuredClone(session.realSideBaseline) : null,
       sideOrientation,
       calibration: batch.analysisDraft ? { ...batch.analysisDraft.calibration.side } : null,
+    },
+  };
+}
+
+/**
+ * Builds the real Side analysis contract from a TestRun within a KodePengujian.
+ * Does NOT adapt back to Batch. Fails loudly for simulation sessions, missing
+ * metadata, or frames without persisted assets.
+ */
+export function buildTestRunRealSideAnalysisInput(
+  kp: KodePengujian,
+  testRunId: string
+): BuildTestRunRealSideAnalysisInputResult {
+  const tr = kp.testRuns.find((t) => t.id === testRunId);
+  if (!tr) return { ok: false, error: `TestRun ${testRunId} not found in KodePengujian ${kp.id}.` };
+  if (!tr.captureSession) return { ok: false, error: `TestRun ${testRunId} has no capture session.` };
+  if (tr.captureSession.captureMode !== 'real') {
+    return { ok: false, error: 'Real Side analysis requires a real capture session; simulation uses synchronized moments.' };
+  }
+
+  const sample = kp.samples.find((s) => s.id === tr.sampleId);
+  if (!sample) return { ok: false, error: `Sample ${tr.sampleId} not found in KodePengujian ${kp.id}.` };
+
+  const effective = getEffectiveSampleContext(sample, kp);
+  const session = tr.captureSession;
+
+  const frames = session.realSideFrames ?? [];
+  if (frames.length === 0) return { ok: false, error: 'Real Side analysis requires at least one captured Side frame.' };
+  if (frames.some((frame, index) => frame.frameIndex !== index || !frame.id || !frame.assetId)) {
+    return { ok: false, error: 'Real Side frames must have contiguous indexes, frame IDs, and persisted asset references.' };
+  }
+  if (frames.some((frame, index) => index > 0 && frame.elapsedMs < frames[index - 1].elapsedMs)) {
+    return { ok: false, error: 'Real Side frame timestamps must be ordered by elapsed time.' };
+  }
+
+  const baseline = session.realSideBaseline;
+  if (!baseline) return { ok: false, error: 'A persisted Side baseline selection is required before analysis preparation.' };
+  const frameById = new Map(frames.map((frame) => [frame.id, frame]));
+  for (const baselineFrame of baseline.frames) {
+    const capturedFrame = frameById.get(baselineFrame.frameId);
+    if (!capturedFrame || capturedFrame.frameIndex !== baselineFrame.frameIndex || capturedFrame.assetId !== baselineFrame.assetId) {
+      return { ok: false, error: `Baseline frame ${baselineFrame.frameId} does not reference the persisted Side capture.` };
+    }
+  }
+
+  const sideOrientation = resolveSideOrientation(tr.analysisDraft?.calibration.side);
+
+  return {
+    ok: true,
+    input: {
+      kodePengujianId: kp.id,
+      sampleId: tr.sampleId,
+      testRunId: tr.id,
+      productCode: kp.productSnapshot.productCode,
+      productName: kp.productSnapshot.productName,
+      recipeName: tr.recipeSnapshot.name,
+      setpoints: tr.setpoints,
+      effectiveStorage: effective.storageCondition ?? '—',
+      effectiveBottlePosition: effective.bottlePosition ?? '—',
+      operatorId: tr.operatorId,
+      operatorName: tr.operatorName,
+      captureMode: 'real',
+      frames: frames.map((frame) => ({ frameId: frame.id, frameIndex: frame.frameIndex, elapsedMs: frame.elapsedMs, assetId: frame.assetId as string })),
+      baseline: session.realSideBaseline ? structuredClone(session.realSideBaseline) : null,
+      sideOrientation,
+      calibration: tr.analysisDraft ? { ...tr.analysisDraft.calibration.side } : null,
     },
   };
 }
@@ -388,9 +491,24 @@ export type ReportFrameSnapshot = {
   maskAsset: string;
 };
 
+export type AnalysisPerspective = 'side' | 'front';
+
+export type DualPerspectiveFinalAnalysisReport = FinalAnalysisReport & {
+  front: NonNullable<FinalAnalysisReport['front']>;
+  supportingCaptures: Array<{
+    captureMomentId: string;
+    frameIndex: number;
+    timestampMs: number;
+    phase: SynchronizedAnalysisFrame['phase'];
+    side: ReportFrameSnapshot;
+    front: ReportFrameSnapshot;
+  }>;
+};
+
 export type FinalAnalysisReport = {
   status: 'finalized';
-  analysisSource: 'simulation';
+  analysisSource: 'simulation' | 'real';
+  perspectives: AnalysisPerspective[];
   test: {
     testId: string;
     sampleId: string;
@@ -416,7 +534,7 @@ export type FinalAnalysisReport = {
     autoGeometry: SidePixelGeometry;
     finalGeometry: SidePixelGeometry;
   };
-  front: FrontFinalMeasurements & {
+  front?: FrontFinalMeasurements & {
     frameId: string;
     frame: ReportFrameSnapshot;
     calibration: CalibrationSnapshot;
@@ -429,7 +547,7 @@ export type FinalAnalysisReport = {
     timestampMs: number;
     phase: SynchronizedAnalysisFrame['phase'];
     side: ReportFrameSnapshot;
-    front: ReportFrameSnapshot;
+    front?: ReportFrameSnapshot;
   }>;
   finalizedBy: string;
   finalizedAt: string;
@@ -791,6 +909,7 @@ function frameSnapshot(frame: SynchronizedAnalysisFrame['side']): ReportFrameSna
   };
 }
 
+// Overloads for createBatchFinalAnalysisReport
 export function createBatchFinalAnalysisReport(input: {
   batch: Batch;
   primaryCaptureMoment: SynchronizedAnalysisFrame;
@@ -805,6 +924,21 @@ export function createBatchFinalAnalysisReport(input: {
   frontFinalGeometry: FrontPixelGeometry;
   finalizedBy: string;
   finalizedAt: string;
+}): DualPerspectiveFinalAnalysisReport;
+export function createBatchFinalAnalysisReport(input: {
+  batch: Batch;
+  primaryCaptureMoment: SynchronizedAnalysisFrame;
+  supportingCaptureMoments: SynchronizedAnalysisFrame[];
+  side: SideFinalMeasurements;
+  front?: FrontFinalMeasurements;
+  sideCalibration: CalibrationSnapshot;
+  frontCalibration?: CalibrationSnapshot;
+  sideAutoGeometry: SidePixelGeometry;
+  sideFinalGeometry: SidePixelGeometry;
+  frontAutoGeometry?: FrontPixelGeometry;
+  frontFinalGeometry?: FrontPixelGeometry;
+  finalizedBy: string;
+  finalizedAt: string;
 }): FinalAnalysisReport {
   if (input.supportingCaptureMoments.length > 9) {
     throw new Error('Maximum 9 supporting captures allowed.');
@@ -815,14 +949,20 @@ export function createBatchFinalAnalysisReport(input: {
   if (input.primaryCaptureMoment.syncStatus !== 'synced') {
     throw new Error('Primary capture must be synchronized.');
   }
-  if (!input.primaryCaptureMoment.side || !input.primaryCaptureMoment.front) {
-    throw new Error('Primary capture must contain both Side and Front frames.');
+  if (!input.primaryCaptureMoment.side) {
+    throw new Error('Primary capture must contain Side frame.');
   }
-  if (input.primaryCaptureMoment.side.frameIndex !== input.primaryCaptureMoment.front.frameIndex) {
-    throw new Error('Side and Front frames must share the same frame index.');
-  }
-  if (input.primaryCaptureMoment.side.timestampMs !== input.primaryCaptureMoment.front.timestampMs) {
-    throw new Error('Side and Front frames must share the same timestamp.');
+  const hasFront = !!input.front;
+  if (hasFront) {
+    if (!input.primaryCaptureMoment.front) {
+      throw new Error('Primary capture must contain Front frame when Front measurements are provided.');
+    }
+    if (input.primaryCaptureMoment.side.frameIndex !== input.primaryCaptureMoment.front.frameIndex) {
+      throw new Error('Side and Front frames must share the same frame index.');
+    }
+    if (input.primaryCaptureMoment.side.timestampMs !== input.primaryCaptureMoment.front.timestampMs) {
+      throw new Error('Side and Front frames must share the same timestamp.');
+    }
   }
 
   const setup = input.batch.setupSnapshot;
@@ -831,10 +971,13 @@ export function createBatchFinalAnalysisReport(input: {
   }
 
   const supportingCaptureMoments = input.supportingCaptureMoments;
+  const perspectives: AnalysisPerspective[] = ['side'];
+  if (hasFront) perspectives.push('front');
 
   return structuredClone({
     status: 'finalized',
     analysisSource: 'simulation',
+    perspectives,
     test: {
       testId: input.batch.id,
       sampleId: setup.sampleId,
@@ -861,26 +1004,29 @@ export function createBatchFinalAnalysisReport(input: {
       autoGeometry: input.sideAutoGeometry,
       finalGeometry: input.sideFinalGeometry,
     },
-    front: {
-      ...input.front,
-      frameId: input.primaryCaptureMoment.front.id,
-      frame: frameSnapshot(input.primaryCaptureMoment.front),
-      calibration: input.frontCalibration,
-      autoGeometry: input.frontAutoGeometry,
-      finalGeometry: input.frontFinalGeometry,
-    },
+    front: hasFront
+      ? {
+          ...input.front!,
+          frameId: input.primaryCaptureMoment.front!.id,
+          frame: frameSnapshot(input.primaryCaptureMoment.front!),
+          calibration: input.frontCalibration!,
+          autoGeometry: input.frontAutoGeometry!,
+          finalGeometry: input.frontFinalGeometry!,
+        }
+      : undefined,
     supportingCaptures: supportingCaptureMoments.map(moment => ({
       captureMomentId: moment.id,
       frameIndex: moment.frameIndex,
       timestampMs: moment.timestampMs,
       phase: moment.phase,
       side: frameSnapshot(moment.side),
-      front: frameSnapshot(moment.front),
+      front: hasFront && moment.front ? frameSnapshot(moment.front) : undefined,
     })),
     finalizedBy: input.finalizedBy,
     finalizedAt: input.finalizedAt,
   });
 }
+// Overloads for createFinalAnalysisReport
 export function createFinalAnalysisReport(input: {
   test: Test;
   primaryCaptureMoment: SynchronizedAnalysisFrame;
@@ -895,6 +1041,21 @@ export function createFinalAnalysisReport(input: {
   frontFinalGeometry: FrontPixelGeometry;
   finalizedBy: string;
   finalizedAt: string;
+}): DualPerspectiveFinalAnalysisReport;
+export function createFinalAnalysisReport(input: {
+  test: Test;
+  primaryCaptureMoment: SynchronizedAnalysisFrame;
+  supportingCaptureMoments: SynchronizedAnalysisFrame[];
+  side: SideFinalMeasurements;
+  front?: FrontFinalMeasurements;
+  sideCalibration: CalibrationSnapshot;
+  frontCalibration?: CalibrationSnapshot;
+  sideAutoGeometry: SidePixelGeometry;
+  sideFinalGeometry: SidePixelGeometry;
+  frontAutoGeometry?: FrontPixelGeometry;
+  frontFinalGeometry?: FrontPixelGeometry;
+  finalizedBy: string;
+  finalizedAt: string;
 }): FinalAnalysisReport {
   if (input.supportingCaptureMoments.length > 9) {
     throw new Error('Maximum 9 supporting captures allowed.');
@@ -905,23 +1066,32 @@ export function createFinalAnalysisReport(input: {
   if (input.primaryCaptureMoment.syncStatus !== 'synced') {
     throw new Error('Primary capture must be synchronized.');
   }
-  if (!input.primaryCaptureMoment.side || !input.primaryCaptureMoment.front) {
-    throw new Error('Primary capture must contain both Side and Front frames.');
+  if (!input.primaryCaptureMoment.side) {
+    throw new Error('Primary capture must contain Side frame.');
   }
-  if (input.primaryCaptureMoment.side.frameIndex !== input.primaryCaptureMoment.front.frameIndex) {
-    throw new Error('Side and Front frames must share the same frame index.');
-  }
-  if (input.primaryCaptureMoment.side.timestampMs !== input.primaryCaptureMoment.front.timestampMs) {
-    throw new Error('Side and Front frames must share the same timestamp.');
+  const hasFront = !!input.front;
+  if (hasFront) {
+    if (!input.primaryCaptureMoment.front) {
+      throw new Error('Primary capture must contain Front frame when Front measurements are provided.');
+    }
+    if (input.primaryCaptureMoment.side.frameIndex !== input.primaryCaptureMoment.front.frameIndex) {
+      throw new Error('Side and Front frames must share the same frame index.');
+    }
+    if (input.primaryCaptureMoment.side.timestampMs !== input.primaryCaptureMoment.front.timestampMs) {
+      throw new Error('Side and Front frames must share the same timestamp.');
+    }
   }
 
   const supportingCaptureMoments = input.supportingCaptureMoments;
   const productSnapshot = input.test.productSnapshot ?? { productCode: input.test.productId ?? 'SIM-PRODUCT', productName: input.test.productName };
   const recipeSnapshot = input.test.recipeSnapshot ?? { name: 'Simulation recipe', ...input.test.config };
+  const perspectives: AnalysisPerspective[] = ['side'];
+  if (hasFront) perspectives.push('front');
 
   return structuredClone({
     status: 'finalized',
     analysisSource: 'simulation',
+    perspectives,
     test: {
       testId: input.test.id,
       sampleId: input.test.sampleId,
@@ -948,21 +1118,23 @@ export function createFinalAnalysisReport(input: {
       autoGeometry: input.sideAutoGeometry,
       finalGeometry: input.sideFinalGeometry,
     },
-    front: {
-      ...input.front,
-      frameId: input.primaryCaptureMoment.front.id,
-      frame: frameSnapshot(input.primaryCaptureMoment.front),
-      calibration: input.frontCalibration,
-      autoGeometry: input.frontAutoGeometry,
-      finalGeometry: input.frontFinalGeometry,
-    },
+    front: hasFront
+      ? {
+          ...input.front!,
+          frameId: input.primaryCaptureMoment.front!.id,
+          frame: frameSnapshot(input.primaryCaptureMoment.front!),
+          calibration: input.frontCalibration!,
+          autoGeometry: input.frontAutoGeometry!,
+          finalGeometry: input.frontFinalGeometry!,
+        }
+      : undefined,
     supportingCaptures: supportingCaptureMoments.map(moment => ({
       captureMomentId: moment.id,
       frameIndex: moment.frameIndex,
       timestampMs: moment.timestampMs,
       phase: moment.phase,
       side: frameSnapshot(moment.side),
-      front: frameSnapshot(moment.front),
+      front: hasFront && moment.front ? frameSnapshot(moment.front) : undefined,
     })),
     finalizedBy: input.finalizedBy,
     finalizedAt: input.finalizedAt,
