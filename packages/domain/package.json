@@ -23,6 +23,10 @@
     "./types": {
       "types": "./dist/types/index.d.ts",
       "default": "./dist/types/index.js"
+    },
+    "./kode-pengujian": {
+      "types": "./dist/kode-pengujian/index.d.ts",
+      "default": "./dist/kode-pengujian/index.js"
     }
   },
   "scripts": {

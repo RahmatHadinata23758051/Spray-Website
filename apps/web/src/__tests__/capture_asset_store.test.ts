@@ -264,4 +264,127 @@ describe('Phase 4 — capture asset store', () => {
       }
     });
   });
+
+  describe('Phase P3A — IndexedDB v2 migration, scopes, and isolation', () => {
+    it('migrates v1 database to v2 without losing existing batch assets', async () => {
+      // 1. Explicitly simulate a v1 database setup (before P3A)
+      const upgradeTestDbName = 'spraybot.capture-assets.test-upgrade';
+      await new Promise<void>((resolve, reject) => {
+        const req = indexedDB.open(upgradeTestDbName, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          const store = db.createObjectStore('assets', { keyPath: 'assetId' });
+          store.createIndex('batchId', 'batchId', { unique: false });
+        };
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction('assets', 'readwrite');
+          const st = tx.objectStore('assets');
+          st.put({
+            assetId: 'bat-v1:side:000',
+            batchId: 'bat-v1',
+            type: 'image/jpeg',
+            data: new TextEncoder().encode('v1-legacy-data').buffer,
+          });
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+        req.onerror = () => reject(req.error);
+      });
+
+      // 2. Perform v2 upgrade using the exact logic from IndexedDbCaptureAssetStore
+      const upgradedDb = await new Promise<IDBDatabase>((resolve, reject) => {
+        const req = indexedDB.open(upgradeTestDbName, 2);
+        req.onupgradeneeded = () => {
+          const database = req.result;
+          const store = database.objectStoreNames.contains('assets')
+            ? req.transaction?.objectStore('assets')
+            : database.createObjectStore('assets', { keyPath: 'assetId' });
+          if (store && !store.indexNames.contains('batchId')) store.createIndex('batchId', 'batchId', { unique: false });
+          if (store && !store.indexNames.contains('testRunKey')) store.createIndex('testRunKey', 'testRunKey', { unique: false });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+
+      // 3. Verify both indices exist
+      const tx = upgradedDb.transaction('assets', 'readonly');
+      const st = tx.objectStore('assets');
+      expect(st.indexNames.contains('batchId')).toBe(true);
+      expect(st.indexNames.contains('testRunKey')).toBe(true);
+
+      // 4. Verify existing v1 record was NOT wiped and can be retrieved via batchId index
+      interface RawStoredRecord {
+        assetId: string;
+        batchId?: string;
+        data: ArrayBuffer;
+      }
+      const legacyRecord = await new Promise<RawStoredRecord | undefined>((resolve, reject) => {
+        const req = st.get('bat-v1:side:000');
+        req.onsuccess = () => resolve(req.result as RawStoredRecord | undefined);
+        req.onerror = () => reject(req.error);
+      });
+      expect(legacyRecord).toBeDefined();
+      expect(legacyRecord?.batchId).toBe('bat-v1');
+      expect(new TextDecoder().decode(legacyRecord?.data)).toBe('v1-legacy-data');
+
+      // 5. Query via batchId index
+      const batchIndex = st.index('batchId');
+      const indexResults = await new Promise<RawStoredRecord[]>((resolve, reject) => {
+        const req = batchIndex.getAll('bat-v1');
+        req.onsuccess = () => resolve(req.result as RawStoredRecord[]);
+        req.onerror = () => reject(req.error);
+      });
+      expect(indexResults).toHaveLength(1);
+      expect(indexResults[0].assetId).toBe('bat-v1:side:000');
+
+      upgradedDb.close();
+    });
+
+    it('isolates deleteScope between test runs, samples, and legacy batches', async () => {
+      const store = new IndexedDbCaptureAssetStore();
+
+      const scopeSample1Run1 = { kind: 'testRun' as const, kpId: 'KP-ISO', sampleId: 'SMP-1', runId: 'TR-1' };
+      const scopeSample1Run2 = { kind: 'testRun' as const, kpId: 'KP-ISO', sampleId: 'SMP-1', runId: 'TR-2' };
+      const scopeSample2Run1 = { kind: 'testRun' as const, kpId: 'KP-ISO', sampleId: 'SMP-2', runId: 'TR-1' };
+      const scopeLegacyBatch = { kind: 'batch' as const, batchId: 'BAT-ISO' };
+
+      const keyS1R1 = 'kp:KP-ISO:sample:SMP-1:run:TR-1:side:000';
+      const keyS1R2 = 'kp:KP-ISO:sample:SMP-1:run:TR-2:side:000';
+      const keyS2R1 = 'kp:KP-ISO:sample:SMP-2:run:TR-1:side:000';
+      const keyBatch = 'BAT-ISO:side:000';
+
+      await store.save(keyS1R1, scopeSample1Run1, new Blob(['s1r1']));
+      await store.save(keyS1R2, scopeSample1Run2, new Blob(['s1r2']));
+      await store.save(keyS2R1, scopeSample2Run1, new Blob(['s2r1']));
+      await store.save(keyBatch, scopeLegacyBatch, new Blob(['batch-iso']));
+
+      // Delete only Sample 1 / Run 1 scope
+      await store.deleteScope(scopeSample1Run1);
+
+      // S1R1 is deleted
+      expect(await store.get(keyS1R1)).toBeNull();
+
+      // S1R2, S2R1, and Legacy Batch must remain intact
+      expect(await store.get(keyS1R2)).not.toBeNull();
+      expect(await readBlobText((await store.get(keyS1R2)) as Blob)).toBe('s1r2');
+
+      expect(await store.get(keyS2R1)).not.toBeNull();
+      expect(await readBlobText((await store.get(keyS2R1)) as Blob)).toBe('s2r1');
+
+      expect(await store.get(keyBatch)).not.toBeNull();
+      expect(await readBlobText((await store.get(keyBatch)) as Blob)).toBe('batch-iso');
+
+      // Delete legacy batch via deleteBatch string method
+      await store.deleteBatch('BAT-ISO');
+      expect(await store.get(keyBatch)).toBeNull();
+
+      // S1R2 and S2R1 still remain intact
+      expect(await store.get(keyS1R2)).not.toBeNull();
+      expect(await store.get(keyS2R1)).not.toBeNull();
+    });
+  });
 });

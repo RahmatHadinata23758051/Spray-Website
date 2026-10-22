@@ -14,7 +14,12 @@ export function AppShell() {
   const isAnalysisPage = location.pathname.includes('/analysis');
 
   const setPage = (nextPage: Page) => {
-    navigate(legacyPageToPath[nextPage] || '/dashboard');
+    const targetPath = legacyPageToPath[nextPage] || '/dashboard';
+    if (typeof window !== 'undefined' && window.__spraybot_on_nav_attempt) {
+      void window.__spraybot_on_nav_attempt(targetPath);
+      return;
+    }
+    navigate(targetPath);
   };
 
   return (

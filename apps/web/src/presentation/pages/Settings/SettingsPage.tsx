@@ -1,7 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Status } from '../../components/ui/Status';
+import { getCaptureSavePolicy, setCaptureSavePolicy } from '../../../application/services';
+import type { CaptureSavePolicy } from '@spray-paragon/domain';
 
 export function SettingsPage() {
+  const [savePolicy, setSavePolicy] = useState<CaptureSavePolicy>(getCaptureSavePolicy());
+
+  const handlePolicyChange = (newPolicy: CaptureSavePolicy) => {
+    setCaptureSavePolicy(newPolicy);
+    setSavePolicy(newPolicy);
+  };
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-border-default bg-surface px-5 py-4 shadow-sm">
@@ -13,6 +22,48 @@ export function SettingsPage() {
         </div>
         <Status tone="neutral">Workstation v0.1.0-alpha</Status>
       </div>
+
+      {/* Group: Kebijakan Penyimpanan Akuisisi */}
+      <section className="surface-panel !rounded-panel overflow-hidden">
+        <div className="border-b border-border-subtle bg-surface-subtle px-5 py-3 flex items-center justify-between">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">Kebijakan Penyimpanan Akuisisi</h2>
+          <span className="text-[11px] font-mono text-primary font-semibold">PENGAMBILAN DATA</span>
+        </div>
+        <div className="divide-y divide-border-subtle bg-surface text-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3.5">
+            <div>
+              <div className="font-semibold text-text-primary">Mode Simpan Hasil Tangkapan</div>
+              <div className="text-text-muted mt-0.5">
+                Tentukan apakah hasil pengambilan data disimpan langsung atau ditinjau terlebih dahulu oleh operator.
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handlePolicyChange('review')}
+                className={`px-3 py-1.5 rounded text-xs font-medium border transition-colors ${
+                  savePolicy === 'review'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-surface text-text-secondary border-border-default hover:bg-surface-subtle'
+                }`}
+              >
+                Tinjau sebelum menyimpan
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePolicyChange('auto')}
+                className={`px-3 py-1.5 rounded text-xs font-medium border transition-colors ${
+                  savePolicy === 'auto'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-surface text-text-secondary border-border-default hover:bg-surface-subtle'
+                }`}
+              >
+                Simpan otomatis
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Group 1: Hardware Simulation & Acquisition */}
       <section className="surface-panel !rounded-panel overflow-hidden">

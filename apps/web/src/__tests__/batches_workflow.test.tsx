@@ -161,15 +161,17 @@ describe('Phase D1 - Canonical Batch Workflow & Persistence', () => {
     });
   });
 
-  it('23 & 24. Sidebar contains Batches and does not contain New Test or History', () => {
+  it('23 & 24. Legacy Batch routes still work but Batch removed from primary sidebar', () => {
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
         <App />
       </MemoryRouter>
     );
 
-    // Sidebar navigation check
-    expect(screen.getByRole('button', { name: 'Batch' })).toBeInTheDocument();
+    // Legacy Batch is removed from primary sidebar navigation
+    expect(screen.queryByRole('button', { name: 'Batch' })).not.toBeInTheDocument();
+
+    // New Test and History were never in sidebar
     expect(screen.queryByRole('button', { name: 'New Test' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'History' })).toBeNull();
   });

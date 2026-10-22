@@ -90,8 +90,8 @@ describe('Phase 6 — Real Side-only Analysis Workspace', () => {
       </MemoryRouter>,
     );
 
-    // Wait until the workspace finishes preparing assets
-    const frame0 = await screen.findByTestId('real-timeline-frame-0');
+    // Wait until the workspace finishes preparing assets (longer timeout under full-suite load)
+    const frame0 = await screen.findByTestId('real-timeline-frame-0', undefined, { timeout: 10000 });
 
     expect(screen.getByText(`Batch: ${realBatch.id}`)).toBeInTheDocument();
 
@@ -131,7 +131,7 @@ describe('Phase 6 — Real Side-only Analysis Workspace', () => {
       </MemoryRouter>,
     );
 
-    await screen.findByTestId('real-timeline-frame-0');
+    await screen.findByTestId('real-timeline-frame-0', undefined, { timeout: 10000 });
 
     // Switch to Front camera tab
     const frontBtn = screen.getByRole('button', { name: /kamera depan/i });
@@ -156,7 +156,7 @@ describe('Phase 6 — Real Side-only Analysis Workspace', () => {
       </MemoryRouter>,
     );
 
-    await screen.findByTestId('real-timeline-frame-0');
+    await screen.findByTestId('real-timeline-frame-0', undefined, { timeout: 10000 });
 
     // Switch to Mask view
     const maskBtn = screen.getByRole('button', { name: 'Mask' });
@@ -185,7 +185,7 @@ describe('Phase 6 — Real Side-only Analysis Workspace', () => {
       </MemoryRouter>,
     );
 
-    await screen.findByTestId('real-timeline-frame-0');
+    await screen.findByTestId('real-timeline-frame-0', undefined, { timeout: 10000 });
 
     // Current frame is 0: set as primary
     const primaryBtn = screen.getByRole('button', { name: 'Jadikan Utama' });

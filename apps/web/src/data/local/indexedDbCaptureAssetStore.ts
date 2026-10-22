@@ -1,9 +1,10 @@
-import type { CaptureAssetStore } from '../../application/ports/captureAssetStore';
+import type { CaptureAssetStore, CaptureScope, CaptureAssetKind } from '../../application/ports/captureAssetStore';
 
 const DATABASE_NAME = 'spraybot.capture-assets.v1';
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 const STORE_NAME = 'assets';
 const BATCH_INDEX = 'batchId';
+const TEST_RUN_INDEX = 'testRunKey';
 
 /**
  * Bytes are stored explicitly instead of the Blob itself: structured-clone
@@ -11,8 +12,10 @@ const BATCH_INDEX = 'batchId';
  */
 type StoredCaptureAsset = {
   assetId: string;
-  batchId: string;
+  batchId?: string;
+  testRunKey?: string;
   type: string;
+  kind: CaptureAssetKind;
   data: ArrayBuffer;
 };
 
@@ -36,6 +39,7 @@ function openDatabase(): Promise<IDBDatabase | null> {
           ? request.transaction?.objectStore(STORE_NAME)
           : database.createObjectStore(STORE_NAME, { keyPath: 'assetId' });
         if (store && !store.indexNames.contains(BATCH_INDEX)) store.createIndex(BATCH_INDEX, 'batchId', { unique: false });
+        if (store && !store.indexNames.contains(TEST_RUN_INDEX)) store.createIndex(TEST_RUN_INDEX, 'testRunKey', { unique: false });
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => {
@@ -89,9 +93,20 @@ function toBlob(record: StoredCaptureAsset | undefined): Blob | null {
   return new Blob([record.data], { type: record.type || 'application/octet-stream' });
 }
 
+function normalizeScope(scope: CaptureScope | string): { batchId?: string; testRunKey?: string } {
+  if (typeof scope === 'string') {
+    return { batchId: scope };
+  }
+  if (scope.kind === 'batch') {
+    return { batchId: scope.batchId };
+  }
+  return { testRunKey: `kp:${scope.kpId}:sample:${scope.sampleId}:run:${scope.runId}` };
+}
+
 export class IndexedDbCaptureAssetStore implements CaptureAssetStore {
-  async save(assetId: string, batchId: string, blob: Blob): Promise<void> {
-    const record: StoredCaptureAsset = { assetId, batchId, type: blob.type, data: await readBlobBytes(blob) };
+  async save(assetId: string, scope: CaptureScope | string, blob: Blob, kind: CaptureAssetKind = 'frame'): Promise<void> {
+    const { batchId, testRunKey } = normalizeScope(scope);
+    const record: StoredCaptureAsset = { assetId, batchId, testRunKey, type: blob.type, kind, data: await readBlobBytes(blob) };
     const database = await openDatabase();
     if (!database) {
       memoryAssets.set(assetId, record);
@@ -115,15 +130,22 @@ export class IndexedDbCaptureAssetStore implements CaptureAssetStore {
     await runTransaction('readwrite', (store) => store.delete(assetId));
   }
 
-  async deleteBatch(batchId: string): Promise<void> {
+  async deleteScope(scope: CaptureScope | string): Promise<void> {
+    const { batchId, testRunKey } = normalizeScope(scope);
     const database = await openDatabase();
     if (!database) {
-      for (const [assetId, record] of memoryAssets) if (record.batchId === batchId) memoryAssets.delete(assetId);
+      for (const [assetId, record] of memoryAssets) {
+        if ((batchId && record.batchId === batchId) || (testRunKey && record.testRunKey === testRunKey)) {
+          memoryAssets.delete(assetId);
+        }
+      }
       return;
     }
+    const indexName = batchId ? BATCH_INDEX : TEST_RUN_INDEX;
+    const keyRange = batchId ? IDBKeyRange.only(batchId) : IDBKeyRange.only(testRunKey!);
     await new Promise<void>((resolve, reject) => {
       const transaction = database.transaction(STORE_NAME, 'readwrite');
-      const request = transaction.objectStore(STORE_NAME).index(BATCH_INDEX).openCursor(IDBKeyRange.only(batchId));
+      const request = transaction.objectStore(STORE_NAME).index(indexName).openCursor(keyRange);
       request.onsuccess = () => {
         const cursor = request.result;
         if (cursor) {
@@ -131,10 +153,14 @@ export class IndexedDbCaptureAssetStore implements CaptureAssetStore {
           cursor.continue();
         }
       };
-      request.onerror = () => reject(request.error ?? new Error('IndexedDB batch asset cleanup failed'));
+      request.onerror = () => reject(request.error ?? new Error('IndexedDB scope asset cleanup failed'));
       transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error ?? new Error('IndexedDB batch cleanup failed'));
-      transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB batch cleanup aborted'));
+      transaction.onerror = () => reject(transaction.error ?? new Error('IndexedDB scope cleanup failed'));
+      transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB scope cleanup aborted'));
     });
+  }
+
+  async deleteBatch(batchId: string): Promise<void> {
+    return this.deleteScope(batchId);
   }
 }

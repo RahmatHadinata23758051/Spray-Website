@@ -1,4 +1,4 @@
-import type { FixtureScenario, SynchronizedAnalysisFrame, RealSideCaptureFrameMetadata, RealSideBaselineSelection, RealSideBaselineSelectionMethod } from '../types';
+import type { FixtureScenario, SynchronizedAnalysisFrame, RealSideCaptureFrameMetadata, RealSideBaselineSelection, RealSideBaselineSelectionMethod, CaptureVideoMetadata } from '../types';
 import type { CalibrationSnapshot, FinalAnalysisReport, FrontPixelGeometry, SidePixelGeometry } from '../analysis';
 
 export class InvalidLifecycleTransitionError extends Error {
@@ -71,6 +71,9 @@ export interface CaptureSession {
   captureMode?: 'simulation' | 'real';
   realSideFrames?: RealSideCaptureFrameMetadata[];
   realSideBaseline?: RealSideBaselineSelection;
+  /** Full video recording of the side camera capture event, if available. */
+  video?: CaptureVideoMetadata;
+  realSideVideo?: CaptureVideoMetadata;
 }
 
 export interface BatchAnalysisDraft {
@@ -333,7 +336,7 @@ function readRealSideFramesForBaseline(batch: Batch): RealSideCaptureFrameMetada
   return frames;
 }
 
-function buildRealSideBaseline(
+export function buildRealSideBaseline(
   frames: RealSideCaptureFrameMetadata[],
   startElapsedMs: number,
   endElapsedMs: number,

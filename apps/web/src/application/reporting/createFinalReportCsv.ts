@@ -8,22 +8,30 @@ function escapeCsv(value: string | number | boolean): string {
   return str;
 }
 
+function getMeasurementValue(value: { auto: number; final: number; adjusted: boolean } | undefined, field: 'auto' | 'final' | 'adjusted'): string | number | boolean {
+  if (!value) return '';
+  return value[field];
+}
+
 export function createFinalReportCsv(report: FinalAnalysisReport): string {
   const slug = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const sideMetrics = [
-    { label: 'Spray Length', value: report.side.sprayLength },
-    { label: 'Spray Angle', value: report.side.sprayAngle },
-    { label: 'Vertical Spread', value: report.side.verticalSpread },
-    { label: 'Direction Offset', value: report.side.directionOffset },
+  const sideMetrics: Array<{ label: string; value: { auto: number; final: number; adjusted: boolean } | undefined }> = [
+    { label: 'Spray Length', value: report.side?.sprayLength },
+    { label: 'Spray Angle', value: report.side?.sprayAngle },
+    { label: 'Vertical Spread', value: report.side?.verticalSpread },
+    { label: 'Direction Offset', value: report.side?.directionOffset },
   ];
-  const frontMetrics = [
-    { label: 'Spray Area', value: report.front.sprayArea },
-    { label: 'Equivalent Diameter', value: report.front.equivalentDiameter },
-    { label: 'Circularity', value: report.front.circularity },
-    { label: 'Centroid Offset X', value: report.front.centroidOffsetX },
-    { label: 'Centroid Offset Y', value: report.front.centroidOffsetY },
-    { label: 'Horizontal Symmetry', value: report.front.horizontalSymmetry },
-    { label: 'Vertical Symmetry', value: report.front.verticalSymmetry },
+  if (report.side?.spreadPosition) {
+    sideMetrics.push({ label: 'Spread Position', value: report.side.spreadPosition });
+  }
+  const frontMetrics: Array<{ label: string; value: { auto: number; final: number; adjusted: boolean } | undefined }> = [
+    { label: 'Spray Area', value: report.front?.sprayArea },
+    { label: 'Equivalent Diameter', value: report.front?.equivalentDiameter },
+    { label: 'Circularity', value: report.front?.circularity },
+    { label: 'Centroid Offset X', value: report.front?.centroidOffsetX },
+    { label: 'Centroid Offset Y', value: report.front?.centroidOffsetY },
+    { label: 'Horizontal Symmetry', value: report.front?.horizontalSymmetry },
+    { label: 'Vertical Symmetry', value: report.front?.verticalSymmetry },
   ];
 
   const fields: Array<[string, string | number | boolean]> = [
@@ -31,6 +39,7 @@ export function createFinalReportCsv(report: FinalAnalysisReport): string {
     ['sample_id', report.test.sampleId],
     ['status', report.status],
     ['analysis_source', report.analysisSource],
+    ['perspectives', report.perspectives.join(';')],
     ['primary_capture_id', report.primaryCaptureMomentId],
     ['primary_frame_index', report.primaryCapture.frameIndex],
     ['primary_timestamp_ms', report.primaryCapture.timestampMs],
@@ -38,11 +47,11 @@ export function createFinalReportCsv(report: FinalAnalysisReport): string {
 
   for (const metric of sideMetrics) {
     const s = slug(metric.label);
-    fields.push([`side_${s}_auto`, metric.value.auto], [`side_${s}_final`, metric.value.final], [`side_${s}_adjusted`, metric.value.adjusted]);
+    fields.push([`side_${s}_auto`, getMeasurementValue(metric.value, 'auto')], [`side_${s}_final`, getMeasurementValue(metric.value, 'final')], [`side_${s}_adjusted`, getMeasurementValue(metric.value, 'adjusted')]);
   }
   for (const metric of frontMetrics) {
     const s = slug(metric.label);
-    fields.push([`front_${s}_auto`, metric.value.auto], [`front_${s}_final`, metric.value.final], [`front_${s}_adjusted`, metric.value.adjusted]);
+    fields.push([`front_${s}_auto`, getMeasurementValue(metric.value, 'auto')], [`front_${s}_final`, getMeasurementValue(metric.value, 'final')], [`front_${s}_adjusted`, getMeasurementValue(metric.value, 'adjusted')]);
   }
 
   const headers = fields.map(([key]) => escapeCsv(key)).join(',');

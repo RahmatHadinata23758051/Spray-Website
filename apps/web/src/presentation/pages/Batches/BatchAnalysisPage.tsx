@@ -66,10 +66,11 @@ export function BatchAnalysisPage() {
       let draft = b.analysisDraft;
       if (b.status === 'FINALIZED' && b.finalReport) {
         // Construct a synthetic draft from finalReport for display
+        // Legacy Batch (simulation) always has both Side and Front
         draft = {
           calibration: {
             side: b.finalReport.side.calibration,
-            front: b.finalReport.front.calibration,
+            front: b.finalReport.front!.calibration,
           },
           primaryCaptureMomentId: b.finalReport.primaryCaptureMomentId,
           supportingCaptureMomentIds: b.finalReport.supportingCaptureMomentIds,
@@ -132,7 +133,9 @@ export function BatchAnalysisPage() {
 
         if (b.status === 'FINALIZED' && b.finalReport) {
           newSideCorrections[b.finalReport.primaryCaptureMomentId] = { geometry: b.finalReport.side.finalGeometry, adjustedBy: 'Operator', adjustedAt: b.finalReport.finalizedAt };
-          newFrontCorrections[b.finalReport.primaryCaptureMomentId] = { geometry: b.finalReport.front.finalGeometry, adjustedBy: 'Operator', adjustedAt: b.finalReport.finalizedAt };
+          if (b.finalReport.front) {
+            newFrontCorrections[b.finalReport.primaryCaptureMomentId] = { geometry: b.finalReport.front.finalGeometry, adjustedBy: 'Operator', adjustedAt: b.finalReport.finalizedAt };
+          }
         }
 
         setSideCorrectionsByMoment(newSideCorrections);
@@ -551,6 +554,7 @@ export function BatchAnalysisPage() {
                 autoFrontGeometry={currentGeometry.front}
                 workingFrontGeometry={workingFrontGeometry ?? savedFrontGeometry}
                 sideOrientation={activeCalibrations.side.sideOrientation}
+                sideCalibration={activeCalibrations.side}
                 onSideChange={handleWorkingSideGeometryChange}
                 onFrontChange={handleWorkingFrontGeometryChange}
               />

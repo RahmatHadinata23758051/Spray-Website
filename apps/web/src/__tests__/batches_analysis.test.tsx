@@ -6,7 +6,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { batchRepository, productRepository, synchronizedFrames, getPixelGeometry } from '../data';
 import { BatchAnalysisPage } from '../presentation/pages/Batches/BatchAnalysisPage';
 import { BatchDetailPage } from '../presentation/pages/Batches/BatchDetailPage';
-import type { Batch } from '@spray-paragon/domain';
+import type { Batch, AnalysisPerspective } from '@spray-paragon/domain';
 
 describe('Phase D3 — Contextual Batch Analysis Unit & Integration Tests', () => {
   let reviewBatch: Batch;
@@ -149,6 +149,7 @@ describe('Phase D3 — Contextual Batch Analysis Unit & Integration Tests', () =
       supportingCaptures: [],
       status: 'finalized' as const,
       analysisSource: 'simulation' as const,
+      perspectives: ['side', 'front'] as AnalysisPerspective[],
       test: {
         testId: reviewBatch.id,
         sampleId: reviewBatch.setupSnapshot!.sampleId,

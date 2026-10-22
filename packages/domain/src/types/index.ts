@@ -8,6 +8,9 @@ export type CapturePhaseV2 = 'pre_spray' | 'build_up' | 'stable' | 'decay';
 export type SyncStatus = 'synced' | 'partial' | 'invalid';
 export type FixtureScenario = 'nominal-01' | 'direction-offset-01' | 'pattern-asymmetry-01' | 'alignment-review-01';
 
+export type CaptureSavePolicy = 'auto' | 'review';
+export const DEFAULT_CAPTURE_SAVE_POLICY: CaptureSavePolicy = 'review';
+
 export const fixtureScenarioSchema = z.enum(['nominal-01', 'direction-offset-01', 'pattern-asymmetry-01', 'alignment-review-01']);
 
 export const analysisFrameSchema = z.object({
@@ -148,6 +151,23 @@ export interface RealSideBaselineSelection {
   endElapsedMs: number;
   frames: RealSideBaselineFrameRef[];
   selectedAt: string;
+}
+
+export interface CaptureVideoMetadata {
+  /** Stable reference to the persisted video binary. */
+  assetId: string;
+  /** Camera role that recorded this video. */
+  camera: 'side';
+  /** MIME type of the recorded video (e.g., video/webm, video/mp4). */
+  mimeType: string;
+  /** Duration of the recording in milliseconds. */
+  durationMs: number;
+  /** ISO timestamp when recording started. */
+  startedAt: string;
+  /** ISO timestamp when recording completed. */
+  completedAt: string;
+  /** Size of the video file in bytes, if known. */
+  sizeBytes?: number;
 }
 
 export interface AnalysisFrame {

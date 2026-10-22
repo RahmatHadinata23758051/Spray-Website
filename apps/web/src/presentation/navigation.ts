@@ -1,18 +1,18 @@
 import {
   Beaker,
+  ClipboardList,
   FileText,
   LayoutDashboard,
-  Layers,
   SlidersHorizontal,
   Users as UsersIcon,
   type LucideIcon,
 } from 'lucide-react';
 
-export type NavPage = 'Dashboard' | 'Batches' | 'Reports' | 'Products' | 'Calibration' | 'Users';
-export type Page = NavPage | 'Settings' | 'Login';
+export type NavPage = 'Dashboard' | 'Reports' | 'Products' | 'Calibration' | 'Users' | 'KodePengujian';
+export type Page = NavPage | 'Settings' | 'Login' | 'KodePengujianNew' | 'KodePengujianDetail' | 'Batches';
 
 export const navigation: { label: string; items: { page: NavPage; icon: LucideIcon }[] }[] = [
-  { label: 'Navigasi Utama', items: [{ page: 'Dashboard', icon: LayoutDashboard }, { page: 'Batches', icon: Layers }] },
+  { label: 'Navigasi Utama', items: [{ page: 'Dashboard', icon: LayoutDashboard }, { page: 'KodePengujian', icon: ClipboardList }] },
   { label: 'Alur Kerja', items: [{ page: 'Reports', icon: FileText }] },
   { label: 'Konfigurasi', items: [{ page: 'Products', icon: Beaker }, { page: 'Calibration', icon: SlidersHorizontal }] },
   { label: 'Sistem', items: [{ page: 'Users', icon: UsersIcon }] },
@@ -27,6 +27,9 @@ export const legacyPageToPath: Record<Page, string> = {
   Calibration: '/calibration',
   Users: '/users',
   Settings: '/settings',
+  KodePengujian: '/kode-pengujian',
+  KodePengujianNew: '/kode-pengujian/new',
+  KodePengujianDetail: '/kode-pengujian/:kpId',
 };
 
 export const pathToLegacyPage: Record<string, Page> = {
@@ -38,6 +41,8 @@ export const pathToLegacyPage: Record<string, Page> = {
   '/calibration': 'Calibration',
   '/users': 'Users',
   '/settings': 'Settings',
+  '/kode-pengujian': 'KodePengujian',
+  '/kode-pengujian/new': 'KodePengujianNew',
 };
 
 export const pageLabels: Record<Page, string> = {
@@ -49,6 +54,9 @@ export const pageLabels: Record<Page, string> = {
   Calibration: 'Kalibrasi',
   Users: 'Pengguna',
   Settings: 'Pengaturan',
+  KodePengujian: 'Kode Pengujian',
+  KodePengujianNew: 'Kode Pengujian Baru',
+  KodePengujianDetail: 'Detail Kode Pengujian',
 };
 
 export const pageDescriptions: Record<Exclude<Page, 'Login'>, string> = {
@@ -59,4 +67,7 @@ export const pageDescriptions: Record<Exclude<Page, 'Login'>, string> = {
   Calibration: 'Pemetaan referensi spasial stasiun kamera ganda.',
   Users: 'Manajemen peran dan hak akses operator workstation.',
   Settings: 'Konfigurasi environment dan penyimpanan workstation.',
+  KodePengujian: 'Kelola kode pengujian, sampel, dan eksekusi pengujian.',
+  KodePengujianNew: 'Buat kode pengujian baru dengan konteks produk dan formula.',
+  KodePengujianDetail: 'Lihat detail kode pengujian, tambah sampel, dan jalankan pengujian.',
 };

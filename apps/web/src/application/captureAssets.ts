@@ -1,5 +1,5 @@
-import { buildRealSideAnalysisInput } from '@spray-paragon/domain';
-import type { Batch, RealSideAnalysisInput, RealSideCaptureFrameMetadata, RealSideBaselineSelection } from '@spray-paragon/domain';
+import { buildRealSideAnalysisInput, buildTestRunRealSideAnalysisInput } from '@spray-paragon/domain';
+import type { Batch, RealSideAnalysisInput, RealSideCaptureFrameMetadata, RealSideBaselineSelection, KodePengujian, TestRunRealSideAnalysisInput, CaptureVideoMetadata } from '@spray-paragon/domain';
 import type { CaptureAssetStore } from './ports/captureAssetStore';
 
 /**
@@ -8,6 +8,33 @@ import type { CaptureAssetStore } from './ports/captureAssetStore';
  */
 export function buildCaptureAssetId(batchId: string, frameIndex: number): string {
   return `${batchId}:side:${String(frameIndex).padStart(3, '0')}`;
+}
+
+/**
+ * Builds a deterministic asset ID for a TestRun capture within a KodePengujian.
+ * Format: kp:{kpId}:sample:{sampleId}:run:{runId}:side:{frameIndex:03d}
+ * Ensures no collision between multiple runs in one KP or between samples.
+ */
+export function buildTestRunCaptureAssetId(
+  kpId: string,
+  sampleId: string,
+  runId: string,
+  frameIndex: number
+): string {
+  return `kp:${kpId}:sample:${sampleId}:run:${runId}:side:${String(frameIndex).padStart(3, '0')}`;
+}
+
+/**
+ * Builds a deterministic asset ID for the TestRun side camera video recording.
+ * Format: kp:{kpId}:sample:{sampleId}:run:{runId}:side:video
+ * Single video per capture event.
+ */
+export function buildTestRunVideoAssetId(
+  kpId: string,
+  sampleId: string,
+  runId: string
+): string {
+  return `kp:${kpId}:sample:${sampleId}:run:${runId}:side:video`;
 }
 
 export type ResolvedSideAnalysisFrame = {
@@ -27,8 +54,21 @@ export type PreparedRealSideAnalysis = {
   input: RealSideAnalysisInput;
 };
 
+export type TestRunPreparedRealSideAnalysis = {
+  kodePengujianId: string;
+  sampleId: string;
+  testRunId: string;
+  frames: ResolvedSideAnalysisFrame[];
+  baseline: ResolvedBaselineFrame[];
+  input: TestRunRealSideAnalysisInput;
+};
+
 export type AnalysisPreparationResult =
   | { ok: true; prepared: PreparedRealSideAnalysis }
+  | { ok: false; error: string; missingFrameAssetIds: string[]; missingBaselineAssetIds: string[] };
+
+export type TestRunAnalysisPreparationResult =
+  | { ok: true; prepared: TestRunPreparedRealSideAnalysis }
   | { ok: false; error: string; missingFrameAssetIds: string[]; missingBaselineAssetIds: string[] };
 
 /**
@@ -45,6 +85,14 @@ export class CaptureAssetResolver {
   resolveBlob(frame: Pick<RealSideCaptureFrameMetadata, 'assetId'>): Promise<Blob | null> {
     if (!frame.assetId) return Promise.resolve(null);
     return this.store.get(frame.assetId);
+  }
+
+  /**
+   * Resolves a persisted video asset by its metadata.
+   */
+  async resolveVideoBlob(video: Pick<CaptureVideoMetadata, 'assetId'>): Promise<Blob | null> {
+    if (!video.assetId) return null;
+    return this.store.get(video.assetId);
   }
 
   /**
@@ -136,5 +184,41 @@ export class CaptureAssetResolver {
       };
     }
     return this.prepareRealSideAnalysis(inputResult.input);
+  }
+
+  /**
+   * Convenience bridge from a persisted TestRun domain model to prepared Side CV inputs.
+   */
+  async prepareTestRunAnalysis(kp: KodePengujian, testRunId: string): Promise<TestRunAnalysisPreparationResult> {
+    const inputResult = buildTestRunRealSideAnalysisInput(kp, testRunId);
+    if (!inputResult.ok) {
+      return {
+        ok: false,
+        error: inputResult.error,
+        missingFrameAssetIds: [],
+        missingBaselineAssetIds: [],
+      };
+    }
+    const batchCompatibleInput: RealSideAnalysisInput = {
+      batchId: inputResult.input.testRunId,
+      captureMode: inputResult.input.captureMode,
+      frames: inputResult.input.frames,
+      baseline: inputResult.input.baseline,
+      sideOrientation: inputResult.input.sideOrientation,
+      calibration: inputResult.input.calibration,
+    };
+    const result = await this.prepareRealSideAnalysis(batchCompatibleInput);
+    if (!result.ok) return result;
+    return {
+      ok: true,
+      prepared: {
+        kodePengujianId: inputResult.input.kodePengujianId,
+        sampleId: inputResult.input.sampleId,
+        testRunId: inputResult.input.testRunId,
+        frames: result.prepared.frames,
+        baseline: result.prepared.baseline,
+        input: inputResult.input,
+      },
+    };
   }
 }

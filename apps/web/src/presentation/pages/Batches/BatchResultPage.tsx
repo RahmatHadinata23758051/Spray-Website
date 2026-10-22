@@ -212,16 +212,16 @@ function FinalizedBatchResult({ batch, report }: { batch: Batch; report: FinalAn
             measurements={report.side}
             calibration={report.side.calibration}
             sideGeometry={report.side.finalGeometry}
-            frontGeometry={report.front.finalGeometry}
+            frontGeometry={report.front!.finalGeometry}
           />
           <ResultCameraFrame
             title="Kamera Depan"
             camera="front"
             frame={primaryFrame}
-            measurements={report.front}
-            calibration={report.front.calibration}
+            measurements={report.front!}
+            calibration={report.front!.calibration}
             sideGeometry={report.side.finalGeometry}
-            frontGeometry={report.front.finalGeometry}
+            frontGeometry={report.front!.finalGeometry}
           />
         </div>
       </section>
@@ -235,7 +235,7 @@ function FinalizedBatchResult({ batch, report }: { batch: Batch; report: FinalAn
       {/* Side & Front Calibration Summaries */}
       <section className="grid md:grid-cols-2 gap-6">
         <CalibrationSummary camera="Side" calibration={report.side.calibration} />
-        <CalibrationSummary camera="Front" calibration={report.front.calibration} />
+        {report.front && <CalibrationSummary camera="Front" calibration={report.front.calibration} />}
       </section>
 
       {/* Audit & Traceability */}
@@ -256,14 +256,15 @@ function resultMetrics(camera: CameraType, report: FinalAnalysisReport): ResultM
     { label: 'Sebaran Vertikal', enLabel: 'Vertical Spread', value: report.side.verticalSpread, format: fmt.mm, editable: true },
     { label: 'Offset Arah', enLabel: 'Direction Offset', value: report.side.directionOffset, format: fmt.deg, editable: true },
   ];
+  // camera === 'front' - legacy Batch (simulation) always has front
   return [
-    { label: 'Luas Semprot', enLabel: 'Spray Area', value: report.front.sprayArea, format: fmt.area, editable: true },
-    { label: 'Diameter Ekuivalen', enLabel: 'Equivalent Diameter', value: report.front.equivalentDiameter, format: fmt.mm, editable: true },
-    { label: 'Sirkularitas', enLabel: 'Circularity', value: report.front.circularity, format: value => value.toFixed(2), editable: false },
-    { label: 'Offset Centroid X', enLabel: 'Centroid Offset X', value: report.front.centroidOffsetX, format: fmt.mm, editable: true },
-    { label: 'Offset Centroid Y', enLabel: 'Centroid Offset Y', value: report.front.centroidOffsetY, format: fmt.mm, editable: true },
-    { label: 'Simetri Horizontal', enLabel: 'Horizontal Symmetry', value: report.front.horizontalSymmetry, format: fmt.pct, editable: false },
-    { label: 'Simetri Vertikal', enLabel: 'Vertical Symmetry', value: report.front.verticalSymmetry, format: fmt.pct, editable: false },
+    { label: 'Luas Semprot', enLabel: 'Spray Area', value: report.front!.sprayArea, format: fmt.area, editable: true },
+    { label: 'Diameter Ekuivalen', enLabel: 'Equivalent Diameter', value: report.front!.equivalentDiameter, format: fmt.mm, editable: true },
+    { label: 'Sirkularitas', enLabel: 'Circularity', value: report.front!.circularity, format: value => value.toFixed(2), editable: false },
+    { label: 'Offset Centroid X', enLabel: 'Centroid Offset X', value: report.front!.centroidOffsetX, format: fmt.mm, editable: true },
+    { label: 'Offset Centroid Y', enLabel: 'Centroid Offset Y', value: report.front!.centroidOffsetY, format: fmt.mm, editable: true },
+    { label: 'Simetri Horizontal', enLabel: 'Horizontal Symmetry', value: report.front!.horizontalSymmetry, format: fmt.pct, editable: false },
+    { label: 'Simetri Vertikal', enLabel: 'Vertical Symmetry', value: report.front!.verticalSymmetry, format: fmt.pct, editable: false },
   ];
 }
 
@@ -396,7 +397,7 @@ export function CalibrationSummary({ camera, calibration }: { camera: 'Side' | '
 
 export function AnalysisAudit({ report }: { report: FinalAnalysisReport }) {
   const sideAdjusted = hasAdjustedMeasurement(report.side);
-  const frontAdjusted = hasAdjustedMeasurement(report.front);
+  const frontAdjusted = report.front ? hasAdjustedMeasurement(report.front) : false;
   return (
     <section className="surface-panel !rounded-panel border border-border-default shadow-sm bg-surface">
       <div className="px-4 py-3 border-b border-border-subtle flex justify-between items-center">

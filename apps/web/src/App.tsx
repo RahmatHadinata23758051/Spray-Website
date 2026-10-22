@@ -22,6 +22,14 @@ import { BatchAnalysisPage } from './presentation/pages/Batches/BatchAnalysisPag
 import { BatchResultPage } from './presentation/pages/Batches/BatchResultPage';
 import { CameraTestPage } from './presentation/pages/CameraTest/CameraTestPage';
 
+// Kode Pengujian Pages
+import { KodePengujianPage } from './presentation/pages/KodePengujian/KodePengujianPage';
+import { NewKodePengujianPage } from './presentation/pages/KodePengujian/NewKodePengujianPage';
+import { KodePengujianDetailPage } from './presentation/pages/KodePengujian/KodePengujianDetailPage';
+import { TestRunCapturePage } from './presentation/pages/KodePengujian/TestRunCapturePage';
+import { TestRunAnalysisPage } from './presentation/pages/KodePengujian/TestRunAnalysisPage';
+import { TestRunResultPage } from './presentation/pages/KodePengujian/TestRunResultPage';
+
 export { createFinalReportCsv } from './application/reporting/createFinalReportCsv';
 
 export function App() {
@@ -30,11 +38,11 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/camera-test" element={<CameraTestPage />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
-      
+
       {/* Shell-wrapped application routes */}
       <Route element={<AppShell />}>
         <Route path="/dashboard" element={<DashboardPage />} />
-        
+
         {/* Canonical Batch Routes */}
         <Route path="/batches" element={<BatchesPage />} />
         <Route path="/batches/new" element={<NewBatchPage />} />
@@ -49,7 +57,24 @@ export function App() {
         <Route path="/capture" element={<Navigate to="/batches" replace />} />
         <Route path="/analysis" element={<Navigate to="/batches" replace />} />
         <Route path="/result" element={<Navigate to="/batches" replace />} />
-        
+
+        {/* Kode Pengujian Routes (P2 & P3A & P3B & P3C) */}
+        <Route path="/kode-pengujian" element={<KodePengujianPage />} />
+        <Route path="/kode-pengujian/new" element={<NewKodePengujianPage />} />
+        <Route path="/kode-pengujian/:kpId" element={<KodePengujianDetailPage />} />
+        <Route
+          path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/capture"
+          element={<TestRunCapturePage />}
+        />
+        <Route
+          path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/analysis"
+          element={<TestRunAnalysisPage />}
+        />
+        <Route
+          path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/result"
+          element={<TestRunResultPage />}
+        />
+
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/calibration" element={<CalibrationPage />} />

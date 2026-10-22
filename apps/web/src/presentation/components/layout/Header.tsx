@@ -11,6 +11,7 @@ export function Header({ page }: { page?: Page }) {
   let description = pageDescriptions[title as Exclude<Page, 'Login'>] || '';
   let subSectionLabel: string | null = null;
   let batchIdMatch: string | null = null;
+  let kpIdMatch: string | null = null;
 
   if (pathname.startsWith('/batches')) {
     title = 'Batches';
@@ -33,6 +34,28 @@ export function Header({ page }: { page?: Page }) {
     }
   }
 
+  if (pathname.startsWith('/kode-pengujian')) {
+    title = 'KodePengujian';
+    description = pageDescriptions.KodePengujian;
+
+    const parts = pathname.split('/').filter(Boolean); // ['kode-pengujian', ':kpId']
+    if (parts.length === 2 && parts[1] === 'new') {
+      subSectionLabel = 'Kode Pengujian Baru';
+    } else if (parts.length >= 2) {
+      description = '';
+      kpIdMatch = parts[1];
+      if (parts.length >= 7 && parts[2] === 'samples' && parts[4] === 'runs' && parts[6] === 'capture') {
+        subSectionLabel = 'Pengambilan Data';
+      } else if (parts.length >= 7 && parts[2] === 'samples' && parts[4] === 'runs' && parts[6] === 'analysis') {
+        subSectionLabel = 'Analisis';
+      } else if (parts.length >= 7 && parts[2] === 'samples' && parts[4] === 'runs' && parts[6] === 'result') {
+        subSectionLabel = 'Hasil';
+      } else {
+        subSectionLabel = 'Detail Kode Pengujian';
+      }
+    }
+  }
+
   const isAnalysisWorkspace = pathname.includes('/analysis');
 
   return (
@@ -46,6 +69,12 @@ export function Header({ page }: { page?: Page }) {
             <>
               <ChevronRight size={13} className="text-border-strong shrink-0" />
               <span className="font-mono text-text-secondary">{batchIdMatch}</span>
+            </>
+          )}
+          {kpIdMatch && (
+            <>
+              <ChevronRight size={13} className="text-border-strong shrink-0" />
+              <span className="font-mono text-text-secondary">{kpIdMatch}</span>
             </>
           )}
           {subSectionLabel && (

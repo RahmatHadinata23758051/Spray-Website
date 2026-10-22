@@ -4,7 +4,7 @@ import { testSchema, analysisSchema, synchronizedAnalysisFrameSchema, type Fixtu
 import { FixtureProductRepository } from '../data';
 import { createTestSession, nextSampleId, nextTestId } from '@spray-paragon/domain';
 import { createFinalReportCsv } from '../App';
-import { addSupportingCapture, adjustCalibration, calculateScaleMmPerPx, calibratedGridSpacingPx, canFinalize, correctMeasurement, createCalibrationSnapshot, createFinalAnalysisReport, createFrontMeasurements, createMeasurementValue, createSideMeasurements, deriveFrontMeasurementsFromGeometry, deriveSideMeasurementsFromGeometry, getPrimary, getUserFacingTestStatus, mirrorSideGeometry, moveCalibrationAnchor, moveFrontMeasurementHandle, moveSideMeasurementHandle, pixelDistanceToMm, pointDistanceToMm, removeSupportingCapture, selectMeasurementValue, setPrimaryCapture, translateCalibrationWithinBounds, updateCalibrationGeometry } from '@spray-paragon/domain';
+import { addSupportingCapture, adjustCalibration, calculateScaleMmPerPx, calibratedGridSpacingPx, canFinalize, correctMeasurement, createCalibrationSnapshot, createFinalAnalysisReport, createFrontMeasurements, createMeasurementValue, createSideMeasurements, deriveFrontMeasurementsFromGeometry, deriveSideMeasurementsFromGeometry, getPrimary, getUserFacingTestStatus, mirrorSideGeometry, moveCalibrationAnchor, moveFrontMeasurementHandle, moveSideMeasurementHandle, pixelDistanceToMm, pointDistanceToMm, removeSupportingCapture, selectMeasurementValue, setPrimaryCapture, translateCalibrationWithinBounds, updateCalibrationGeometry, type DualPerspectiveFinalAnalysisReport } from '@spray-paragon/domain';
 
 describe('Spraybot Core Fixtures & Formatters', () => {
   it('has deterministic test fixtures', () => {
@@ -610,8 +610,8 @@ describe('Final Analysis V2 report result contract', () => {
     expect(report.supportingCaptures).toHaveLength(9);
     expect(report.supportingCaptureMomentIds).toHaveLength(9);
     report.supportingCaptures.forEach(capture => {
-      expect(capture.side.frameIndex).toBe(capture.front.frameIndex);
-      expect(capture.side.timestampMs).toBe(capture.front.timestampMs);
+      expect(capture.side.frameIndex).toBe(capture.front?.frameIndex);
+      expect(capture.side.timestampMs).toBe(capture.front?.timestampMs);
     });
     expect(report.side.calibration.adjusted).toBe(true);
     expect(report.front.calibration.adjusted).toBe(false);
@@ -785,7 +785,7 @@ describe('Task L1 — Final Report Snapshot Integrity', () => {
       finalizedBy: 'Nadia Putri',
       finalizedAt: '2026-09-29T14:45:00Z',
       ...overrides,
-    });
+    } as Parameters<typeof createFinalAnalysisReport>[0]) as DualPerspectiveFinalAnalysisReport;
   };
 
   it('final report contains frozen Side and Front pixel geometry', () => {
