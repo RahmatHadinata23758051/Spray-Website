@@ -5,6 +5,7 @@ import {
 } from '../../../application/services';
 import type { KodePengujian, TestRun, Sample } from '@spray-paragon/domain';
 import { TestRunRealSideAnalysisWorkspace } from './TestRunRealSideAnalysisWorkspace';
+import { TestRunSimulationAnalysisWorkspace } from './TestRunSimulationAnalysisWorkspace';
 
 export function TestRunAnalysisPage() {
   const { kpId, sampleId, runId } = useParams();
@@ -43,18 +44,28 @@ export function TestRunAnalysisPage() {
           setError(`Pengujian ${runId} belum siap untuk analisis (status: ${testRun.status})`);
           return;
         }
-        // Require a persisted real capture session with baseline
-        if (!testRun.captureSession || testRun.captureSession.captureMode !== 'real') {
-          setError('Analisis hanya tersedia untuk sesi capture nyata (real) dengan baseline.');
+        // Validate capture session exists
+        if (!testRun.captureSession) {
+          setError('Sesi capture tidak ditemukan. Capture harus diselesaikan terlebih dahulu.');
           return;
         }
-        if (!testRun.captureSession.realSideBaseline) {
-          setError('Baseline pra-spray belum dipilih. Pilih baseline di halaman Pengambilan Data terlebih dahulu.');
-          return;
-        }
-        if (!testRun.captureSession.realSideFrames?.length) {
-          setError('Tidak ada frame Side yang tertangkap.');
-          return;
+        // Validate capture session data based on mode
+        const isRealCapture = testRun.captureSession.captureMode === 'real';
+        if (isRealCapture) {
+          if (!testRun.captureSession.realSideBaseline) {
+            setError('Baseline pra-spray belum dipilih. Pilih baseline di halaman Pengambilan Data terlebih dahulu.');
+            return;
+          }
+          if (!testRun.captureSession.realSideFrames?.length) {
+            setError('Tidak ada frame Side yang tertangkap.');
+            return;
+          }
+        } else {
+          // Simulation mode
+          if (!testRun.captureSession.synchronizedMoments?.length) {
+            setError('Tidak ada momen sinkron yang tersedia untuk analisis simulasi.');
+            return;
+          }
         }
         setContext({ kp, sample, testRun });
       } catch (loadError) {
@@ -101,13 +112,23 @@ export function TestRunAnalysisPage() {
 
   return (
     <div className="flex flex-col h-full max-w-[1440px] mx-auto w-full">
-      <TestRunRealSideAnalysisWorkspace
-        kp={kp}
-        sample={sample}
-        testRun={testRun}
-        onBack={handleBack}
-        onTestRunUpdated={handleTestRunUpdated}
-      />
+      {testRun.captureSession?.captureMode === 'real' ? (
+        <TestRunRealSideAnalysisWorkspace
+          kp={kp}
+          sample={sample}
+          testRun={testRun}
+          onBack={handleBack}
+          onTestRunUpdated={handleTestRunUpdated}
+        />
+      ) : (
+        <TestRunSimulationAnalysisWorkspace
+          kp={kp}
+          sample={sample}
+          testRun={testRun}
+          onBack={handleBack}
+          onTestRunUpdated={handleTestRunUpdated}
+        />
+      )}
     </div>
   );
 }

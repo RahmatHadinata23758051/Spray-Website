@@ -319,6 +319,7 @@ export function TestRunCapturePage() {
       setContext(c => c ? { ...c, testRun: updatedKp } : null);
       setMode('simulation');
       setIsCapturing(true);
+      setCaptureProgress(0);
     } catch (startError) {
       console.error('Failed to start simulated capture', startError);
       setError('Gagal memulai akuisisi simulasi');
@@ -543,7 +544,7 @@ export function TestRunCapturePage() {
             capturedAt: now,
             captureMode: 'simulation',
           },
-          status: 'CAPTURING',
+          // status remains CAPTURING per domain rule (awaiting save), but captureSession is now populated
         });
         setContext(c => c ? { ...c, testRun: updatedKp } : null);
         void syncService.queueSync(context.kp.id);
@@ -752,11 +753,13 @@ export function TestRunCapturePage() {
     setIsCapturing(false);
     setIsRealPreview(mode === 'real');
     setCaptureProgress(0);
-    // Clean up temporary assets if no previous accepted session exists
-    const hadPriorAcceptedSession = ((context.testRun.captureSession?.synchronizedMoments?.length ?? 0) > 0) ||
-      ((context.testRun.captureSession?.realSideFrames?.length ?? 0) > 0);
 
-    if (!hadPriorAcceptedSession) {
+    // For simulation mode: always clear and go to PENDING (no frame restoration for simulation)
+    // For real mode: only restore if there are actual persisted realSideFrames/video
+    const hasPersistedRealFrames = (context.testRun.captureSession?.realSideFrames?.length ?? 0) > 0;
+    const hasPersistedVideo = !!context.testRun.captureSession?.video;
+
+    if (mode === 'simulation' || (!hasPersistedRealFrames && !hasPersistedVideo)) {
       await captureAssetStore.deleteScope({
         kind: 'testRun',
         kpId: context.kp.id,
@@ -769,7 +772,7 @@ export function TestRunCapturePage() {
       });
       setContext(c => c ? { ...c, testRun: updated } : null);
     } else {
-      // Restore previously accepted session
+      // Restore previously accepted REAL session (has realSideFrames or video)
       const persistedFrames = context.testRun.captureSession?.realSideFrames ?? [];
       setRestoredRealFrameCount(persistedFrames.length);
       if (persistedFrames.length > 0) {
@@ -796,11 +799,13 @@ export function TestRunCapturePage() {
     setRealStatus('idle');
     setIsCapturing(false);
     setCaptureProgress(0);
-    // Clean up temporary assets
-    const hadPriorAcceptedSession = ((context.testRun.captureSession?.synchronizedMoments?.length ?? 0) > 0) ||
-      ((context.testRun.captureSession?.realSideFrames?.length ?? 0) > 0);
 
-    if (!hadPriorAcceptedSession) {
+    // For simulation mode: always clear and go to PENDING (no frame restoration for simulation)
+    // For real mode: only restore if there are actual persisted realSideFrames/video
+    const hasPersistedRealFrames = (context.testRun.captureSession?.realSideFrames?.length ?? 0) > 0;
+    const hasPersistedVideo = !!context.testRun.captureSession?.video;
+
+    if (mode === 'simulation' || (!hasPersistedRealFrames && !hasPersistedVideo)) {
       await captureAssetStore.deleteScope({
         kind: 'testRun',
         kpId: context.kp.id,
@@ -813,7 +818,7 @@ export function TestRunCapturePage() {
       });
       setContext(c => c ? { ...c, testRun: updated } : null);
     } else {
-      // Restore previously accepted session
+      // Restore previously accepted REAL session (has realSideFrames or video)
       const persistedFrames = context.testRun.captureSession?.realSideFrames ?? [];
       setRestoredRealFrameCount(persistedFrames.length);
       if (persistedFrames.length > 0) {
@@ -833,9 +838,9 @@ export function TestRunCapturePage() {
   const handleProceedToAnalysis = async () => {
     if (!context) return;
     try {
-      // Ensure baseline exists on captureSession before proceeding
       let currentTestRun = context.testRun;
-      if (!currentTestRun.captureSession?.realSideBaseline && realFramesRef.current.length > 0) {
+      // For real capture, ensure baseline exists on captureSession before proceeding
+      if (mode === 'real' && !currentTestRun.captureSession?.realSideBaseline && realFramesRef.current.length > 0) {
         const frames = realFramesRef.current;
         const defaultWindowMs = DEFAULT_REAL_SIDE_BASELINE_WINDOW_MS;
         const maxElapsed = frames[frames.length - 1]?.elapsedMs ?? 0;
@@ -965,9 +970,22 @@ export function TestRunCapturePage() {
             <span className="text-text-muted">•</span>
             <span className="text-sm font-semibold text-text-secondary">{testRun.recipeSnapshot.name}</span>
             <span className="text-text-muted">•</span>
-            <Status tone={isCapturing ? 'warning' : hasUnsavedCapture ? 'warning' : 'neutral'}>
-              {isCapturing ? 'Merekam' : hasUnsavedCapture ? 'Belum Disimpan' : testRun.status}
-            </Status>
+            {(() => {
+              const hasSavedSession =
+                (mode === 'simulation' &&
+                  testRun.captureSession?.captureMode === 'simulation' &&
+                  (testRun.captureSession?.synchronizedMoments?.length ?? 0) > 0) ||
+                (mode === 'real' && (realStatus === 'complete' || restoredRealFrameCount > 0));
+              const tone = isCapturing ? 'warning' : hasUnsavedCapture ? 'warning' : hasSavedSession ? 'success' : 'neutral';
+              const label = isCapturing
+                ? 'Merekam'
+                : hasUnsavedCapture
+                ? 'Pengambilan selesai · Belum disimpan'
+                : hasSavedSession
+                ? 'Tersimpan'
+                : testRun.status;
+              return <Status tone={tone}>{label}</Status>;
+            })()}
           </div>
           <p className="text-xs text-text-muted">
             {mode === 'real' ? 'Mode kamera nyata — Side only' : 'Mode simulasi — fixture capture'}
@@ -1046,6 +1064,13 @@ export function TestRunCapturePage() {
               <button onClick={handleAbortCapture} className="btn btn-danger">Batalkan Akuisisi</button>
             </>
           )}
+          {mode === 'simulation' && !isCapturing && testRun.captureSession?.captureMode === 'simulation' && (testRun.captureSession?.synchronizedMoments?.length ?? 0) > 0 && !hasUnsavedCapture && (
+            <>
+              <button onClick={handleProceedToAnalysis} className="btn btn-primary">Lanjut ke Analisis</button>
+              <button onClick={() => handleNavigate(`/kode-pengujian/${kpId}`)} className="btn btn-secondary">Kembali ke Kode Pengujian</button>
+              <button onClick={handleAbortCapture} className="btn btn-danger">Batalkan Akuisisi</button>
+            </>
+          )}
           {hasUnsavedCapture && (
             <>
               <button onClick={() => handleNavigate(`/kode-pengujian/${kp.id}`)} className="btn btn-secondary">
@@ -1107,7 +1132,7 @@ export function TestRunCapturePage() {
               </span>
             ) : (
               <span className={isCapturing ? 'text-primary' : 'text-text-primary'}>
-                {visibleCount} / 60 tangkapan
+                {visibleCount} / 60 tangkapan{!isCapturing && visibleCount >= 60 && ' · selesai'}
               </span>
             )}
           </div>

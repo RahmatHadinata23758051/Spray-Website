@@ -844,5 +844,275 @@ describe('Phase P3A — TestRun Capture Bridge', () => {
       expect(await captureAssetStore.get(assetA)).toBeNull();
       expect(await captureAssetStore.get(assetB)).not.toBeNull();
     });
+
+    // Phase: Simulation Capture Fix Verification
+    it('21. review mode simulation reaches 60/60, shows "Pengambilan selesai · Belum disimpan" badge and Simpan/Ulangi/Buang actions', async () => {
+      const kp = await kodePengujianRepository.create({
+        productId: 'p-1',
+        productSnapshot: { productCode: 'PRD-MIST', productName: 'Hydra Mist' },
+        operatorId: 'usr-1',
+        operatorName: 'Operator One',
+      });
+      const { sample } = await kodePengujianRepository.addSample(kp.id, { sampleCode: 'SMP-SIM-REVIEW' });
+      const { testRun } = await kodePengujianRepository.addTestRun(kp.id, {
+        sampleId: sample.id,
+        recipeId: 'rec-1',
+        recipeSnapshot: { name: 'Standar 20N', forceSetpointN: 20, pressDurationMs: 400, strokeMm: 12 },
+        setpoints: { forceSetpointN: 20, pressDurationMs: 400, strokeMm: 12 },
+        fixture: 'nominal-01',
+        operatorId: 'usr-1',
+        operatorName: 'Operator One',
+      });
+
+      render(
+        <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/capture`]}>
+          <App />
+        </MemoryRouter>
+      );
+
+      // Start simulation
+      fireEvent.click(await screen.findByRole('button', { name: /Mulai Simulasi/i }));
+
+      // Wait for simulation to complete (60/60)
+      await screen.findByRole('button', { name: /^Simpan$/i }, { timeout: 15000 });
+
+      // Verify badge shows "Pengambilan selesai · Belum disimpan"
+      const statusBadge = screen.getByText(/Pengambilan selesai · Belum disimpan/i);
+      expect(statusBadge).toBeInTheDocument();
+
+      // Verify review actions are present
+      expect(screen.getByRole('button', { name: /^Simpan$/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Ulangi Pengambilan/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Buang$/i })).toBeInTheDocument();
+
+      // Verify captureSession NOT persisted yet (review mode)
+      const refreshedKp = await kodePengujianRepository.get(kp.id);
+      const tr = refreshedKp?.testRuns.find(t => t.id === testRun.id);
+      expect(tr?.captureSession?.synchronizedMoments?.length ?? 0).toBe(0);
+    });
+
+    it('22. auto mode simulation persists captureSession automatically and shows "Lanjut ke Analisis"', async () => {
+      const kp = await kodePengujianRepository.create({
+        productId: 'p-1',
+        productSnapshot: { productCode: 'PRD-MIST', productName: 'Hydra Mist' },
+        operatorId: 'usr-1',
+        operatorName: 'Operator One',
+      });
+      const { sample } = await kodePengujianRepository.addSample(kp.id, { sampleCode: 'SMP-SIM-AUTO' });
+      const { testRun } = await kodePengujianRepository.addTestRun(kp.id, {
+        sampleId: sample.id,
+        recipeId: 'rec-1',
+        recipeSnapshot: { name: 'Standar 20N', forceSetpointN: 20, pressDurationMs: 400, strokeMm: 12 },
+        setpoints: { forceSetpointN: 20, pressDurationMs: 400, strokeMm: 12 },
+        fixture: 'nominal-01',
+        operatorId: 'usr-1',
+        operatorName: 'Operator One',
+      });
+
+      render(
+        <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/capture`]}>
+          <App />
+        </MemoryRouter>
+      );
+
+      // Wait for page to load, then switch to auto mode
+      await screen.findByRole('button', { name: /Simpan otomatis/i });
+      fireEvent.click(screen.getByRole('button', { name: /Simpan otomatis/i }));
+
+      // Start simulation
+      fireEvent.click(await screen.findByRole('button', { name: /Mulai Simulasi/i }));
+
+      // Wait for auto-save to complete
+      await waitFor(async () => {
+        const refreshedKp = await kodePengujianRepository.get(kp.id);
+        const tr = refreshedKp?.testRuns.find(t => t.id === testRun.id);
+        expect(tr?.captureSession?.synchronizedMoments?.length).toBeGreaterThan(0);
+        expect(tr?.status).toBe('CAPTURING');
+      }, { timeout: 15000 });
+
+      // Verify "Lanjut ke Analisis" button appears (not auto-navigate)
+      expect(await screen.findByRole('button', { name: /Lanjut ke Analisis/i }, { timeout: 15000 })).toBeInTheDocument();
+      expect(screen.getByText(/Linimasa Tangkapan/i)).toBeInTheDocument();
+
+      // Verify badge shows "Tersimpan"
+      expect(screen.getByText(/Tersimpan/i)).toBeInTheDocument();
+    });
+
+    it('23. simulation retake returns to clean capture state (PENDING, no captureSession)', async () => {
+      const kp = await kodePengujianRepository.create({
+        productId: 'p-1',
+        productSnapshot: { productCode: 'PRD-MIST', productName: 'Hydra Mist' },
+        operatorId: 'usr-1',
+        operatorName: 'Operator One',
+      });
+      const { sample } = await kodePengujianRepository.addSample(kp.id, { sampleCode: 'SMP-SIM-RETAKE' });
+      const { testRun } = await kodePengujianRepository.addTestRun(kp.id, {
+        sampleId: sample.id,
+        recipeId: 'rec-1',
+        recipeSnapshot: { name: 'Standar 20N', forceSetpointN: 20, pressDurationMs: 400, strokeMm: 12 },
+        setpoints: { forceSetpointN: 20, pressDurationMs: 400, strokeMm: 12 },
+        fixture: 'nominal-01',
+        operatorId: 'usr-1',
+        operatorName: 'Operator One',
+      });
+
+      render(
+        <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/capture`]}>
+          <App />
+        </MemoryRouter>
+      );
+
+      // Start and complete simulation
+      fireEvent.click(await screen.findByRole('button', { name: /Mulai Simulasi/i }));
+      await screen.findByRole('button', { name: /^Simpan$/i }, { timeout: 15000 });
+
+      // Click Ulangi Pengambilan
+      fireEvent.click(screen.getByRole('button', { name: /Ulangi Pengambilan/i }));
+
+      // Should return to initial state with "Mulai Simulasi" button
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Mulai Simulasi/i })).toBeInTheDocument();
+      });
+
+      // Repository should be reset to PENDING
+      const refreshedKp = await kodePengujianRepository.get(kp.id);
+      const tr = refreshedKp?.testRuns.find(t => t.id === testRun.id);
+      expect(tr?.status).toBe('PENDING');
+      expect(tr?.captureSession).toBeUndefined();
+    });
+
+    it('24. simulation discard clears pending state and resets to PENDING', async () => {
+      const kp = await kodePengujianRepository.create({
+        productId: 'p-1',
+        productSnapshot: { productCode: 'PRD-MIST', productName: 'Hydra Mist' },
+        operatorId: 'usr-1',
+        operatorName: 'Operator One',
+      });
+      const { sample } = await kodePengujianRepository.addSample(kp.id, { sampleCode: 'SMP-SIM-DISCARD' });
+      const { testRun } = await kodePengujianRepository.addTestRun(kp.id, {
+        sampleId: sample.id,
+        recipeId: 'rec-1',
+        recipeSnapshot: { name: 'Standar 20N', forceSetpointN: 20, pressDurationMs: 400, strokeMm: 12 },
+        setpoints: { forceSetpointN: 20, pressDurationMs: 400, strokeMm: 12 },
+        fixture: 'nominal-01',
+        operatorId: 'usr-1',
+        operatorName: 'Operator One',
+      });
+
+      render(
+        <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/capture`]}>
+          <App />
+        </MemoryRouter>
+      );
+
+      fireEvent.click(await screen.findByRole('button', { name: /Mulai Simulasi/i }));
+      await screen.findByRole('button', { name: /^Simpan$/i }, { timeout: 15000 });
+
+      fireEvent.click(screen.getByRole('button', { name: /^Buang$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Mulai Simulasi/i })).toBeInTheDocument();
+      });
+
+      const refreshedKp = await kodePengujianRepository.get(kp.id);
+      const tr = refreshedKp?.testRuns.find(t => t.id === testRun.id);
+      expect(tr?.status).toBe('PENDING');
+      expect(tr?.captureSession).toBeUndefined();
+    });
+
+    it('25. completed-but-unsaved simulation triggers unsaved navigation confirmation', async () => {
+      const kp = await kodePengujianRepository.create({
+        productId: 'p-1',
+        productSnapshot: { productCode: 'PRD-MIST', productName: 'Hydra Mist' },
+        operatorId: 'usr-1',
+        operatorName: 'Operator One',
+      });
+      const { sample } = await kodePengujianRepository.addSample(kp.id, { sampleCode: 'SMP-SIM-NAV' });
+      const { testRun } = await kodePengujianRepository.addTestRun(kp.id, {
+        sampleId: sample.id,
+        recipeId: 'rec-1',
+        recipeSnapshot: { name: 'Standar 20N', forceSetpointN: 20, pressDurationMs: 400, strokeMm: 12 },
+        setpoints: { forceSetpointN: 20, pressDurationMs: 400, strokeMm: 12 },
+        fixture: 'nominal-01',
+        operatorId: 'usr-1',
+        operatorName: 'Operator One',
+      });
+
+      render(
+        <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/capture`]}>
+          <App />
+        </MemoryRouter>
+      );
+
+      fireEvent.click(await screen.findByRole('button', { name: /Mulai Simulasi/i }));
+      await screen.findByRole('button', { name: /^Simpan$/i }, { timeout: 15000 });
+
+      // Click "Kembali ke Kode Pengujian" to trigger modal
+      fireEvent.click(screen.getByRole('button', { name: /Kembali ke Kode Pengujian/i }));
+
+      // Modal should appear
+      await screen.findByRole('heading', { name: /Hasil pengambilan data belum disimpan\./i });
+      expect(screen.getByRole('button', { name: /Simpan & Keluar/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Keluar Tanpa Menyimpan/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Batal$/i })).toBeInTheDocument();
+
+      // Cancel - should stay on capture page
+      fireEvent.click(screen.getByRole('button', { name: /^Batal$/i }));
+      await waitFor(() => {
+        expect(screen.queryByRole('heading', { name: /Hasil pengambilan data belum disimpan\./i })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /^Simpan$/i })).toBeInTheDocument();
+      });
+    });
+
+    it('26. auto mode simulation click Lanjut ke Analisis transitions to ANALYZING and navigates', async () => {
+      const kp = await kodePengujianRepository.create({
+        productId: 'p-1',
+        productSnapshot: { productCode: 'PRD-MIST', productName: 'Hydra Mist' },
+        operatorId: 'usr-1',
+        operatorName: 'Operator One',
+      });
+      const { sample } = await kodePengujianRepository.addSample(kp.id, { sampleCode: 'SMP-SIM-AUTO-NAV' });
+      const { testRun } = await kodePengujianRepository.addTestRun(kp.id, {
+        sampleId: sample.id,
+        recipeId: 'rec-1',
+        recipeSnapshot: { name: 'Standar 20N', forceSetpointN: 20, pressDurationMs: 400, strokeMm: 12 },
+        setpoints: { forceSetpointN: 20, pressDurationMs: 400, strokeMm: 12 },
+        fixture: 'nominal-01',
+        operatorId: 'usr-1',
+        operatorName: 'Operator One',
+      });
+
+      render(
+        <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/capture`]}>
+          <App />
+        </MemoryRouter>
+      );
+
+      // Wait for page to load, then switch to auto mode
+      await screen.findByRole('button', { name: /Simpan otomatis/i });
+      fireEvent.click(screen.getByRole('button', { name: /Simpan otomatis/i }));
+
+      // Start simulation
+      fireEvent.click(await screen.findByRole('button', { name: /Mulai Simulasi/i }));
+
+      await waitFor(async () => {
+        const refreshedKp = await kodePengujianRepository.get(kp.id);
+        const tr = refreshedKp?.testRuns.find(t => t.id === testRun.id);
+        expect(tr?.captureSession?.synchronizedMoments?.length).toBeGreaterThan(0);
+      }, { timeout: 15000 });
+
+      // Click Lanjut ke Analisis
+      fireEvent.click(await screen.findByRole('button', { name: /Lanjut ke Analisis/i }, { timeout: 15000 }));
+
+      // Should navigate to analysis page
+      await waitFor(() => {
+        expect(screen.getByText(/Analisis/i)).toBeInTheDocument();
+      });
+
+      // Verify status transitioned to ANALYZING
+      const refreshedKp = await kodePengujianRepository.get(kp.id);
+      const tr = refreshedKp?.testRuns.find(t => t.id === testRun.id);
+      expect(tr?.status).toBe('ANALYZING');
+    });
   });
 });
