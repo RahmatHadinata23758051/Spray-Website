@@ -356,11 +356,11 @@ export function requestTestRunReview(kp: KodePengujian, testRunId: string, now =
 export function finalizeTestRun(kp: KodePengujian, testRunId: string, report: FinalAnalysisReport, now = new Date().toISOString()): KodePengujian {
   const tr = kp.testRuns.find(t => t.id === testRunId);
   if (!tr) throw new DomainInvariantError(`TestRun ${testRunId} not found in KodePengujian ${kp.id}.`);
-  if (tr.status !== 'REVIEW_REQUIRED') {
-    throw new DomainInvariantError(`Cannot finalize: TestRun ${testRunId} is in status ${tr.status}, expected REVIEW_REQUIRED.`);
-  }
   if (tr.finalReport) {
     throw new DomainInvariantError(`TestRun ${testRunId} already has a final report. Finalized results are immutable.`);
+  }
+  if (tr.status !== 'REVIEW_REQUIRED' && tr.status !== 'ANALYZING') {
+    throw new DomainInvariantError(`Cannot finalize: TestRun ${testRunId} is in status ${tr.status}, expected REVIEW_REQUIRED or ANALYZING.`);
   }
 
   return {

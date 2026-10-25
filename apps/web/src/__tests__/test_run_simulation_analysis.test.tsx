@@ -104,6 +104,10 @@ describe('TestRun Simulation Analysis Workspace', () => {
               />
             }
           />
+          <Route
+            path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/result"
+            element={<div data-testid="result-page">Result Page</div>}
+          />
         </Routes>
       </MemoryRouter>
     );
@@ -404,5 +408,153 @@ describe('TestRun Simulation Analysis Workspace', () => {
     await waitFor(() => {
       expect(screen.getByText(/Tidak ada momen sinkron yang tersedia untuk analisis simulasi/)).toBeInTheDocument();
     });
+  });
+
+  it('11. eligible simulation run shows Finalisasi Hasil button when primary and geometries are set', async () => {
+    renderWorkspace();
+    // Set primary capture
+    await waitFor(() => {
+      const setPrimaryBtn = screen.getByRole('button', { name: /Jadikan Utama/ });
+      fireEvent.click(setPrimaryBtn);
+    });
+    // Edit and apply measurement for both side and front
+    await waitFor(() => {
+      const editBtn = screen.getByRole('button', { name: /Koreksi Pengukuran/ });
+      fireEvent.click(editBtn);
+    });
+    await waitFor(() => {
+      const applyBtn = screen.getByRole('button', { name: /Terapkan Pengukuran/ });
+      fireEvent.click(applyBtn);
+    });
+    await waitFor(() => {}, { timeout: 1000 });
+
+    // Should show "Siap Difinalisasi" status and "Finalisasi Hasil" button
+    await waitFor(() => {
+      expect(screen.getByText('Siap Difinalisasi')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Finalisasi Hasil/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Finalisasi Hasil/ })).not.toBeDisabled();
+    });
+  });
+
+  it('12. non-ready simulation shows blocking reasons (no primary, no geometries)', async () => {
+    renderWorkspace();
+    // Should show "Belum Siap" with reasons
+    await waitFor(() => {
+      expect(screen.getByText('Belum Siap')).toBeInTheDocument();
+      expect(screen.getByText('Primary capture moment not selected. Select a primary capture in the analysis workspace.')).toBeInTheDocument();
+    });
+  });
+
+  it('13. finalize creates immutable FinalAnalysisReport with analysisSource = simulation', async () => {
+    renderWorkspace();
+    // Set primary capture
+    await waitFor(() => {
+      const setPrimaryBtn = screen.getByRole('button', { name: /Jadikan Utama/ });
+      fireEvent.click(setPrimaryBtn);
+    });
+    // Edit and apply measurement
+    await waitFor(() => {
+      const editBtn = screen.getByRole('button', { name: /Koreksi Pengukuran/ });
+      fireEvent.click(editBtn);
+    });
+    await waitFor(() => {
+      const applyBtn = screen.getByRole('button', { name: /Terapkan Pengukuran/ });
+      fireEvent.click(applyBtn);
+    });
+    await waitFor(() => {}, { timeout: 1000 });
+
+    // Click Finalisasi Hasil
+    await waitFor(() => {
+      const finalizeBtn = screen.getByRole('button', { name: /Finalisasi Hasil/ });
+      fireEvent.click(finalizeBtn);
+    });
+    await waitFor(() => {}, { timeout: 2000 });
+
+    // Should navigate to result page (result page element is rendered)
+    await waitFor(() => {
+      expect(screen.getByTestId('result-page')).toBeInTheDocument();
+    });
+
+    // Verify report is persisted in repository
+    const refreshed = await kodePengujianRepository.get(kp.id);
+    const tr = refreshed!.testRuns.find(t => t.id === testRun.id)!;
+    expect(tr.status).toBe('FINALIZED');
+    expect(tr.finalReport).toBeDefined();
+    expect(tr.finalReport!.analysisSource).toBe('simulation');
+    expect(tr.finalReport!.primaryCaptureMomentId).toBeTruthy();
+    expect(tr.finalReport!.supportingCaptureMomentIds).toEqual([]);
+    expect(tr.finalReport!.side).toBeDefined();
+    expect(tr.finalReport!.front).toBeDefined();
+    expect(tr.finalReport!.side.calibration).toBeDefined();
+    expect(tr.finalReport!.front!.calibration).toBeDefined();
+
+    // Verify CSV export works with simulation report
+    const { createFinalReportCsv } = await import('../application/reporting/createFinalReportCsv');
+    const report = tr.finalReport!;
+    const csv = createFinalReportCsv(report);
+    expect(csv).toContain('analysis_source');
+    expect(csv).toContain('simulation');
+  });
+
+  it('14. sample becomes TESTED, KP remains ACTIVE after finalize', async () => {
+    renderWorkspace();
+    await waitFor(() => {
+      const setPrimaryBtn = screen.getByRole('button', { name: /Jadikan Utama/ });
+      fireEvent.click(setPrimaryBtn);
+    });
+    await waitFor(() => {
+      const editBtn = screen.getByRole('button', { name: /Koreksi Pengukuran/ });
+      fireEvent.click(editBtn);
+    });
+    await waitFor(() => {
+      const applyBtn = screen.getByRole('button', { name: /Terapkan Pengukuran/ });
+      fireEvent.click(applyBtn);
+    });
+    await waitFor(() => {}, { timeout: 1000 });
+
+    await waitFor(() => {
+      const finalizeBtn = screen.getByRole('button', { name: /Finalisasi Hasil/ });
+      fireEvent.click(finalizeBtn);
+    });
+    await waitFor(() => {}, { timeout: 2000 });
+
+    const refreshed = await kodePengujianRepository.get(kp.id);
+    expect(refreshed!.samples.find(s => s.id === sample.id)!.status).toBe('TESTED');
+    expect(refreshed!.status).toBe('ACTIVE');
+  });
+
+  it('15. re-finalization is blocked (immutability)', async () => {
+    // First finalize
+    renderWorkspace();
+    await waitFor(() => {
+      const setPrimaryBtn = screen.getByRole('button', { name: /Jadikan Utama/ });
+      fireEvent.click(setPrimaryBtn);
+    });
+    await waitFor(() => {
+      const editBtn = screen.getByRole('button', { name: /Koreksi Pengukuran/ });
+      fireEvent.click(editBtn);
+    });
+    await waitFor(() => {
+      const applyBtn = screen.getByRole('button', { name: /Terapkan Pengukuran/ });
+      fireEvent.click(applyBtn);
+    });
+    await waitFor(() => {}, { timeout: 1000 });
+
+    await waitFor(() => {
+      const finalizeBtn = screen.getByRole('button', { name: /Finalisasi Hasil/ });
+      fireEvent.click(finalizeBtn);
+    });
+    await waitFor(() => {}, { timeout: 2000 });
+
+    // Reload and try to finalize again - should show finalized status
+    const refreshed = await kodePengujianRepository.get(kp.id);
+    const tr = refreshed!.testRuns.find(t => t.id === testRun.id)!;
+    expect(tr.status).toBe('FINALIZED');
+    expect(tr.finalReport).toBeDefined();
+
+    // Try to call finalize again via domain - should throw
+    const { finalizeTestRun: finalizeDomain } = await import('@spray-paragon/domain');
+    const report = tr.finalReport!;
+    expect(() => finalizeDomain(refreshed!, tr.id, report)).toThrow(/already has a final report/);
   });
 });

@@ -187,6 +187,12 @@ export function TestRunResultPage() {
             <span className="font-semibold text-text-primary">Analisis: </span>
             <span className="font-mono text-text-secondary">{report.analysisSource}</span>
           </span>
+          {report.analysisSource === 'simulation' && (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary-soft px-2.5 py-1 rounded border border-primary/20">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              <span>Mode Simulasi — Data Fixture</span>
+            </div>
+          )}
         </div>
       </div>
 

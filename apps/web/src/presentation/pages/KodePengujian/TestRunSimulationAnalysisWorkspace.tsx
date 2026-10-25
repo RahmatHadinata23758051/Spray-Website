@@ -33,6 +33,8 @@ import {
   createFinalAnalysisReport,
   adjustCalibration,
   moveCalibrationAnchor,
+  canFinalizeTestRun,
+  finalizeTestRun,
 } from '@spray-paragon/domain';
 import { simulationService } from '../../../application/services';
 import { kodePengujianRepository, syncService } from '../../../application/services';
@@ -44,7 +46,6 @@ import { CalibrationReferenceOverlay } from '../../features/analysis/Calibration
 import { MeasurementCorrectionOverlay } from '../../features/analysis/MeasurementCorrectionOverlay';
 import { CaptureSelection } from '../../features/analysis/CaptureSelection';
 import { Inspector } from '../../features/analysis/Inspector';
-import { FinalAnalysisConfirmation } from '../../features/analysis/FinalAnalysisConfirmation';
 import { cameraCopy } from '../../features/analysis/cameraCopy';
 
 export interface TestRunSimulationAnalysisWorkspaceProps {
@@ -243,6 +244,9 @@ export function TestRunSimulationAnalysisWorkspace({
         frontPatch[primaryId] = { geometry: frontDisplayGeom, adjustedBy: 'Operator', adjustedAt: new Date().toISOString() };
       }
 
+      setSideCorrectionsByMoment(sidePatch);
+      setFrontCorrectionsByMoment(frontPatch);
+
       persistDraft({
         primaryCaptureMomentId: currentMoment.id,
         supportingCaptureMomentIds: res.selected.filter(s => s.role === 'supporting').map(s => s.captureFrameId),
@@ -406,6 +410,38 @@ export function TestRunSimulationAnalysisWorkspace({
   const primarySideMeasurements = primaryMoment ? getSideMeasurementsForMoment(primaryMoment) : undefined;
   const primaryFrontMeasurements = primaryMoment ? getFrontMeasurementsForMoment(primaryMoment) : undefined;
 
+  // Build a synthetic KP with current draft for finalization eligibility check
+  const syntheticKpForFinalize = useMemo(() => {
+    const currentDraft: BatchAnalysisDraft = {
+      calibration: { ...calibrations },
+      primaryCaptureMomentId: selectedCaptures.find(s => s.role === 'primary')?.captureFrameId || null,
+      supportingCaptureMomentIds: selectedCaptures.filter(s => s.role === 'supporting').map(s => s.captureFrameId),
+      sideCorrections: Object.fromEntries(Object.entries(sideCorrectionsByMoment).map(([k, v]) => [k, v.geometry])),
+      frontCorrections: Object.fromEntries(Object.entries(frontCorrectionsByMoment).map(([k, v]) => [k, v.geometry])),
+      updatedAt: new Date().toISOString(),
+    };
+    const testRuns = kp.testRuns.some(t => t.id === testRun.id)
+      ? kp.testRuns.map(t =>
+          t.id === testRun.id
+            ? {
+                ...t,
+                status: t.status === 'PENDING' ? ('ANALYZING' as const) : t.status,
+                analysisDraft: currentDraft,
+                captureSession: testRun.captureSession,
+              }
+            : t
+        )
+      : [{ ...testRun, status: 'ANALYZING' as const, analysisDraft: currentDraft, captureSession: testRun.captureSession }];
+    return {
+      ...kp,
+      testRuns,
+    };
+  }, [kp, testRun, calibrations, selectedCaptures, sideCorrectionsByMoment, frontCorrectionsByMoment]);
+
+  const finalizeEligibility = useMemo(() => canFinalizeTestRun(syntheticKpForFinalize, testRun.id), [syntheticKpForFinalize, testRun.id]);
+  const isFinalized = testRun.status === 'FINALIZED';
+  const canFinalize = finalizeEligibility.ok && !isFinalized;
+
   const handleConfirmFinalAnalysis = useCallback(async () => {
     if (!primaryMoment) {
       setSelectionError('Primary capture must be selected.');
@@ -450,10 +486,18 @@ export function TestRunSimulationAnalysisWorkspace({
         finalizedAt: new Date().toISOString(),
       });
 
+      const currentKp = (await kodePengujianRepository.get(kp.id)) || kp;
+      const kpToFinalize: KodePengujian = {
+        ...currentKp,
+        testRuns: currentKp.testRuns.map(t =>
+          t.id === testRun.id && t.status === 'PENDING' ? { ...t, status: 'ANALYZING' as const } : t
+        ),
+      };
+      finalizeTestRun(kpToFinalize, testRun.id, report);
       await kodePengujianRepository.updateTestRun(kp.id, testRun.id, {
         finalReport: report,
         status: 'FINALIZED',
-        completedAt: new Date().toISOString(),
+        completedAt: report.finalizedAt,
       });
       await syncService.queueSync(kp.id);
       navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/result`);
@@ -687,17 +731,105 @@ export function TestRunSimulationAnalysisWorkspace({
             moments={moments}
             readOnly={isReadOnly}
           />
-          <FinalAnalysisConfirmation
-            status={testRun.status === 'FINALIZED' ? 'finalized' : 'review_required'}
-            selectedCount={selectedCount}
-            primaryMoment={primaryMoment}
-            sideMeasurements={primarySideMeasurements}
-            frontMeasurements={primaryFrontMeasurements}
-            calibrations={calibrations}
-            finalReport={testRun.finalReport || null}
-            onConfirm={handleConfirmFinalAnalysis}
-            onViewResult={() => navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/result`)}
-          />
+          {/* Finalisasi Hasil Action Section */}
+          <section className="inspector-section space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-border-subtle">
+              <h3 className="inspector-header !mb-0">Finalisasi Hasil</h3>
+              <span
+                className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                  isFinalized
+                    ? 'bg-semantic-success-soft text-semantic-success'
+                    : finalizeEligibility.ok
+                    ? 'bg-primary-soft text-primary'
+                    : 'bg-surface-subtle text-text-muted'
+                }`}
+              >
+                {isFinalized ? 'Final' : finalizeEligibility.ok ? 'Siap Difinalisasi' : 'Belum Siap'}
+              </span>
+            </div>
+
+            <div className="space-y-4 pt-1">
+              <p className="text-xs text-text-secondary leading-relaxed">
+                Konfirmasi operator untuk memfinalisasi hasil simulasi dan membuat laporan pengujian yang tidak dapat diubah (immutable).
+              </p>
+
+              {/* Blocking reasons when not eligible */}
+              {!isFinalized && !finalizeEligibility.ok && (
+                <div className="space-y-2 rounded-md bg-semantic-warning-soft border border-semantic-warning/30 p-3">
+                  <div className="text-xs font-semibold text-semantic-warning">Belum Siap Difinalisasi:</div>
+                  <ul className="list-disc list-inside text-xs text-text-secondary space-y-1">
+                    {finalizeEligibility.reasons.map((reason, idx) => (
+                      <li key={idx}>{reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Ready summary */}
+              {primaryMoment && primarySideMeasurements && primaryFrontMeasurements && (
+                <dl className="space-y-1.5 text-xs bg-surface-subtle p-3 rounded-lg border border-border-subtle">
+                  <div className="flex justify-between">
+                    <dt className="text-text-muted">Tangkapan Utama</dt>
+                    <dd className="font-mono font-bold text-text-primary">
+                      #{String(primaryMoment.frameIndex + 1).padStart(3, '0')} · {primaryMoment.timestampMs} ms
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-text-muted">Tangkapan Dipilih</dt>
+                    <dd className="font-semibold text-text-primary">{selectedCount} / 10</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-text-muted">Profil Samping</dt>
+                    <dd className="font-mono font-semibold text-text-primary">
+                      Panjang {primarySideMeasurements.sprayLength.final.toFixed(1)} mm · Sudut {primarySideMeasurements.sprayAngle.final.toFixed(1)}°
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-text-muted">Pola Depan</dt>
+                    <dd className="font-mono font-semibold text-text-primary">
+                      Area {primaryFrontMeasurements.sprayArea.final.toFixed(0)} mm² · Ø {primaryFrontMeasurements.equivalentDiameter.final.toFixed(1)} mm
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-text-muted">Sumber Analisis</dt>
+                    <dd className="font-semibold text-primary">Simulasi (Data Fixture)</dd>
+                  </div>
+                </dl>
+              )}
+
+              {/* Primary Finalize Action (only for simulation, never for real) */}
+              {testRun.captureSession?.captureMode !== 'real' && !isFinalized && (
+                <button
+                  type="button"
+                  aria-label="Finalisasi Hasil"
+                  className="btn btn-primary w-full shadow-sm"
+                  onClick={handleConfirmFinalAnalysis}
+                  disabled={!canFinalize}
+                >
+                  Finalisasi Hasil
+                </button>
+              )}
+
+              {/* View Result button if finalized */}
+              {(isFinalized || testRun.finalReport) && (
+                <div className="pt-2 space-y-2 border-t border-border-subtle">
+                  <p className="text-[11px] text-text-muted">
+                    Laporan final tersimpan:{' '}
+                    <strong className="font-mono text-text-primary">
+                      {testRun.finalReport?.primaryCaptureMomentId || 'Tersedia'}
+                    </strong>
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-secondary w-full"
+                    onClick={() => navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/result`)}
+                  >
+                    Buka Hasil &rarr;
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
         </aside>
       </div>
     </div>
