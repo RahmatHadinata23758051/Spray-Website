@@ -4,7 +4,7 @@ import {
   KP_STORAGE_KEY,
 } from '../data/local/kodePengujianRepository';
 import { LocalStorageBatchRepository } from '../data/local/batchRepository';
-import { getEffectiveSampleContext, DomainInvariantError } from '@spray-paragon/domain';
+import { getEffectiveSampleContext, DomainInvariantError, createCalibrationSnapshot } from '@spray-paragon/domain';
 import { KodePengujianNotFoundError } from '../application/ports/kodePengujianRepository';
 import type { FinalAnalysisReport } from '@spray-paragon/domain';
 
@@ -295,7 +295,39 @@ describe('LocalStorageKodePengujianRepository (P1C)', () => {
       })
     ).rejects.toThrow(DomainInvariantError);
 
-    // Invariant 2: Mutating captureSession on a finalized run must throw
+    // Invariant 2: Mutating captureSession or analysisDraft on a finalized run must throw
+    await expect(
+      repo.updateTestRun(kp.id, testRun.id, {
+        captureSession: { scenario: 'nominal-01', startedAt: '2026-10-20T12:00:00Z', synchronizedMoments: [] },
+      })
+    ).rejects.toThrow(DomainInvariantError);
+
+    await expect(
+      repo.updateTestRun(kp.id, testRun.id, {
+        analysisDraft: {
+          calibration: {
+            side: createCalibrationSnapshot({
+              camera: 'side',
+              referenceDistanceMm: 10,
+              anchorA: { x: 0, y: 0 },
+              anchorB: { x: 100, y: 0 },
+            }),
+            front: createCalibrationSnapshot({
+              camera: 'front',
+              referenceDistanceMm: 10,
+              anchorA: { x: 0, y: 0 },
+              anchorB: { x: 100, y: 0 },
+            }),
+          },
+          primaryCaptureMomentId: 'new-id',
+          supportingCaptureMomentIds: [],
+          sideCorrections: {},
+          frontCorrections: {},
+          updatedAt: '2026-10-20T12:05:00Z',
+        },
+      })
+    ).rejects.toThrow(DomainInvariantError);
+
     await expect(
       repo.updateTestRun(kp.id, testRun.id, {
         status: 'CAPTURING',
@@ -308,6 +340,18 @@ describe('LocalStorageKodePengujianRepository (P1C)', () => {
     });
     expect(updated.notes).toBe('Reviewed and approved by QA manager.');
     expect(updated.status).toBe('FINALIZED');
+    expect(updated.finalReport).toEqual(fakeReport);
+
+    // Parent KP metadata can continue evolving without mutating frozen finalReport
+    const updatedKp = await repo.updateSyncMetadata(kp.id, {
+      status: 'pending',
+      retryCount: 1,
+    });
+    expect(updatedKp.sync?.status).toBe('pending');
+    const reloaded = await repo.get(kp.id);
+    const reloadedTr = reloaded!.testRuns.find(t => t.id === testRun.id)!;
+    expect(reloadedTr.finalReport).toEqual(fakeReport);
+    expect(reloadedTr.status).toBe('FINALIZED');
   });
 
   it('8. dual-read: legacy Batch data in spraybot.batches.v1 is surfaced through adapter', async () => {

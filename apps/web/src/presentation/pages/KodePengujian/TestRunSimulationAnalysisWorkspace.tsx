@@ -457,19 +457,38 @@ export function TestRunSimulationAnalysisWorkspace({
     const primaryFrontFinalGeometry = getFrontDisplayGeometry(primaryGeometry.front, frontCorrectionsByMoment[primaryMoment.id]);
 
     try {
+      const currentKp = (await kodePengujianRepository.get(kp.id)) || kp;
+      const currentTr = currentKp.testRuns.find(t => t.id === testRun.id);
+      if (!currentTr) {
+        throw new Error(`TestRun ${testRun.id} not found in KodePengujian ${kp.id}.`);
+      }
+      if (currentTr.status === 'FINALIZED' || currentTr.finalReport) {
+        throw new Error(`TestRun ${testRun.id} is already FINALIZED. Finalized results are immutable.`);
+      }
+      const currentSample = currentKp.samples.find(s => s.id === (currentTr.sampleId || sample.id)) || sample;
+
+      const acceptedDraft: BatchAnalysisDraft = {
+        calibration: { ...calibrations },
+        primaryCaptureMomentId: primaryMoment.id,
+        supportingCaptureMomentIds: supportingCaptureMoments.map(m => m.id),
+        sideCorrections: Object.fromEntries(Object.entries(sideCorrectionsByMoment).map(([k, v]) => [k, v.geometry])),
+        frontCorrections: Object.fromEntries(Object.entries(frontCorrectionsByMoment).map(([k, v]) => [k, v.geometry])),
+        updatedAt: new Date().toISOString(),
+      };
+
       const report = createFinalAnalysisReport({
         test: {
-          id: testRun.id,
-          sampleId: sample.id,
-          productId: kp.productId,
-          productName: kp.productSnapshot.productName,
-          productSnapshot: kp.productSnapshot,
-          recipeSnapshot: testRun.recipeSnapshot,
-          config: testRun.setpoints,
-          operatorName: testRun.operatorName,
-          createdAt: testRun.startedAt || testRun.createdAt,
-          productionBatch: kp.productLot,
-          fixture: testRun.fixture,
+          id: currentTr.id,
+          sampleId: currentSample.id,
+          productId: currentKp.productId,
+          productName: currentKp.productSnapshot.productName,
+          productSnapshot: currentKp.productSnapshot,
+          recipeSnapshot: currentTr.recipeSnapshot,
+          config: currentTr.setpoints,
+          operatorName: currentTr.operatorName,
+          createdAt: currentTr.startedAt || currentTr.createdAt,
+          productionBatch: currentKp.productLot,
+          fixture: currentTr.fixture,
           status: 'complete' as const,
         },
         primaryCaptureMoment: primaryMoment,
@@ -482,24 +501,41 @@ export function TestRunSimulationAnalysisWorkspace({
         sideFinalGeometry: primarySideFinalGeometry,
         frontAutoGeometry: primaryGeometry.front,
         frontFinalGeometry: primaryFrontFinalGeometry,
-        finalizedBy: testRun.operatorName,
+        finalizedBy: currentTr.operatorName,
         finalizedAt: new Date().toISOString(),
       });
 
-      const currentKp = (await kodePengujianRepository.get(kp.id)) || kp;
       const kpToFinalize: KodePengujian = {
         ...currentKp,
         testRuns: currentKp.testRuns.map(t =>
-          t.id === testRun.id && t.status === 'PENDING' ? { ...t, status: 'ANALYZING' as const } : t
+          t.id === testRun.id
+            ? {
+                ...t,
+                status: t.status === 'PENDING' ? ('ANALYZING' as const) : t.status,
+                analysisDraft: acceptedDraft,
+                captureSession: t.captureSession || testRun.captureSession,
+              }
+            : t
         ),
       };
+
+      const eligibility = canFinalizeTestRun(kpToFinalize, testRun.id);
+      if (!eligibility.ok) {
+        throw new Error(`Cannot finalize test run: ${eligibility.reasons.join(', ')}`);
+      }
+
       finalizeTestRun(kpToFinalize, testRun.id, report);
       await kodePengujianRepository.updateTestRun(kp.id, testRun.id, {
+        analysisDraft: acceptedDraft,
         finalReport: report,
         status: 'FINALIZED',
         completedAt: report.finalizedAt,
       });
-      await syncService.queueSync(kp.id);
+      try {
+        await syncService.queueSync(kp.id);
+      } catch (syncErr) {
+        console.warn('Sync queue failed after finalization (non-blocking):', syncErr);
+      }
       navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/result`);
     } catch (e) {
       console.error(e);
@@ -589,6 +625,23 @@ export function TestRunSimulationAnalysisWorkspace({
           <span>&larr;</span> Kembali ke Kode Pengujian
         </button>
       </div>
+
+      {isReadOnly && (
+        <div className="flex items-center justify-between rounded-panel border border-border-default bg-surface px-4 py-2.5 text-xs shadow-sm">
+          <div className="flex items-center gap-2 text-text-secondary">
+            <span className="font-semibold text-text-primary">Status: Final</span>
+            <span>&bull;</span>
+            <span>Pengujian ini telah difinalisasi. Mode hanya-baca aktif — hasil tidak dapat diubah.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/result`)}
+            className="btn btn-secondary !min-h-[28px] !py-1 px-3 text-xs"
+          >
+            Buka Hasil &rarr;
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] items-start">
         {/* Technical Workbench */}

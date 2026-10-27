@@ -7,3 +7,4 @@ export { mockSpraybotService } from './local/mockSpraybotRepository';
 export * from './local/indexedDbCaptureAssetStore';
 export * from './remote/mockKodePengujianRemoteRepository';
 export * from './remote/mockCaptureMediaRemoteStore';
+export * from './remote/httpKodePengujianRemoteRepository';

@@ -22,6 +22,16 @@ export interface KodePengujianRemoteRepository {
    * Check if remote is reachable.
    */
   isOnline(): Promise<boolean>;
+
+  /**
+   * Test helper: Clear all mock server state.
+   */
+  clear(): void;
+
+  /**
+   * Test helper: Set online/offline status for testing.
+   */
+  setOnline(status: boolean): void;
 }
 
 /**

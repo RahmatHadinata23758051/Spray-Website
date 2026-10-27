@@ -277,6 +277,7 @@ export class LocalStorageKodePengujianRepository implements KodePengujianReposit
         const trIndex = promotedKp.testRuns.findIndex(t => t.id === testRunId);
         if (trIndex < 0) throw new TestRunNotFoundError(kpId, testRunId);
         const tr = promotedKp.testRuns[trIndex];
+        this.assertTestRunPatchAllowed(tr, patch);
         const updatedTr = this.applyTestRunPatch(tr, patch);
         const updatedKp: KodePengujian = {
           ...promotedKp,
@@ -297,17 +298,7 @@ export class LocalStorageKodePengujianRepository implements KodePengujianReposit
     if (trIndex < 0) throw new TestRunNotFoundError(kpId, testRunId);
     const tr = kp.testRuns[trIndex];
 
-    // Immutable final report guard
-    if (tr.finalReport && patch.finalReport) {
-      throw new DomainInvariantError(`TestRun ${testRunId} already has a final report. Finalized results are immutable.`);
-    }
-
-    // If status is FINALIZED, allow only metadata/notes updates
-    const allowedFinalizedFields = new Set(['notes', 'metadata', 'failureReason']);
-    const patchKeys = Object.keys(patch);
-    if (tr.status === 'FINALIZED' && patchKeys.some(k => !allowedFinalizedFields.has(k))) {
-      throw new DomainInvariantError(`TestRun ${testRunId} is FINALIZED. Cannot update field(s): ${patchKeys.filter(k => !allowedFinalizedFields.has(k)).join(', ')}.`);
-    }
+    this.assertTestRunPatchAllowed(tr, patch);
 
     const updatedTr = this.applyTestRunPatch(tr, patch);
 
@@ -345,6 +336,18 @@ export class LocalStorageKodePengujianRepository implements KodePengujianReposit
     kps[kpIndex] = updatedKp;
     writeKpAll(kps);
     return updatedKp;
+  }
+
+  private assertTestRunPatchAllowed(tr: TestRun, patch: Partial<UpdateTestRunInput>): void {
+    if (tr.finalReport && patch.finalReport) {
+      throw new DomainInvariantError(`TestRun ${tr.id} already has a final report. Finalized results are immutable.`);
+    }
+
+    const allowedFinalizedFields = new Set(['notes', 'metadata', 'failureReason']);
+    const patchKeys = Object.keys(patch);
+    if (tr.status === 'FINALIZED' && patchKeys.some(k => !allowedFinalizedFields.has(k))) {
+      throw new DomainInvariantError(`TestRun ${tr.id} is FINALIZED. Cannot update field(s): ${patchKeys.filter(k => !allowedFinalizedFields.has(k)).join(', ')}.`);
+    }
   }
 
   private applyTestRunPatch(tr: TestRun, patch: Partial<UpdateTestRunInput>): TestRun {

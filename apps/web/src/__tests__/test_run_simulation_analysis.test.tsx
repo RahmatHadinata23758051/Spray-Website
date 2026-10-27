@@ -557,4 +557,182 @@ describe('TestRun Simulation Analysis Workspace', () => {
     const report = tr.finalReport!;
     expect(() => finalizeDomain(refreshed!, tr.id, report)).toThrow(/already has a final report/);
   });
+
+  it('16. sync failure does not roll back local finalization or block navigation', async () => {
+    renderWorkspace();
+    await waitFor(() => {
+      const setPrimaryBtn = screen.getByRole('button', { name: /Jadikan Utama/ });
+      fireEvent.click(setPrimaryBtn);
+    });
+    await waitFor(() => {
+      const editBtn = screen.getByRole('button', { name: /Koreksi Pengukuran/ });
+      fireEvent.click(editBtn);
+    });
+    await waitFor(() => {
+      const applyBtn = screen.getByRole('button', { name: /Terapkan Pengukuran/ });
+      fireEvent.click(applyBtn);
+    });
+    await waitFor(() => {}, { timeout: 1000 });
+
+    const { syncService } = await import('../application/services');
+    vi.spyOn(syncService, 'queueSync').mockRejectedValueOnce(new Error('Network offline or sync unavailable'));
+
+    await waitFor(() => {
+      const finalizeBtn = screen.getByRole('button', { name: /Finalisasi Hasil/ });
+      fireEvent.click(finalizeBtn);
+    });
+    await waitFor(() => {}, { timeout: 2000 });
+
+    // Should still navigate to Result page despite sync failure
+    await waitFor(() => {
+      expect(screen.getByTestId('result-page')).toBeInTheDocument();
+    });
+
+    // Local repository must be successfully updated to FINALIZED
+    const refreshed = await kodePengujianRepository.get(kp.id);
+    const tr = refreshed!.testRuns.find(t => t.id === testRun.id)!;
+    expect(tr.status).toBe('FINALIZED');
+    expect(tr.finalReport).toBeDefined();
+    expect(tr.finalReport!.analysisSource).toBe('simulation');
+  });
+
+  it('17. real TestRun finalization remains blocked (canFinalizeTestRun ok: false)', async () => {
+    const { canFinalizeTestRun: canFinalize } = await import('@spray-paragon/domain');
+    // Create a real capture session on a test run
+    const realSession = {
+      scenario: 'nominal-01' as const,
+      captureMode: 'real' as const,
+      startedAt: '2026-10-26T10:00:00Z',
+      synchronizedMoments: [],
+      realSideFrames: [
+        { id: 'f-1', frameIndex: 0, elapsedMs: 10, capturedAt: '2026-10-26T10:00:00.010Z', camera: 'side' as const, assetId: 'asset-1' },
+        { id: 'f-2', frameIndex: 1, elapsedMs: 20, capturedAt: '2026-10-26T10:00:00.020Z', camera: 'side' as const, assetId: 'asset-2' },
+      ],
+      realSideBaseline: {
+        selectionMethod: 'initial-window' as const,
+        configuredWindowMs: 50,
+        startElapsedMs: 0,
+        endElapsedMs: 50,
+        frames: [
+          { frameId: 'f-1', frameIndex: 0, elapsedMs: 10, assetId: 'asset-1' },
+          { frameId: 'f-2', frameIndex: 1, elapsedMs: 20, assetId: 'asset-2' },
+        ],
+        selectedAt: '2026-10-26T10:00:05Z',
+      },
+    };
+
+    const realKp = {
+      ...kp,
+      testRuns: [
+        {
+          ...testRun,
+          status: 'ANALYZING' as const,
+          captureSession: realSession,
+          analysisDraft: {
+            calibration: {
+              side: {
+                camera: 'side' as const,
+                referenceDistanceMm: 100,
+                anchorA: { x: 50, y: 50 },
+                anchorB: { x: 150, y: 50 },
+                scaleMmPerPx: 1,
+                adjusted: false,
+                source: 'default' as const,
+                calibrationTimestamp: '2026-10-26T10:00:00Z',
+              },
+              front: {
+                camera: 'front' as const,
+                referenceDistanceMm: 100,
+                anchorA: { x: 50, y: 50 },
+                anchorB: { x: 150, y: 50 },
+                scaleMmPerPx: 1,
+                adjusted: false,
+                source: 'default' as const,
+                calibrationTimestamp: '2026-10-26T10:00:00Z',
+              },
+            },
+            primaryCaptureMomentId: 'f-1',
+            supportingCaptureMomentIds: [],
+            sideCorrections: {
+              'f-1': {
+                nozzleOriginPx: { x: 100, y: 100 },
+                sprayEndpointPx: { x: 300, y: 100 },
+                upperBoundaryPx: { x: 300, y: 50 },
+                lowerBoundaryPx: { x: 300, y: 150 },
+                verticalSpreadTopPx: { x: 200, y: 60 },
+                verticalSpreadBottomPx: { x: 200, y: 140 },
+                directionReferencePx: { x: 300, y: 100 },
+              },
+            },
+            frontCorrections: {},
+            updatedAt: '2026-10-26T10:00:10Z',
+          },
+        },
+      ],
+    };
+
+    const check = canFinalize(realKp, testRun.id);
+    expect(check.ok).toBe(false);
+    if (!check.ok) {
+      expect(check.reasons.some(r => r.includes('Side CV analysis pipeline not integrated'))).toBe(true);
+    }
+  });
+
+  it('18. finalized simulation workspace renders read-only notice and link to Result', async () => {
+    // Finalize the run first
+    renderWorkspace();
+    await waitFor(() => {
+      const setPrimaryBtn = screen.getByRole('button', { name: /Jadikan Utama/ });
+      fireEvent.click(setPrimaryBtn);
+    });
+    await waitFor(() => {
+      const editBtn = screen.getByRole('button', { name: /Koreksi Pengukuran/ });
+      fireEvent.click(editBtn);
+    });
+    await waitFor(() => {
+      const applyBtn = screen.getByRole('button', { name: /Terapkan Pengukuran/ });
+      fireEvent.click(applyBtn);
+    });
+    await waitFor(() => {}, { timeout: 1000 });
+
+    await waitFor(() => {
+      const finalizeBtn = screen.getByRole('button', { name: /Finalisasi Hasil/ });
+      fireEvent.click(finalizeBtn);
+    });
+    await waitFor(() => {}, { timeout: 2000 });
+
+    // Re-render workspace with the now-FINALIZED testRun
+    const updatedKp = (await kodePengujianRepository.get(kp.id))!;
+    const updatedTr = updatedKp.testRuns.find(t => t.id === testRun.id)!;
+
+    render(
+      <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/analysis`]}>
+        <Routes>
+          <Route
+            path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/analysis"
+            element={
+              <TestRunSimulationAnalysisWorkspace
+                kp={updatedKp}
+                sample={sample}
+                testRun={updatedTr}
+                onBack={vi.fn()}
+              />
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Should show read-only banner
+    await waitFor(() => {
+      expect(screen.getByText(/Pengujian ini telah difinalisasi\. Mode hanya-baca aktif/)).toBeInTheDocument();
+      expect(screen.getByText('Hanya Baca')).toBeInTheDocument();
+    });
+
+    // Should NOT show Finalisasi Hasil action
+    expect(screen.queryByRole('button', { name: /Finalisasi Hasil/ })).not.toBeInTheDocument();
+
+    // Should show Buka Hasil link/button
+    expect(screen.getAllByRole('button', { name: /Buka Hasil/i }).length).toBeGreaterThan(0);
+  });
 });
