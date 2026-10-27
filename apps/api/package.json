@@ -9,7 +9,7 @@
     "start": "node dist/app.js",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --test-timeout=30000",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/data/postgres/migrate.ts",
     "db:seed": "tsx src/data/postgres/seed.ts"

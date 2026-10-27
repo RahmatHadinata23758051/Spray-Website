@@ -2,9 +2,9 @@ import type { FastifyRequest } from 'fastify';
 import crypto from 'node:crypto';
 import type { AuthRepository } from '../../application/ports/authRepository';
 
-export function createAuthMiddleware(repo: AuthRepository) {
-  const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
+export const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
 
+export function createAuthMiddleware(repo: AuthRepository) {
   return {
     async getCurrentUser(request: FastifyRequest) {
       const token = request.cookies.spraybot_session;

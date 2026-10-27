@@ -8,7 +8,7 @@ if (!connectionString) throw new Error('DATABASE_URL required');
 const client = postgres(connectionString, { max: 1 });
 const db = drizzle(client);
 
-await migrate(db, { migrationsFolder: './db/migrations' });
+await migrate(db, { migrationsFolder: './drizzle' });
 await client.end();
 
 console.log('Migrations complete');
