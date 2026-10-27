@@ -44,6 +44,7 @@ export interface KodePengujian {
   testRuns: TestRun[];
   createdAt: string;
   updatedAt: string;
+  version: number;
 }
 
 export type SampleStatus = 'CREATED' | 'TESTED' | 'EXCLUDED';
@@ -180,6 +181,7 @@ export function createKodePengujian(input: {
     testRuns: [],
     createdAt: now,
     updatedAt: now,
+    version: 1,
   };
 }
 
@@ -589,6 +591,7 @@ export function adaptBatchToKodePengujian(batch: Batch): { kodePengujian: KodePe
     testRuns: [testRun],
     createdAt: batch.createdAt,
     updatedAt: batch.updatedAt,
+    version: 1,
   };
 
   // Freeze all levels for read-only guarantee.

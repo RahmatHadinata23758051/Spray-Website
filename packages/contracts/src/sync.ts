@@ -80,6 +80,7 @@ export const RemoteSyncPayloadSchema = z.object({
     testRuns: z.array(z.unknown()),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
+    version: z.number().int().positive().optional(),
     sync: SyncMetadataSchema,
   }),
   mediaManifest: z.array(RemoteMediaDescriptorSchema),
