@@ -259,6 +259,59 @@ export type ExternalSideAnalysisResult = {
 };
 
 /**
+ * Automatic Side analysis result — genuine CV pipeline output.
+ * Separate from operator corrections (sideCorrections).
+ * Keyed by source frameId in analysisDraft.sideAutomaticAnalysis.
+ */
+export type SideAutomaticAnalysisResult = {
+  /** Source frame identity (traceability) */
+  sourceFrame: {
+    frameId: string;
+    frameIndex: number;
+    elapsedMs: number;
+    assetId: string;
+  };
+
+  /** Method provenance — OUTPUT side (what actually ran) */
+  analysisMethod: string;
+  analysisVersion: string;
+
+  /** Pixel geometry (always present) */
+  geometry: SidePixelGeometry;
+
+  /** Calibrated measurements (present when calibration valid) */
+  measurements: SideFinalMeasurements | null;
+
+  /** Segmentation evidence reference (not binary) */
+  segmentation: {
+    maskAssetId: string;
+    polygonHint?: Point[];
+  } | null;
+
+  /** Quality metadata — no generic confidence until CV team defines semantics */
+  quality: {
+    qcStatus: 'pending' | 'passed' | 'failed';
+    metrics?: Record<string, number>;
+    issues?: string[];
+  };
+
+  /** Calibration actually used by pipeline (may differ from input if auto-recalibrated) */
+  calibrationUsed: {
+    referenceDistanceMm: number;
+    anchorA: Point;
+    anchorB: Point;
+    scaleMmPerPx: number;
+    wasAutoRecalibrated: boolean;
+  };
+
+  /** Pipeline warnings */
+  warnings?: string[];
+
+  /** Timestamp */
+  producedAt: string;
+};
+
+/**
  * Real Side analysis input. This replaces the synchronized-moment assumption
  * for real captures: there is no Front frame and no fabricated sync metadata.
  * It references persisted binaries by assetId only; no Blob or ObjectURL.

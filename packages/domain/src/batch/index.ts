@@ -1,5 +1,5 @@
 import type { FixtureScenario, SynchronizedAnalysisFrame, RealSideCaptureFrameMetadata, RealSideBaselineSelection, RealSideBaselineSelectionMethod, CaptureVideoMetadata } from '../types';
-import type { CalibrationSnapshot, FinalAnalysisReport, FrontPixelGeometry, SidePixelGeometry } from '../analysis';
+import type { CalibrationSnapshot, FinalAnalysisReport, FrontPixelGeometry, SidePixelGeometry, SideAutomaticAnalysisResult } from '../analysis';
 
 export class InvalidLifecycleTransitionError extends Error {
   constructor(message: string) {
@@ -83,8 +83,11 @@ export interface BatchAnalysisDraft {
   };
   primaryCaptureMomentId: string | null;
   supportingCaptureMomentIds: string[];
+  /** Operator corrections (existing) */
   sideCorrections: Record<string, SidePixelGeometry>;
   frontCorrections: Record<string, FrontPixelGeometry>;
+  /** Automatic analysis results from CV pipeline (NEW - genuine automatic evidence) */
+  sideAutomaticAnalysis?: Record<string, SideAutomaticAnalysisResult>;
   updatedAt: string;
 }
 
