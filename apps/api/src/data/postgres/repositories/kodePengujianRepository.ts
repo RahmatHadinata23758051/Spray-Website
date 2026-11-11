@@ -13,6 +13,7 @@ import type {
   DeviceConfiguration,
   ExecutionMeasurements,
   OperationalDerivedMetrics,
+  WizardProgress,
 } from '@spray-paragon/domain';
 import type { CreateKodePengujianInput, KodePengujianParentMetadata, CreateSampleInput, UpdateSampleInput, CreateTestRunInput, UpdateTestRunInput } from '../../../application/ports/kodePengujianRepository';
 import type { RemoteSyncPayload, RemoteSyncResponse } from '@spray-paragon/contracts';
@@ -23,6 +24,7 @@ import { DomainInvariantError } from '@spray-paragon/domain';
 
 function buildKpMetadata(meta?: Record<string, unknown>, fields?: Partial<KodePengujianParentMetadata>): Record<string, unknown> {
   const result: Record<string, unknown> = { ...(meta || {}) };
+  if (fields?.formulaNumber !== undefined) result.formulaNumber = fields.formulaNumber;
   if (fields?.kuf !== undefined) result.kuf = fields.kuf;
   if (fields?.trialObjective !== undefined) result.trialObjective = fields.trialObjective;
   if (fields?.benchmark !== undefined) result.benchmark = fields.benchmark;
@@ -40,6 +42,7 @@ function buildSampleMetadata(meta?: Record<string, unknown>, fields?: Partial<Up
 
 function buildTestRunMetadata(meta?: Record<string, unknown>, fields?: Partial<UpdateTestRunInput | CreateTestRunInput>): Record<string, unknown> {
   const result: Record<string, unknown> = { ...(meta || {}) };
+  if (fields?.wizardProgress !== undefined) result.wizardProgress = fields.wizardProgress;
   if (fields?.executionMeasurements !== undefined) result.executionMeasurements = fields.executionMeasurements;
   if (fields?.operationalDerivedMetrics !== undefined) result.operationalDerivedMetrics = fields.operationalDerivedMetrics;
   if (fields?.observationObjectives !== undefined) result.observationObjectives = fields.observationObjectives;
@@ -57,6 +60,7 @@ function mapKpRow(row: typeof kodePengujian.$inferSelect): KodePengujian {
     defaultRecipeId: row.defaultRecipeId ?? undefined,
     defaultRecipeSnapshot: row.defaultRecipeSnapshot ?? undefined,
     productLot: row.productLot ?? undefined,
+    formulaNumber: (meta.formulaNumber as string) ?? undefined,
     testPeriod: row.testPeriod ?? undefined,
     operatorId: row.operatorId,
     operatorName: row.operatorName,
@@ -111,6 +115,7 @@ function mapTestRunRow(row: typeof testRuns.$inferSelect): TestRun {
     captureSession: row.captureSession as CaptureSession | undefined,
     analysisDraft: row.analysisDraft as BatchAnalysisDraft | undefined,
     finalReport: row.finalReport as FinalAnalysisReport | undefined,
+    wizardProgress: (meta.wizardProgress as WizardProgress) ?? undefined,
     executionMeasurements: (meta.executionMeasurements as ExecutionMeasurements) ?? undefined,
     operationalDerivedMetrics: (meta.operationalDerivedMetrics as OperationalDerivedMetrics) ?? undefined,
     observationObjectives: (meta.observationObjectives as ObservationObjective[]) ?? undefined,
@@ -206,6 +211,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       defaultRecipeId: input.defaultRecipeId,
       defaultRecipeSnapshot: input.defaultRecipeSnapshot,
       productLot: input.productLot,
+      formulaNumber: input.formulaNumber,
       testPeriod: input.testPeriod,
       operatorId: input.operatorId,
       operatorName: input.operatorName,
@@ -361,6 +367,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       operatorId: input.operatorId,
       operatorName: input.operatorName,
       repetitionIndex: input.repetitionIndex,
+      wizardProgress: input.wizardProgress,
       executionMeasurements: input.executionMeasurements,
       operationalDerivedMetrics: input.operationalDerivedMetrics,
       observationObjectives: input.observationObjectives,
@@ -401,6 +408,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       operationalDerivedMetrics,
       observationObjectives,
       acquisitionDate,
+      wizardProgress,
       ...restPatch
     } = patch;
 
@@ -411,6 +419,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       operationalDerivedMetrics,
       observationObjectives,
       acquisitionDate,
+      wizardProgress,
     } as unknown as Record<string, unknown>);
 
     const updateData: Partial<typeof testRuns.$inferInsert> = {

@@ -205,6 +205,7 @@ export function TestRunResultPage() {
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between"><dt className="text-text-muted">ID</dt><dd className="font-mono text-text-primary">{kp.id}</dd></div>
                 <div className="flex justify-between"><dt className="text-text-muted">Produk</dt><dd className="font-medium text-text-primary">{kp.productSnapshot.productName} ({kp.productSnapshot.productCode})</dd></div>
+                <div className="flex justify-between"><dt className="text-text-muted">No. Formula</dt><dd className="font-mono text-text-primary">{kp.formulaNumber || (kp.metadata?.formulaNumber as string) || '—'}</dd></div>
                 <div className="flex justify-between"><dt className="text-text-muted">Lot Produk</dt><dd className="font-mono text-text-secondary">{kp.productLot || '—'}</dd></div>
                 <div className="flex justify-between"><dt className="text-text-muted">Periode Uji</dt><dd className="font-mono text-text-secondary">{kp.testPeriod || '—'}</dd></div>
                 <div className="flex justify-between"><dt className="text-text-muted">Operator</dt><dd className="font-medium text-text-primary">{kp.operatorName}</dd></div>
@@ -232,6 +233,86 @@ export function TestRunResultPage() {
             </div>
           </div>
         </Panel>
+
+        {/* Operational Metrics & Measurements Panel (Authoritative Snapshot) */}
+        {report.operationalMetrics && (() => {
+          const raw = report.operationalMetrics as {
+            measurements?: Record<string, unknown>;
+            derived?: {
+              dischargedMassG?: number;
+              dischargeRateGPerS?: number;
+              pressureDropBar?: number;
+            };
+            dischargedMassG?: number;
+            dischargeRateGPerS?: number;
+            pressureDropBar?: number;
+          };
+          const derived = raw.derived ?? (raw.dischargedMassG !== undefined ? raw : undefined);
+          const m = raw.measurements ?? {};
+
+          return (
+            <Panel title="Metrik & Pengukuran Operasional (Operational Snapshot)">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 bg-surface-subtle rounded border border-border-default">
+                    <div className="text-xs text-text-muted">Discharged Mass</div>
+                    <div className="font-mono text-xl font-bold text-primary mt-1">
+                      {derived?.dischargedMassG !== undefined ? `${derived.dischargedMassG.toFixed(3)} g` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-3 bg-surface-subtle rounded border border-border-default">
+                    <div className="text-xs text-text-muted">Discharge Rate</div>
+                    <div className="font-mono text-xl font-bold text-primary mt-1">
+                      {derived?.dischargeRateGPerS !== undefined ? `${derived.dischargeRateGPerS.toFixed(3)} g/s` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-3 bg-surface-subtle rounded border border-border-default">
+                    <div className="text-xs text-text-muted">Pressure Drop</div>
+                    <div className="font-mono text-xl font-bold text-primary mt-1">
+                      {derived?.pressureDropBar !== undefined ? `${derived.pressureDropBar.toFixed(2)} bar` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-3 bg-surface-subtle rounded border border-border-default">
+                    <div className="text-xs text-text-muted">Kebocoran</div>
+                    <div className="font-mono text-xl font-bold mt-1">
+                      {m.leakage === 'Tidak' ? (
+                        <span className="text-semantic-success">Tidak</span>
+                      ) : m.leakage === 'Ya' ? (
+                        <span className="text-semantic-danger">Ya</span>
+                      ) : (
+                        '—'
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-surface-subtle rounded border border-border-default">
+                  <h5 className="font-semibold text-text-primary text-xs uppercase tracking-wider mb-2">
+                    Detail Pengukuran Fisik & Sensor
+                  </h5>
+                  <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+                    <div>
+                      <dt className="text-text-muted font-sans">Bobot Awal / Akhir</dt>
+                      <dd className="text-text-primary mt-0.5">{String(m.initialGrossWeightG ?? '—')} g / {String(m.finalGrossWeightG ?? '—')} g</dd>
+                    </div>
+                    <div>
+                      <dt className="text-text-muted font-sans">Tekanan Awal / Akhir</dt>
+                      <dd className="text-text-primary mt-0.5">{String(m.initialPressureBar ?? '—')} bar / {String(m.finalPressureBar ?? '—')} bar</dd>
+                    </div>
+                    <div>
+                      <dt className="text-text-muted font-sans">Durasi Tekan Aktual</dt>
+                      <dd className="text-text-primary mt-0.5">{m.actualPressDurationS !== undefined ? `${String(m.actualPressDurationS)} s` : '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-text-muted font-sans">Kedalaman Stroke</dt>
+                      <dd className="text-text-primary mt-0.5">{m.actualStrokeDepth !== undefined ? `${String(m.actualStrokeDepth)}` : '—'}</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+            </Panel>
+          );
+        })()}
 
         {/* Primary Capture Panel */}
         <Panel title="Tangkapan Utama">

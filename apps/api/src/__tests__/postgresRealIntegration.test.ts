@@ -647,4 +647,155 @@ describe('Real PostgreSQL Integration & Verification (P6.1)', () => {
     expect(columnNames).not.toContain('binary');
     expect(columnNames).not.toContain('base64');
   });
+
+  it('client field round-trip test (KP -> Sample -> TestRun) persists formulaNumber, wizardProgress, and execution measurements', async () => {
+    const kpId = 'KP-REAL-CLIENT-ROUNDTRIP-01';
+    const sampleId = 'SMP-REAL-CLIENT-01';
+    const testRunId = 'TR-REAL-CLIENT-01';
+
+    // 1. Create KP with formulaNumber
+    const createdKp = await repo.create({
+      id: kpId,
+      productId: 'PRD-MIST-01',
+      productSnapshot: { productCode: 'PRD-MIST-01', productName: 'Hydra Mist 50ml' },
+      formulaNumber: 'FOR-PARAGON-2026-X',
+      operatorId: userA.id,
+      operatorName: userA.displayName,
+      productLot: 'LOT-999',
+    });
+    expect(createdKp.formulaNumber).toBe('FOR-PARAGON-2026-X');
+
+    // 2. Add Sample with storageCondition & bottlePosition
+    const { sample } = await repo.addSample(kpId, {
+      id: sampleId,
+      sampleCode: 'SMP-CLI-01',
+      storageCondition: 'Oven 40',
+      bottlePosition: 'Tidur',
+      usagePattern: 'Berulang',
+    });
+    expect(sample.storageCondition).toBe('Oven 40');
+    expect(sample.bottlePosition).toBe('Tidur');
+
+    // 3. Add TestRun with wizardProgress & execution measurements
+    const { testRun } = await repo.addTestRun(kpId, {
+      id: testRunId,
+      sampleId,
+      recipeId: 'rcp-1',
+      recipeSnapshot: { name: 'Standard Actuation', forceSetpointN: 30, pressDurationMs: 1200, strokeMm: 10 },
+      setpoints: { forceSetpointN: 30, pressDurationMs: 1200, strokeMm: 10, bottleHeightMm: 125 },
+      fixture: 'nominal-01',
+      operatorId: userA.id,
+      operatorName: userA.displayName,
+      wizardProgress: {
+        step1Completed: true,
+        step2Completed: true,
+      },
+      executionMeasurements: {
+        initialGrossWeightG: 120.5,
+        finalGrossWeightG: 119.5,
+        actualPressDurationS: 1.2,
+        actualStrokeDepth: 10.0,
+        leakage: 'Tidak',
+      },
+      observationObjectives: ['Panjang lintasan', 'Sebaran'],
+    });
+    expect(testRun.wizardProgress?.step1Completed).toBe(true);
+    expect(testRun.executionMeasurements?.actualStrokeDepth).toBe(10.0);
+
+    // 4. Update TestRun with new wizard progress step
+    const updatedTr = await repo.updateTestRun(kpId, testRunId, {
+      wizardProgress: {
+        step1Completed: true,
+        step2Completed: true,
+        step3Completed: true,
+      },
+    });
+    expect(updatedTr.wizardProgress?.step3Completed).toBe(true);
+
+    // 5. Reload KP directly from repo (Postgres queries)
+    const reloaded = await repo.get(kpId);
+    expect(reloaded).not.toBeNull();
+    expect(reloaded?.formulaNumber).toBe('FOR-PARAGON-2026-X');
+    const reloadedSample = reloaded?.samples.find(s => s.id === sampleId);
+    expect(reloadedSample?.storageCondition).toBe('Oven 40');
+    expect(reloadedSample?.bottlePosition).toBe('Tidur');
+    const reloadedTr = reloaded?.testRuns.find(t => t.id === testRunId);
+    expect(reloadedTr?.wizardProgress?.step3Completed).toBe(true);
+    expect(reloadedTr?.executionMeasurements?.leakage).toBe('Tidak');
+    expect(reloadedTr?.executionMeasurements?.actualStrokeDepth).toBe(10.0);
+  });
+
+  it('finalization round-trip test verifies operationalMetrics snapshot and immutability', async () => {
+    const kpId = 'KP-REAL-FINALIZE-01';
+    const sampleId = 'SMP-REAL-FIN-01';
+    const testRunId = 'TR-REAL-FIN-01';
+
+    await repo.create({
+      id: kpId,
+      productId: 'PRD-MIST-01',
+      productSnapshot: { productCode: 'PRD-MIST-01', productName: 'Hydra Mist 50ml' },
+      operatorId: userA.id,
+      operatorName: userA.displayName,
+    });
+
+    await repo.addSample(kpId, {
+      id: sampleId,
+      sampleCode: 'SMP-FIN-01',
+    });
+
+    await repo.addTestRun(kpId, {
+      id: testRunId,
+      sampleId,
+      recipeId: 'rcp-1',
+      recipeSnapshot: { name: 'Standard Actuation', forceSetpointN: 25, pressDurationMs: 1000, strokeMm: 10 },
+      setpoints: { forceSetpointN: 25, pressDurationMs: 1000, strokeMm: 10 },
+      fixture: 'nominal-01',
+      operatorId: userA.id,
+      operatorName: userA.displayName,
+      executionMeasurements: {
+        initialGrossWeightG: 100.0,
+        finalGrossWeightG: 98.5,
+        actualPressDurationS: 1.0,
+        leakage: 'Tidak',
+      },
+    });
+
+    // Finalize report
+    const finalizedReport: FinalAnalysisReport = {
+      ...mockFinalReport,
+      testId: testRunId,
+      operationalMetrics: {
+        measurements: {
+          initialGrossWeightG: 100.0,
+          finalGrossWeightG: 98.5,
+          actualPressDurationS: 1.0,
+          leakage: 'Tidak',
+        },
+        derived: {
+          dischargedMassG: 1.5,
+          dischargeRateGPerS: 1.5,
+        },
+      },
+    };
+
+    const finalizedTr = await repo.updateTestRun(kpId, testRunId, {
+      status: 'FINALIZED',
+      finalReport: finalizedReport,
+    });
+    expect(finalizedTr.status).toBe('FINALIZED');
+    expect(finalizedTr.finalReport?.operationalMetrics?.derived?.dischargedMassG).toBe(1.5);
+
+    // Attempting to mutate non-allowed fields on finalized TestRun must throw DomainInvariantError
+    await expect(
+      repo.updateTestRun(kpId, testRunId, {
+        setpoints: { forceSetpointN: 50, pressDurationMs: 2000, strokeMm: 15 },
+      })
+    ).rejects.toThrow();
+
+    // Notes can still be updated
+    const updatedNotesTr = await repo.updateTestRun(kpId, testRunId, {
+      notes: 'Updated operator notes post-finalization',
+    });
+    expect(updatedNotesTr.notes).toBe('Updated operator notes post-finalization');
+  });
 });

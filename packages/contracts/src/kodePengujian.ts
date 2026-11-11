@@ -52,6 +52,23 @@ export type StorageCondition = z.infer<typeof StorageConditionSchema>;
 export const LeakageStatusSchema = z.enum(['Ya', 'Tidak']);
 export type LeakageStatus = z.infer<typeof LeakageStatusSchema>;
 
+export const ObservationObjectiveSchema = z.enum([
+  'Panjang lintasan',
+  'Sebaran',
+  'Sudut kontak',
+  'Kecepatan pengeringan',
+  'Distribusi droplet',
+]);
+export type ObservationObjective = z.infer<typeof ObservationObjectiveSchema>;
+
+export const WizardProgressSchema = z.object({
+  step1Completed: z.boolean().optional(),
+  step2Completed: z.boolean().optional(),
+  step3Completed: z.boolean().optional(),
+  step4Completed: z.boolean().optional(),
+});
+export type WizardProgress = z.infer<typeof WizardProgressSchema>;
+
 export const AerosolPackagingSpecSchema = z.object({
   actuatorCode: z.string().optional(),
   canOrBottleCode: z.string().optional(),
@@ -112,6 +129,7 @@ export const CreateKodePengujianRequestSchema = z.object({
   defaultRecipeId: z.string().optional(),
   defaultRecipeSnapshot: RecipeSnapshotSchema.optional(),
   productLot: z.string().optional(),
+  formulaNumber: z.string().optional(),
   testPeriod: z.string().optional(),
   operatorId: z.string().uuid().optional(),
   operatorName: z.string().optional(),
@@ -122,7 +140,7 @@ export const CreateKodePengujianRequestSchema = z.object({
   trialObjective: z.string().optional(),
   benchmark: z.string().optional(),
   trialType: TrialTypeSchema.optional(),
-  observationObjectives: z.array(z.string()).optional(),
+  observationObjectives: z.array(z.union([ObservationObjectiveSchema, z.string()])).optional(),
   notes: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
 });
@@ -131,6 +149,7 @@ export type CreateKodePengujianRequest = z.infer<typeof CreateKodePengujianReque
 
 export const UpdateKodePengujianRequestSchema = z.object({
   productLot: z.string().optional(),
+  formulaNumber: z.string().optional(),
   testPeriod: z.string().optional(),
   calculationStandard: z.string().optional(),
   storageCondition: z.string().optional(),
@@ -139,7 +158,7 @@ export const UpdateKodePengujianRequestSchema = z.object({
   trialObjective: z.string().optional(),
   benchmark: z.string().optional(),
   trialType: TrialTypeSchema.optional(),
-  observationObjectives: z.array(z.string()).optional(),
+  observationObjectives: z.array(z.union([ObservationObjectiveSchema, z.string()])).optional(),
   notes: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
   defaultRecipeId: z.string().optional(),
@@ -189,7 +208,8 @@ export const CreateTestRunRequestSchema = z.object({
   repetitionIndex: z.number().int().nonnegative().optional(),
   executionMeasurements: ExecutionMeasurementsSchema.optional(),
   operationalDerivedMetrics: OperationalDerivedMetricsSchema.optional(),
-  observationObjectives: z.array(z.string()).optional(),
+  observationObjectives: z.array(z.union([ObservationObjectiveSchema, z.string()])).optional(),
+  wizardProgress: WizardProgressSchema.optional(),
   acquisitionDate: z.string().optional(),
   notes: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
@@ -201,7 +221,8 @@ export const UpdateTestRunRequestSchema = z.object({
   setpoints: SetpointsSchema.optional(),
   executionMeasurements: ExecutionMeasurementsSchema.optional(),
   operationalDerivedMetrics: OperationalDerivedMetricsSchema.optional(),
-  observationObjectives: z.array(z.string()).optional(),
+  observationObjectives: z.array(z.union([ObservationObjectiveSchema, z.string()])).optional(),
+  wizardProgress: WizardProgressSchema.optional(),
   acquisitionDate: z.string().optional(),
   captureSession: z.unknown().optional(),
   analysisDraft: z.unknown().optional(),
@@ -225,6 +246,7 @@ export const KodePengujianResponseSchema = z.object({
   defaultRecipeId: z.string().optional(),
   defaultRecipeSnapshot: RecipeSnapshotSchema.optional(),
   productLot: z.string().optional(),
+  formulaNumber: z.string().optional(),
   testPeriod: z.string().optional(),
   operatorId: z.string().uuid(),
   operatorName: z.string(),

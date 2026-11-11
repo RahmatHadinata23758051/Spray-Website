@@ -237,19 +237,19 @@ export function Step04ExecutionData({
         </FormField>
 
         <FormField
-          label="Kedalaman Stroke Aktual (mm/s)"
+          label="Kedalaman Stroke Aktual"
           hint={
             <span className="inline-flex items-center gap-1">
-              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">HARDWARE</span>
-              <span>Label client (ambiguitas unit mm vs s)</span>
+              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL — integrasi hardware pending</span>
+              <span>Satuan menunggu konfirmasi Paragon</span>
             </span>
           }
         >
           <Input
             type="number"
             step="0.1"
-            value={formData.actualStrokeDepthMm}
-            onChange={(e) => onChange({ actualStrokeDepthMm: e.target.value })}
+            value={formData.actualStrokeDepth}
+            onChange={(e) => onChange({ actualStrokeDepth: e.target.value })}
             disabled={isReadOnly}
             placeholder="Contoh: 10.0"
             mono
@@ -313,13 +313,20 @@ export function Step04ExecutionData({
 
       {/* Live Operational Metrics Preview */}
       {liveMetrics && (
-        <div className="border border-primary/20 bg-primary/5 rounded-md p-4">
-          <div className="text-xs font-bold uppercase tracking-wider text-primary mb-3 flex items-center justify-between">
+        <div className="border border-primary/20 bg-primary/5 rounded-md p-4 space-y-3">
+          <div className="text-xs font-bold uppercase tracking-wider text-primary flex items-center justify-between">
             <span>Kalkulasi Metrik Operasional (Live Derived Metrics)</span>
             <span className="text-[10px] font-mono text-text-muted font-normal">
               Formula Standar Paragon
             </span>
           </div>
+          {((liveMetrics.dischargedMassG !== undefined && liveMetrics.dischargedMassG < 0) ||
+            (liveMetrics.pressureDropBar !== undefined && liveMetrics.pressureDropBar < 0)) && (
+            <div className="bg-semantic-warning/10 border border-semantic-warning/30 rounded p-2 text-xs text-semantic-warning flex items-center gap-2">
+              <span className="font-bold">Perhatian:</span>
+              <span>Terdeteksi nilai negatif (kemungkinan drift tare atau anomali sensor). Nilai bertanda negatif dipertahankan sesuai formula analitik.</span>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-surface p-3 rounded border border-border-subtle">
               <div className="text-[11px] text-text-muted">Discharged Mass</div>

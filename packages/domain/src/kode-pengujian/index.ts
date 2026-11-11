@@ -91,6 +91,13 @@ export interface OperationalDerivedMetrics {
   pressureDropBar?: number;
 }
 
+export interface WizardProgress {
+  step1Completed?: boolean;
+  step2Completed?: boolean;
+  step3Completed?: boolean;
+  step4Completed?: boolean;
+}
+
 /**
  * Kode Pengujian — parent context containing shared formula/material context
  * and multiple Samples with their TestRuns.
@@ -105,6 +112,7 @@ export interface KodePengujian {
   defaultRecipeId?: string;
   defaultRecipeSnapshot?: { name: string; forceSetpointN: number; pressDurationMs: number; strokeMm: number };
   productLot?: string;
+  formulaNumber?: string;
   testPeriod?: string;
   operatorId: string;
   operatorName: string;
@@ -116,7 +124,7 @@ export interface KodePengujian {
   trialObjective?: string;
   benchmark?: string;
   trialType?: TrialType;
-  observationObjectives?: string[];
+  observationObjectives?: ObservationObjective[] | string[];
   metadata?: Record<string, unknown>;
   sync?: SyncMetadata;
   samples: Sample[];
@@ -166,7 +174,8 @@ export interface TestRun {
   finalReport?: FinalAnalysisReport;
   executionMeasurements?: ExecutionMeasurements;
   operationalDerivedMetrics?: OperationalDerivedMetrics;
-  observationObjectives?: string[];
+  observationObjectives?: ObservationObjective[] | string[];
+  wizardProgress?: WizardProgress;
   acquisitionDate?: string;
   failureReason?: string;
   repetitionIndex?: number;
@@ -229,6 +238,7 @@ export function createKodePengujian(input: {
   defaultRecipeId?: string;
   defaultRecipeSnapshot?: { name: string; forceSetpointN: number; pressDurationMs: number; strokeMm: number };
   productLot?: string;
+  formulaNumber?: string;
   testPeriod?: string;
   operatorId: string;
   operatorName: string;
@@ -240,7 +250,7 @@ export function createKodePengujian(input: {
   trialObjective?: string;
   benchmark?: string;
   trialType?: TrialType;
-  observationObjectives?: string[];
+  observationObjectives?: ObservationObjective[] | string[];
   metadata?: Record<string, unknown>;
   id?: string;
   now?: string;
@@ -254,6 +264,7 @@ export function createKodePengujian(input: {
     defaultRecipeId: input.defaultRecipeId,
     defaultRecipeSnapshot: input.defaultRecipeSnapshot,
     productLot: input.productLot,
+    formulaNumber: input.formulaNumber,
     testPeriod: input.testPeriod,
     operatorId: input.operatorId,
     operatorName: input.operatorName,
@@ -347,9 +358,10 @@ export function createTestRun(kp: KodePengujian, input: {
   operatorId: string;
   operatorName: string;
   repetitionIndex?: number;
+  wizardProgress?: WizardProgress;
   executionMeasurements?: ExecutionMeasurements;
   operationalDerivedMetrics?: OperationalDerivedMetrics;
-  observationObjectives?: string[];
+  observationObjectives?: ObservationObjective[] | string[];
   acquisitionDate?: string;
   notes?: string;
   metadata?: Record<string, unknown>;
@@ -373,6 +385,7 @@ export function createTestRun(kp: KodePengujian, input: {
     operatorId: input.operatorId,
     operatorName: input.operatorName,
     repetitionIndex,
+    wizardProgress: input.wizardProgress,
     executionMeasurements: input.executionMeasurements,
     operationalDerivedMetrics: input.operationalDerivedMetrics,
     observationObjectives: input.observationObjectives,
@@ -567,6 +580,33 @@ export function finalizeTestRun(kp: KodePengujian, testRunId: string, report: Fi
     throw new DomainInvariantError(`Cannot finalize: TestRun ${testRunId} is in status ${tr.status}, expected REVIEW_REQUIRED or ANALYZING.`);
   }
 
+  const sample = kp.samples.find(s => s.id === tr.sampleId);
+  const isAerosol = sample?.deviceConfiguration?.deviceType === 'Aerosol';
+
+  // Authoritative operational metrics snapshot: recalculate from execution measurements
+  const measurements: ExecutionMeasurements | undefined = tr.executionMeasurements
+    ? { ...tr.executionMeasurements }
+    : report.operationalMetrics?.measurements;
+
+  let derived: OperationalDerivedMetrics | undefined = report.operationalMetrics?.derived;
+  if (measurements) {
+    const dischargedMassG = calculateDischargedMass(measurements.initialGrossWeightG, measurements.finalGrossWeightG);
+    const dischargeRateGPerS = calculateDischargeRate(dischargedMassG, measurements.actualPressDurationS);
+    const pressureDropBar = calculatePressureDrop(measurements.initialPressureBar, measurements.finalPressureBar, isAerosol);
+    if (dischargedMassG !== undefined || dischargeRateGPerS !== undefined || pressureDropBar !== undefined) {
+      derived = {
+        dischargedMassG,
+        dischargeRateGPerS,
+        pressureDropBar,
+      };
+    }
+  }
+
+  const finalReportWithMetrics: FinalAnalysisReport = {
+    ...report,
+    operationalMetrics: measurements || derived ? { measurements, derived } : undefined,
+  };
+
   return {
     ...kp,
     samples: kp.samples.map(s =>
@@ -574,7 +614,7 @@ export function finalizeTestRun(kp: KodePengujian, testRunId: string, report: Fi
     ),
     testRuns: kp.testRuns.map(t =>
       t.id === testRunId
-        ? { ...t, finalReport: report, status: 'FINALIZED', completedAt: now, updatedAt: now }
+        ? { ...t, finalReport: finalReportWithMetrics, status: 'FINALIZED', completedAt: now, updatedAt: now }
         : t
     ),
     updatedAt: now,

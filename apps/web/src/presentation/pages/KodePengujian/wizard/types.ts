@@ -21,6 +21,14 @@ import {
 
 export type WizardStep = 1 | 2 | 3 | 4 | 5;
 
+export interface ForcePresetProvider {
+  getNormalPresets(): number[];
+}
+
+export const defaultForcePresetProvider: ForcePresetProvider = {
+  getNormalPresets: () => [20, 25, 30, 35, 40, 50],
+};
+
 export interface WizardFormData {
   // Step 01: Identification
   productName: string;
@@ -69,7 +77,7 @@ export interface WizardFormData {
   initialGrossWeightG: string;
   finalGrossWeightG: string;
   actualPressDurationS: string;
-  actualStrokeDepthMm: string;
+  actualStrokeDepth: string;
   leakage: LeakageStatus | '';
   dryingTimeS: string;
   observationNotes: string;
@@ -98,7 +106,7 @@ export function initWizardFormData(
   return {
     // 01 Identification
     productName: kp.productSnapshot?.productName || '',
-    formulaNumber: (kp.metadata?.formulaNumber as string) || kp.productSnapshot?.productCode || '',
+    formulaNumber: kp.formulaNumber || (kp.metadata?.formulaNumber as string) || kp.productSnapshot?.productCode || '',
     lotNumber: kp.productLot || '',
     kuf: kp.kuf || '',
     acquisitionDate: testRun.acquisitionDate || new Date().toISOString().slice(0, 10),
@@ -146,7 +154,7 @@ export function initWizardFormData(
     initialGrossWeightG: initGrossWeight,
     finalGrossWeightG: exec?.finalGrossWeightG !== undefined ? exec.finalGrossWeightG.toString() : '',
     actualPressDurationS: exec?.actualPressDurationS !== undefined ? exec.actualPressDurationS.toString() : '',
-    actualStrokeDepthMm: exec?.actualStrokeDepth !== undefined ? exec.actualStrokeDepth.toString() : '',
+    actualStrokeDepth: exec?.actualStrokeDepth !== undefined ? exec.actualStrokeDepth.toString() : '',
     leakage: exec?.leakage || '',
     dryingTimeS: exec?.dryingTimeS !== undefined ? exec.dryingTimeS.toString() : '',
     observationNotes: testRun.notes || '',
@@ -218,7 +226,7 @@ export function parseExecutionMeasurementsFromForm(formData: WizardFormData): Ex
   const initialGrossWeightG = formData.initialGrossWeightG ? parseFloat(formData.initialGrossWeightG) : undefined;
   const finalGrossWeightG = formData.finalGrossWeightG ? parseFloat(formData.finalGrossWeightG) : undefined;
   const actualPressDurationS = formData.actualPressDurationS ? parseFloat(formData.actualPressDurationS) : undefined;
-  const actualStrokeDepth = formData.actualStrokeDepthMm ? parseFloat(formData.actualStrokeDepthMm) : undefined;
+  const actualStrokeDepth = formData.actualStrokeDepth ? parseFloat(formData.actualStrokeDepth) : undefined;
   const dryingTimeS = formData.dryingTimeS ? parseFloat(formData.dryingTimeS) : undefined;
 
   return {

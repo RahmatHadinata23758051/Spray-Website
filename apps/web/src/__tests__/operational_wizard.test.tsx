@@ -156,7 +156,11 @@ describe('Operational Test Execution Wizard (Client Flow Alignment)', () => {
   });
 
   it('converts Holding Time seconds to ms bidirectionally and supports force modes in Step 03', async () => {
-    const { kp, sample, testRun } = await seedTestRun();
+    const { kp, sample, testRun } = await seedTestRun({
+      runOverrides: {
+        wizardProgress: { step1Completed: true, step2Completed: true },
+      },
+    });
 
     render(
       <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/execute?step=3`]}>
@@ -194,7 +198,11 @@ describe('Operational Test Execution Wizard (Client Flow Alignment)', () => {
   });
 
   it('calculates live operational derived metrics in Step 04 and displays provenance tags', async () => {
-    const { kp, sample, testRun } = await seedTestRun();
+    const { kp, sample, testRun } = await seedTestRun({
+      runOverrides: {
+        wizardProgress: { step1Completed: true, step2Completed: true, step3Completed: true },
+      },
+    });
 
     render(
       <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/execute?step=4`]}>
@@ -360,5 +368,140 @@ describe('Operational Test Execution Wizard (Client Flow Alignment)', () => {
 
     // Check CSV Export button exists
     expect(screen.getByRole('button', { name: /Unduh Hasil \(CSV\)/i })).toBeInTheDocument();
+  });
+
+  it('route guard clamps step to 1 when previous steps are incomplete', async () => {
+    const { kp, sample, testRun } = await seedTestRun();
+
+    render(
+      <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/execute?step=5`]}>
+        <Routes>
+          <Route
+            path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/execute"
+            element={<TestExecutionWizardPage />}
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Operator attempted step 5 directly on uncompleted test run -> clamped to Step 01
+    await waitFor(() => {
+      expect(screen.getByText(/01\. Identifikasi Sampel & Konteks Studi/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/05\. Ringkasan & Hasil Akhir Pengujian/i)).not.toBeInTheDocument();
+  });
+
+  it('formulaNumber round-trips from form to KP on save draft', async () => {
+    const { kp, sample, testRun } = await seedTestRun();
+
+    render(
+      <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/execute?step=1`]}>
+        <Routes>
+          <Route
+            path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/execute"
+            element={<TestExecutionWizardPage />}
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/01\. Identifikasi Sampel/i)).toBeInTheDocument();
+    });
+
+    const formulaInput = screen.getByPlaceholderText(/FOR-2026-X01/i);
+    fireEvent.change(formulaInput, { target: { value: 'FOR-PARAGON-99' } });
+
+    const saveDraftBtn = screen.getByRole('button', { name: /Simpan Draf/i });
+    fireEvent.click(saveDraftBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Draf pengujian berhasil disimpan/i)).toBeInTheDocument();
+    });
+
+    const reloadedKp = await kodePengujianRepository.get(kp.id);
+    expect(reloadedKp?.formulaNumber).toBe('FOR-PARAGON-99');
+  });
+
+  it('updating test run observation objectives does NOT mutate parent KP default objectives', async () => {
+    const { kp, sample, testRun } = await seedTestRun({
+      kpOverrides: {
+        observationObjectives: ['Panjang lintasan'],
+      },
+      runOverrides: {
+        wizardProgress: { step1Completed: true, step2Completed: true },
+        observationObjectives: ['Panjang lintasan'],
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/execute?step=3`]}>
+        <Routes>
+          <Route
+            path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/execute"
+            element={<TestExecutionWizardPage />}
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/03\. Parameter Uji & Sasaran Observasi/i)).toBeInTheDocument();
+    });
+
+    // Toggle on "Sebaran" checkbox
+    const sebaranLabel = screen.getByText('Sebaran');
+    fireEvent.click(sebaranLabel);
+
+    // Save draft
+    const saveDraftBtn = screen.getByRole('button', { name: /Simpan Draf/i });
+    fireEvent.click(saveDraftBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Draf pengujian berhasil disimpan/i)).toBeInTheDocument();
+    });
+
+    // Reload KP and verify default objectives were NOT changed
+    const reloadedKp = await kodePengujianRepository.get(kp.id);
+    expect(reloadedKp?.observationObjectives).toEqual(['Panjang lintasan']);
+
+    // Reload testRun and verify snapshot received the update
+    const reloadedTr = reloadedKp?.testRuns.find(t => t.id === testRun.id);
+    expect(reloadedTr?.observationObjectives).toContain('Sebaran');
+  });
+
+  it('save draft failure keeps operator on current step and shows error message', async () => {
+    const { kp, sample, testRun } = await seedTestRun();
+
+    // Mock updateTestRun to fail
+    vi.spyOn(kodePengujianRepository, 'updateTestRun').mockRejectedValueOnce(new Error('Network failure'));
+
+    render(
+      <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/execute?step=1`]}>
+        <Routes>
+          <Route
+            path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/execute"
+            element={<TestExecutionWizardPage />}
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/01\. Identifikasi Sampel/i)).toBeInTheDocument();
+    });
+
+    // Click "Selanjutnya" which triggers handleSaveDraft
+    const nextBtn = screen.getByRole('button', { name: /Selanjutnya/i });
+    fireEvent.click(nextBtn);
+
+    // Error banner displayed
+    await waitFor(() => {
+      expect(screen.getByText(/Gagal menyimpan draf pengujian/i)).toBeInTheDocument();
+    });
+
+    // Must NOT have advanced to Step 02
+    expect(screen.getByText(/01\. Identifikasi Sampel/i)).toBeInTheDocument();
+    expect(screen.queryByText(/02\. Konfigurasi Device \/ Kemasan/i)).not.toBeInTheDocument();
   });
 });

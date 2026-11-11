@@ -12,6 +12,8 @@ import type {
   DeviceConfiguration,
   UsagePattern,
   TrialType,
+  ObservationObjective,
+  WizardProgress,
 } from '@spray-paragon/domain';
 import type { RemoteSyncPayload, RemoteSyncResponse } from '@spray-paragon/contracts';
 
@@ -21,6 +23,7 @@ export interface CreateKodePengujianInput {
   defaultRecipeId?: string;
   defaultRecipeSnapshot?: { name: string; forceSetpointN: number; pressDurationMs: number; strokeMm: number };
   productLot?: string;
+  formulaNumber?: string;
   testPeriod?: string;
   operatorId: string;
   operatorName: string;
@@ -31,7 +34,7 @@ export interface CreateKodePengujianInput {
   trialObjective?: string;
   benchmark?: string;
   trialType?: TrialType;
-  observationObjectives?: string[];
+  observationObjectives?: ObservationObjective[] | string[];
   notes?: string;
   metadata?: Record<string, unknown>;
   id?: string;
@@ -39,6 +42,7 @@ export interface CreateKodePengujianInput {
 
 export interface KodePengujianParentMetadata {
   productLot?: string;
+  formulaNumber?: string;
   testPeriod?: string;
   calculationStandard?: string;
   storageCondition?: string;
@@ -47,7 +51,7 @@ export interface KodePengujianParentMetadata {
   trialObjective?: string;
   benchmark?: string;
   trialType?: TrialType;
-  observationObjectives?: string[];
+  observationObjectives?: ObservationObjective[] | string[];
   notes?: string;
   metadata?: Record<string, unknown>;
   defaultRecipeId?: string;
@@ -89,7 +93,8 @@ export interface CreateTestRunInput {
   repetitionIndex?: number;
   executionMeasurements?: ExecutionMeasurements;
   operationalDerivedMetrics?: OperationalDerivedMetrics;
-  observationObjectives?: string[];
+  observationObjectives?: ObservationObjective[] | string[];
+  wizardProgress?: WizardProgress;
   acquisitionDate?: string;
   notes?: string;
   metadata?: Record<string, unknown>;
@@ -100,7 +105,8 @@ export interface UpdateTestRunInput {
   setpoints?: TestRunSetpoints;
   executionMeasurements?: ExecutionMeasurements;
   operationalDerivedMetrics?: OperationalDerivedMetrics;
-  observationObjectives?: string[];
+  observationObjectives?: ObservationObjective[] | string[];
+  wizardProgress?: WizardProgress;
   acquisitionDate?: string;
   captureSession?: CaptureSession;
   analysisDraft?: BatchAnalysisDraft;

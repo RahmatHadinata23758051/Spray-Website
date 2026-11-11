@@ -55,7 +55,44 @@ export function createFinalReportCsv(report: FinalAnalysisReport): string {
   }
 
   if (report.operationalMetrics) {
-    const derived = report.operationalMetrics.derived;
+    const raw = report.operationalMetrics as {
+      measurements?: Record<string, unknown>;
+      derived?: {
+        dischargedMassG?: number;
+        dischargeRateGPerS?: number;
+        pressureDropBar?: number;
+      };
+      dischargedMassG?: number;
+      dischargeRateGPerS?: number;
+      pressureDropBar?: number;
+    };
+    const derived = raw.derived ?? (raw.dischargedMassG !== undefined ? raw : undefined);
+    const m = raw.measurements ?? {};
+
+    if (m.initialGrossWeightG !== undefined) {
+      fields.push(['operational_initial_gross_weight_g', m.initialGrossWeightG as number]);
+    }
+    if (m.finalGrossWeightG !== undefined) {
+      fields.push(['operational_final_gross_weight_g', m.finalGrossWeightG as number]);
+    }
+    if (m.actualPressDurationS !== undefined) {
+      fields.push(['operational_actual_press_duration_s', m.actualPressDurationS as number]);
+    }
+    if (m.actualStrokeDepth !== undefined) {
+      fields.push(['operational_actual_stroke_depth', m.actualStrokeDepth as number]);
+    }
+    if (m.initialPressureBar !== undefined) {
+      fields.push(['operational_initial_pressure_bar', m.initialPressureBar as number]);
+    }
+    if (m.finalPressureBar !== undefined) {
+      fields.push(['operational_final_pressure_bar', m.finalPressureBar as number]);
+    }
+    if (m.leakage !== undefined) {
+      fields.push(['operational_leakage', m.leakage as string]);
+    }
+    if (m.dryingTimeS !== undefined) {
+      fields.push(['operational_drying_time_s', m.dryingTimeS as number]);
+    }
     if (derived?.dischargedMassG !== undefined) {
       fields.push(['operational_discharged_mass_g', derived.dischargedMassG]);
     }

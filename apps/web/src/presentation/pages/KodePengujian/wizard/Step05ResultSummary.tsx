@@ -22,19 +22,54 @@ export function Step05ResultSummary({
   onBackToKp,
 }: Step05ResultSummaryProps) {
   const isAerosol = formData.deviceType === 'Aerosol';
-  const rawReportMetrics = testRun.finalReport?.operationalMetrics as Record<string, unknown> | undefined;
-  const derivedReportMetrics =
-    (rawReportMetrics?.derived as OperationalDerivedMetrics | undefined) ??
+  const isFinalized = testRun.status === 'FINALIZED';
+  const finalReport = testRun.finalReport;
+
+  const rawReportMetrics = finalReport?.operationalMetrics as {
+    measurements?: Record<string, unknown>;
+    derived?: OperationalDerivedMetrics;
+    dischargedMassG?: number;
+    dischargeRateGPerS?: number;
+    pressureDropBar?: number;
+  } | undefined;
+
+  const snapshotDerived =
+    rawReportMetrics?.derived ??
     (rawReportMetrics && 'dischargedMassG' in rawReportMetrics
-      ? (rawReportMetrics as unknown as OperationalDerivedMetrics)
+      ? (rawReportMetrics as OperationalDerivedMetrics)
       : undefined);
 
-  const operationalMetrics =
-    derivedReportMetrics ??
-    testRun.operationalDerivedMetrics ??
-    computeLiveOperationalMetrics(formData);
-  const finalReport = testRun.finalReport;
-  const isFinalized = testRun.status === 'FINALIZED';
+  const snapshotMeasurements = rawReportMetrics?.measurements;
+
+  // Authoritative operational metrics: if finalized, MUST use immutable final report snapshot
+  const operationalMetrics: OperationalDerivedMetrics | undefined = isFinalized
+    ? snapshotDerived
+    : testRun.operationalDerivedMetrics ?? computeLiveOperationalMetrics(formData);
+
+  // Field measurements: if finalized, use frozen snapshot measurements; otherwise formData
+  const displayInitialWeight = isFinalized && snapshotMeasurements?.initialGrossWeightG !== undefined
+    ? String(snapshotMeasurements.initialGrossWeightG)
+    : formData.initialGrossWeightG;
+
+  const displayFinalWeight = isFinalized && snapshotMeasurements?.finalGrossWeightG !== undefined
+    ? String(snapshotMeasurements.finalGrossWeightG)
+    : formData.finalGrossWeightG;
+
+  const displayActualDuration = isFinalized && snapshotMeasurements?.actualPressDurationS !== undefined
+    ? String(snapshotMeasurements.actualPressDurationS)
+    : formData.actualPressDurationS;
+
+  const displayInitialPressure = isFinalized && snapshotMeasurements?.initialPressureBar !== undefined
+    ? String(snapshotMeasurements.initialPressureBar)
+    : formData.initialPressureBar;
+
+  const displayFinalPressure = isFinalized && snapshotMeasurements?.finalPressureBar !== undefined
+    ? String(snapshotMeasurements.finalPressureBar)
+    : formData.finalPressureBar;
+
+  const displayLeakage = isFinalized && snapshotMeasurements?.leakage !== undefined
+    ? String(snapshotMeasurements.leakage)
+    : formData.leakage;
 
   return (
     <div className="space-y-6">
@@ -124,9 +159,9 @@ export function Step05ResultSummary({
               Status Kebocoran
             </div>
             <div className="font-mono text-2xl font-bold mt-1">
-              {formData.leakage === 'Tidak' ? (
+              {displayLeakage === 'Tidak' ? (
                 <span className="text-semantic-success">Aman (Tidak)</span>
-              ) : formData.leakage === 'Ya' ? (
+              ) : displayLeakage === 'Ya' ? (
                 <span className="text-semantic-danger">Bocor (Ya)</span>
               ) : (
                 '—'
@@ -282,27 +317,27 @@ export function Step05ResultSummary({
             <div>
               <dt className="font-sans text-text-muted text-[11px]">Bobot Awal / Akhir Bruto</dt>
               <dd className="text-text-primary">
-                {formData.initialGrossWeightG || '—'} g / {formData.finalGrossWeightG || '—'} g
+                {displayInitialWeight || '—'} g / {displayFinalWeight || '—'} g
               </dd>
             </div>
             <div>
               <dt className="font-sans text-text-muted text-[11px]">Durasi Tekan Aktual</dt>
-              <dd className="text-text-primary">{formData.actualPressDurationS ? `${formData.actualPressDurationS} s` : '—'}</dd>
+              <dd className="text-text-primary">{displayActualDuration ? `${displayActualDuration} s` : '—'}</dd>
             </div>
             {isAerosol && (
               <div>
                 <dt className="font-sans text-text-muted text-[11px]">Tekanan Awal / Sesudah</dt>
                 <dd className="text-text-primary">
-                  {formData.initialPressureBar || '—'} bar / {formData.finalPressureBar || '—'} bar
+                  {displayInitialPressure || '—'} bar / {displayFinalPressure || '—'} bar
                 </dd>
               </div>
             )}
             <div>
               <dt className="font-sans text-text-muted text-[11px]">Kebocoran</dt>
               <dd className="font-sans font-semibold">
-                {formData.leakage === 'Tidak' ? (
+                {displayLeakage === 'Tidak' ? (
                   <span className="text-semantic-success">Tidak</span>
-                ) : formData.leakage === 'Ya' ? (
+                ) : displayLeakage === 'Ya' ? (
                   <span className="text-semantic-danger">Ya</span>
                 ) : (
                   '—'

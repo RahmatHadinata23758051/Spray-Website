@@ -8,6 +8,7 @@ import type {
   TestRun,
   Sample,
   DeviceConfiguration,
+  WizardProgress,
 } from '@spray-paragon/domain';
 import { Status } from '../../components/ui/Status';
 import { ActionBar } from '../../components/ui/ActionBar';
@@ -26,6 +27,16 @@ import { Step02DeviceConfig } from './wizard/Step02DeviceConfig';
 import { Step03Parameters } from './wizard/Step03Parameters';
 import { Step04ExecutionData } from './wizard/Step04ExecutionData';
 import { Step05ResultSummary } from './wizard/Step05ResultSummary';
+
+function getMaxAllowedStep(testRun: TestRun): WizardStep {
+  if (testRun.status === 'FINALIZED') return 5;
+  const wp = testRun.wizardProgress;
+  if (!wp?.step1Completed) return 1;
+  if (!wp?.step2Completed) return 2;
+  if (!wp?.step3Completed) return 3;
+  if (!wp?.step4Completed) return 4;
+  return 5;
+}
 
 export function TestExecutionWizardPage() {
   const { kpId, sampleId, runId } = useParams();
@@ -78,17 +89,20 @@ export function TestExecutionWizardPage() {
       setContext({ kp, sample, testRun });
       setFormData(initWizardFormData(kp, sample, testRun));
 
-      // Determine initial step
+      // Determine initial step safely
+      const maxAllowed = getMaxAllowedStep(testRun);
       const queryStep = parseInt(searchParams.get('step') || '', 10);
+      let targetStep: WizardStep = 1;
       if (queryStep >= 1 && queryStep <= 5) {
-        setStep(queryStep as WizardStep);
+        targetStep = (testRun.status === 'FINALIZED' ? queryStep : Math.min(queryStep, maxAllowed)) as WizardStep;
       } else if (testRun.status === 'FINALIZED') {
-        setStep(5);
+        targetStep = 5;
       } else if (['CAPTURING', 'ANALYZING', 'REVIEW_REQUIRED'].includes(testRun.status)) {
-        setStep(4);
+        targetStep = Math.min(4, maxAllowed) as WizardStep;
       } else {
-        setStep(1);
+        targetStep = 1;
       }
+      setStep(targetStep);
 
       // Compute completed steps
       const completed = new Set<WizardStep>();
@@ -99,10 +113,11 @@ export function TestExecutionWizardPage() {
         completed.add(4);
         completed.add(5);
       } else {
-        if (kp.productSnapshot?.productName && sample.sampleCode) completed.add(1);
-        if (sample.deviceConfiguration) completed.add(2);
-        if (testRun.setpoints) completed.add(3);
-        if (testRun.captureSession) completed.add(4);
+        const wp = testRun.wizardProgress;
+        if (wp?.step1Completed) completed.add(1);
+        if (wp?.step2Completed) completed.add(2);
+        if (wp?.step3Completed) completed.add(3);
+        if (wp?.step4Completed) completed.add(4);
       }
       setCompletedSteps(completed);
     } catch (err) {
@@ -126,27 +141,32 @@ export function TestExecutionWizardPage() {
   };
 
   const handleStepClick = (targetStep: WizardStep) => {
+    if (!context) return;
+    const maxAllowed = getMaxAllowedStep(context.testRun);
+    if (!isReadOnly && targetStep > maxAllowed) {
+      return;
+    }
     setStep(targetStep);
     setSearchParams({ step: targetStep.toString() });
   };
 
   // Save Draft
-  const handleSaveDraft = async () => {
-    if (!context || !formData || isReadOnly || isSaving) return;
+  const handleSaveDraft = async (): Promise<boolean> => {
+    if (!context || !formData || isReadOnly || isSaving) return true;
     setIsSaving(true);
     setSaveStatus(null);
 
     try {
       const { kp, sample, testRun } = context;
 
-      // 1. Update KP metadata if changed
+      // 1. Update KP metadata if changed (Do NOT mutate parent observationObjectives!)
       const kpPatch = {
+        formulaNumber: formData.formulaNumber || undefined,
         productLot: formData.lotNumber || undefined,
         kuf: formData.kuf || undefined,
         trialObjective: formData.trialObjective || undefined,
         benchmark: formData.benchmark || undefined,
         trialType: formData.trialType,
-        observationObjectives: formData.observationObjectives,
       };
       await kodePengujianRepository.updateParentMetadata(kp.id, kpPatch);
 
@@ -187,6 +207,15 @@ export function TestExecutionWizardPage() {
       const executionMeasurements = parseExecutionMeasurementsFromForm(formData);
       const operationalDerivedMetrics = computeLiveOperationalMetrics(formData);
 
+      const currentWp = testRun.wizardProgress ?? {};
+      const updatedWp: WizardProgress = {
+        ...currentWp,
+        step1Completed: step >= 1 ? true : currentWp.step1Completed,
+        step2Completed: step >= 2 ? true : currentWp.step2Completed,
+        step3Completed: step >= 3 ? true : currentWp.step3Completed,
+        step4Completed: step >= 4 ? true : currentWp.step4Completed,
+      };
+
       const updatedTr = await kodePengujianRepository.updateTestRun(kp.id, testRun.id, {
         setpoints,
         executionMeasurements,
@@ -194,14 +223,24 @@ export function TestExecutionWizardPage() {
         observationObjectives: formData.observationObjectives,
         acquisitionDate: formData.acquisitionDate || undefined,
         notes: formData.observationNotes || undefined,
+        wizardProgress: updatedWp,
       });
 
       setContext((c) => (c ? { ...c, testRun: updatedTr } : null));
       setSaveStatus('Draf pengujian berhasil disimpan.');
-      setCompletedSteps((prev) => new Set([...prev, step]));
+      setCompletedSteps((prev) => {
+        const next = new Set(prev);
+        if (updatedWp.step1Completed) next.add(1);
+        if (updatedWp.step2Completed) next.add(2);
+        if (updatedWp.step3Completed) next.add(3);
+        if (updatedWp.step4Completed) next.add(4);
+        return next;
+      });
+      return true;
     } catch (err) {
       console.error('Failed to save draft', err);
       setSaveStatus('Gagal menyimpan draf pengujian.');
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -210,7 +249,8 @@ export function TestExecutionWizardPage() {
   const handleNextStep = async () => {
     if (!formData) return;
     if (!isReadOnly) {
-      await handleSaveDraft();
+      const ok = await handleSaveDraft();
+      if (!ok) return;
     }
     if (step < 5) {
       const nextStep = (step + 1) as WizardStep;

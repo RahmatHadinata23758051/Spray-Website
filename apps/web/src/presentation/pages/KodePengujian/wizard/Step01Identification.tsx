@@ -7,6 +7,19 @@ import { Select } from '../../../components/ui/Select';
 import { Status } from '../../../components/ui/Status';
 import type { TrialType, UsagePattern } from '@spray-paragon/domain';
 
+const STANDARD_STORAGE_POSITIONS = ['Tegak', 'Tidur'] as const;
+const STANDARD_STORAGE_CONDITIONS = [
+  'Ruang',
+  'Jemur',
+  'Display',
+  'Oven 40',
+  'Oven 45',
+  'Oven 50',
+  'Oven 60',
+  'Freezer',
+  'Siklus',
+] as const;
+
 interface Step01IdentificationProps {
   formData: WizardFormData;
   onChange: (patch: Partial<WizardFormData>) => void;
@@ -24,6 +37,8 @@ export function Step01Identification({
 }: Step01IdentificationProps) {
   const isStorageOverridden = Boolean(defaultStorageCondition && formData.storageCondition !== defaultStorageCondition);
   const isPositionOverridden = Boolean(defaultBottlePosition && formData.storagePosition !== defaultBottlePosition);
+  const isLegacyPosition = Boolean(formData.storagePosition && !STANDARD_STORAGE_POSITIONS.includes(formData.storagePosition as (typeof STANDARD_STORAGE_POSITIONS)[number]));
+  const isLegacyCondition = Boolean(formData.storageCondition && !STANDARD_STORAGE_CONDITIONS.includes(formData.storageCondition as (typeof STANDARD_STORAGE_CONDITIONS)[number]));
 
   return (
     <div className="space-y-6">
@@ -41,11 +56,10 @@ export function Step01Identification({
         title="Identitas Produk & Formula"
         description="Informasi produk dan formula yang menjadi acuan pengujian"
       >
-        <FormField label="Nama Produk" required>
+        <FormField label="Nama Produk" hint="Identitas produk acuan dari master produk (Read-Only)">
           <Input
             value={formData.productName}
-            onChange={(e) => onChange({ productName: e.target.value })}
-            disabled={isReadOnly}
+            disabled={true}
             placeholder="Contoh: Hair Spray Extra Hold"
           />
         </FormField>
@@ -167,9 +181,16 @@ export function Step01Identification({
             onChange={(e) => onChange({ storagePosition: e.target.value })}
             disabled={isReadOnly}
           >
-            <option value="Tegak">Tegak</option>
-            <option value="Terbalik">Terbalik</option>
-            <option value="Miring">Miring</option>
+            {STANDARD_STORAGE_POSITIONS.map((pos) => (
+              <option key={pos} value={pos}>
+                {pos}
+              </option>
+            ))}
+            {isLegacyPosition && (
+              <option value={formData.storagePosition}>
+                {formData.storagePosition} (Legacy)
+              </option>
+            )}
           </Select>
         </FormField>
 
@@ -188,10 +209,16 @@ export function Step01Identification({
             onChange={(e) => onChange({ storageCondition: e.target.value })}
             disabled={isReadOnly}
           >
-            <option value="Suhu Ruang">Suhu Ruang</option>
-            <option value="Suhu Rendah (5°C)">Suhu Rendah (5°C)</option>
-            <option value="Oven 40°C">Oven 40°C</option>
-            <option value="Cycling">Cycling</option>
+            {STANDARD_STORAGE_CONDITIONS.map((cond) => (
+              <option key={cond} value={cond}>
+                {cond}
+              </option>
+            ))}
+            {isLegacyCondition && (
+              <option value={formData.storageCondition}>
+                {formData.storageCondition} (Legacy)
+              </option>
+            )}
           </Select>
         </FormField>
       </FormSection>

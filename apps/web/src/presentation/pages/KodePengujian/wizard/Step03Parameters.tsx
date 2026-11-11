@@ -1,5 +1,6 @@
 import React from 'react';
-import type { WizardFormData } from './types';
+import type { WizardFormData, ForcePresetProvider } from './types';
+import { defaultForcePresetProvider } from './types';
 import { FormSection } from '../../../components/ui/FormSection';
 import { FormField } from '../../../components/ui/FormField';
 import { Input } from '../../../components/ui/Input';
@@ -12,24 +13,25 @@ interface Step03ParametersProps {
   formData: WizardFormData;
   onChange: (patch: Partial<WizardFormData>) => void;
   isReadOnly?: boolean;
+  forcePresetProvider?: ForcePresetProvider;
 }
 
 const ALL_OBJECTIVES: Array<{ id: ObservationObjective; label: string; note?: string }> = [
-  { id: 'Panjang lintasan', label: 'Panjang lintasan (Spray Length)' },
-  { id: 'Sebaran', label: 'Sebaran (Spray Angle / Cone Width)' },
+  { id: 'Panjang lintasan', label: 'Panjang lintasan', note: 'Spray Length' },
+  { id: 'Sebaran', label: 'Sebaran', note: 'Spray Angle / Cone Width' },
   { id: 'Sudut kontak', label: 'Sudut kontak', note: 'Menunggu konfirmasi semantik Paragon' },
   { id: 'Kecepatan pengeringan', label: 'Kecepatan pengeringan' },
-  { id: 'Distribusi droplet', label: 'Distribusi droplet (D50)', note: 'Fasilitas optik droplet terpisah' },
+  { id: 'Distribusi droplet', label: 'Distribusi droplet', note: 'Fasilitas optik droplet terpisah' },
 ];
-
-const NORMAL_FORCE_PRESETS = [20, 25, 30, 35, 40, 50];
 
 export function Step03Parameters({
   formData,
   onChange,
   isReadOnly = false,
+  forcePresetProvider = defaultForcePresetProvider,
 }: Step03ParametersProps) {
   const isNormalForce = formData.forceMode === 'Normal';
+  const normalPresets = forcePresetProvider.getNormalPresets();
 
   const handleObjectiveToggle = (objId: ObservationObjective) => {
     if (isReadOnly) return;
@@ -136,13 +138,17 @@ export function Step03Parameters({
         </FormField>
 
         {isNormalForce ? (
-          <FormField label="Preset Gaya Tekan (N)" required>
+          <FormField
+            label="Preset Gaya Tekan (N)"
+            hint="Preset gaya adalah fixture sementara menunggu konfirmasi standar resmi Paragon"
+            required
+          >
             <Select
               value={formData.normalForcePresetN}
               onChange={(e) => onChange({ normalForcePresetN: Number(e.target.value) })}
               disabled={isReadOnly}
             >
-              {NORMAL_FORCE_PRESETS.map((preset) => (
+              {normalPresets.map((preset) => (
                 <option key={preset} value={preset}>
                   {preset} N (Preset Standar)
                 </option>

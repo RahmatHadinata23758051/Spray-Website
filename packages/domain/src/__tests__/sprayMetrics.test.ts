@@ -57,6 +57,11 @@ describe('sprayMetrics domain calculation engine', () => {
       expect(result).toBe(0.3);
     });
 
+    it('returns signed negative value when final pressure exceeds initial pressure (anomaly / gauge drift)', () => {
+      const result = calculatePressureDrop(4.2, 4.5, true);
+      expect(result).toBe(-0.3);
+    });
+
     it('returns undefined for Non-Aerosol device', () => {
       expect(calculatePressureDrop(4.5, 4.2, false)).toBeUndefined();
     });
