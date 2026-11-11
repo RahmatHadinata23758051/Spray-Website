@@ -97,7 +97,7 @@ export function createFinalReportCsv(report: FinalAnalysisReport): string {
       fields.push(['operational_discharged_mass_g', derived.dischargedMassG]);
     }
     if (derived?.dischargeRateGPerS !== undefined) {
-      fields.push(['operational_discharge_rate_gps', derived.dischargeRateGPerS]);
+      fields.push(['operational_discharge_rate_g_per_s', derived.dischargeRateGPerS]);
     }
     if (derived?.pressureDropBar !== undefined) {
       fields.push(['operational_pressure_drop_bar', derived.pressureDropBar]);

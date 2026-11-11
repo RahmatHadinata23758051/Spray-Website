@@ -17,11 +17,11 @@ interface Step03ParametersProps {
 }
 
 const ALL_OBJECTIVES: Array<{ id: ObservationObjective; label: string; note?: string }> = [
-  { id: 'Panjang lintasan', label: 'Panjang lintasan', note: 'Spray Length' },
-  { id: 'Sebaran', label: 'Sebaran', note: 'Spray Angle / Cone Width' },
+  { id: 'Panjang lintasan', label: 'Panjang lintasan' },
+  { id: 'Sebaran', label: 'Sebaran' },
   { id: 'Sudut kontak', label: 'Sudut kontak', note: 'Menunggu konfirmasi semantik Paragon' },
   { id: 'Kecepatan pengeringan', label: 'Kecepatan pengeringan' },
-  { id: 'Distribusi droplet', label: 'Distribusi droplet', note: 'Fasilitas optik droplet terpisah' },
+  { id: 'Distribusi droplet', label: 'Distribusi droplet', note: 'Metode pengukuran menunggu konfirmasi Paragon' },
 ];
 
 export function Step03Parameters({

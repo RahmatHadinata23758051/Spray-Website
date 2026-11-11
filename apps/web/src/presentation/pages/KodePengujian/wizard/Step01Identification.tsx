@@ -76,7 +76,7 @@ export function Step01Identification({
 
         <FormField
           label="No. Batch"
-          hint="Nomor batch atau lot manufaktur"
+          hint="Nomor batch sesuai identitas pengujian Paragon"
         >
           <Input
             value={formData.lotNumber}

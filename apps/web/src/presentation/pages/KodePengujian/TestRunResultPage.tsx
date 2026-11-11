@@ -335,7 +335,7 @@ export function TestRunResultPage() {
             </div>
             <div className="flex justify-between">
               <dt className="text-text-muted">Jumlah Pendukung</dt>
-              <dd className="font-mono text-text-primary">{report.supportingCaptureMomentIds.length} / 9</dd>
+              <dd className="font-mono text-text-primary">{(report.supportingCaptureMomentIds?.length ?? 0)} / 9</dd>
             </div>
           </div>
         </Panel>
@@ -344,33 +344,37 @@ export function TestRunResultPage() {
         <Panel title="Analisis Samping (Side)">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <h5 className="font-semibold text-text-primary">Kalibrasi</h5>
-                <dl className="space-y-1 text-xs text-text-secondary">
-                  <div className="flex justify-between"><dt>mm/px</dt><dd className="font-mono">{report.side.calibration.scaleMmPerPx.toFixed(4)}</dd></div>
-                  <div className="flex justify-between"><dt>Referensi (mm)</dt><dd className="font-mono">{report.side.calibration.referenceDistanceMm}</dd></div>
-                  <div className="flex justify-between"><dt>Diadjust</dt><dd>{report.side.calibration.adjusted ? 'Ya' : 'Tidak'}</dd></div>
-                </dl>
-              </div>
-              <div className="space-y-2">
-                <h5 className="font-semibold text-text-primary">Geometri Otomatis (Piksel)</h5>
-                <dl className="space-y-1 text-xs text-text-secondary">
-                  <div className="flex justify-between"><dt>Nozzle Origin</dt><dd className="font-mono">({report.side.autoGeometry.nozzleOriginPx.x.toFixed(0)}, {report.side.autoGeometry.nozzleOriginPx.y.toFixed(0)})</dd></div>
-                  <div className="flex justify-between"><dt>Spray Endpoint</dt><dd className="font-mono">({report.side.autoGeometry.sprayEndpointPx.x.toFixed(0)}, {report.side.autoGeometry.sprayEndpointPx.y.toFixed(0)})</dd></div>
-                  <div className="flex justify-between"><dt>Upper Boundary</dt><dd className="font-mono">({report.side.autoGeometry.upperBoundaryPx.x.toFixed(0)}, {report.side.autoGeometry.upperBoundaryPx.y.toFixed(0)})</dd></div>
-                  <div className="flex justify-between"><dt>Lower Boundary</dt><dd className="font-mono">({report.side.autoGeometry.lowerBoundaryPx.x.toFixed(0)}, {report.side.autoGeometry.lowerBoundaryPx.y.toFixed(0)})</dd></div>
-                </dl>
-              </div>
+              {report.side.calibration && (
+                <div className="space-y-2">
+                  <h5 className="font-semibold text-text-primary">Kalibrasi</h5>
+                  <dl className="space-y-1 text-xs text-text-secondary">
+                    <div className="flex justify-between"><dt>mm/px</dt><dd className="font-mono">{report.side.calibration.scaleMmPerPx.toFixed(4)}</dd></div>
+                    <div className="flex justify-between"><dt>Referensi (mm)</dt><dd className="font-mono">{report.side.calibration.referenceDistanceMm}</dd></div>
+                    <div className="flex justify-between"><dt>Diadjust</dt><dd>{report.side.calibration.adjusted ? 'Ya' : 'Tidak'}</dd></div>
+                  </dl>
+                </div>
+              )}
+              {report.side.autoGeometry && (
+                <div className="space-y-2">
+                  <h5 className="font-semibold text-text-primary">Geometri Otomatis (Piksel)</h5>
+                  <dl className="space-y-1 text-xs text-text-secondary">
+                    <div className="flex justify-between"><dt>Nozzle Origin</dt><dd className="font-mono">({report.side.autoGeometry.nozzleOriginPx.x.toFixed(0)}, {report.side.autoGeometry.nozzleOriginPx.y.toFixed(0)})</dd></div>
+                    <div className="flex justify-between"><dt>Spray Endpoint</dt><dd className="font-mono">({report.side.autoGeometry.sprayEndpointPx.x.toFixed(0)}, {report.side.autoGeometry.sprayEndpointPx.y.toFixed(0)})</dd></div>
+                    <div className="flex justify-between"><dt>Upper Boundary</dt><dd className="font-mono">({report.side.autoGeometry.upperBoundaryPx.x.toFixed(0)}, {report.side.autoGeometry.upperBoundaryPx.y.toFixed(0)})</dd></div>
+                    <div className="flex justify-between"><dt>Lower Boundary</dt><dd className="font-mono">({report.side.autoGeometry.lowerBoundaryPx.x.toFixed(0)}, {report.side.autoGeometry.lowerBoundaryPx.y.toFixed(0)})</dd></div>
+                  </dl>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <h5 className="font-semibold text-text-primary">Pengukuran Final (mm)</h5>
               <dl className="grid grid-cols-2 gap-2 text-sm">
-                <div><dt className="text-text-muted">Panjang Spray</dt><dd className="font-mono text-text-primary">{report.side.sprayLength.final.toFixed(2)}</dd></div>
-                <div><dt className="text-text-muted">Sudut Spray</dt><dd className="font-mono text-text-primary">{report.side.sprayAngle.final.toFixed(2)}</dd></div>
-                <div><dt className="text-text-muted">Spread Vertikal</dt><dd className="font-mono text-text-primary">{report.side.verticalSpread.final.toFixed(2)}</dd></div>
-                <div><dt className="text-text-muted">Offset Arah</dt><dd className="font-mono text-text-primary">{report.side.directionOffset.final.toFixed(2)}</dd></div>
+                <div><dt className="text-text-muted">Panjang Spray</dt><dd className="font-mono text-text-primary">{report.side.sprayLength?.final !== undefined ? report.side.sprayLength.final.toFixed(2) : '—'}</dd></div>
+                <div><dt className="text-text-muted">Sudut Spray</dt><dd className="font-mono text-text-primary">{report.side.sprayAngle?.final !== undefined ? report.side.sprayAngle.final.toFixed(2) : '—'}</dd></div>
+                <div><dt className="text-text-muted">Spread Vertikal</dt><dd className="font-mono text-text-primary">{report.side.verticalSpread?.final !== undefined ? report.side.verticalSpread.final.toFixed(2) : '—'}</dd></div>
+                <div><dt className="text-text-muted">Offset Arah</dt><dd className="font-mono text-text-primary">{report.side.directionOffset?.final !== undefined ? report.side.directionOffset.final.toFixed(2) : '—'}</dd></div>
                 {report.side.spreadPosition && (
-                  <div><dt className="text-text-muted">Posisi Spread</dt><dd className="font-mono text-text-primary">{report.side.spreadPosition.final.toFixed(2)}</dd></div>
+                  <div><dt className="text-text-muted">Posisi Spread</dt><dd className="font-mono text-text-primary">{report.side.spreadPosition.final !== undefined ? report.side.spreadPosition.final.toFixed(2) : '—'}</dd></div>
                 )}
               </dl>
             </div>
@@ -421,7 +425,7 @@ export function TestRunResultPage() {
         )}
 
         {/* Supporting Captures Panel */}
-        {report.supportingCaptures.length > 0 && (
+        {Boolean(report.supportingCaptures && report.supportingCaptures.length > 0) && (
           <Panel title="Tangkapan Pendukung">
             <div className="space-y-3">
               {report.supportingCaptures.map((cap, idx) => (

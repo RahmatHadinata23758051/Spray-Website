@@ -15,6 +15,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "test": "vitest run",
+    "test:contracts": "npm run test --workspace=@spray-paragon/contracts",
     "test:web": "npm run test --workspace=@spray-paragon/web",
     "test:api": "npm run test --workspace=@spray-paragon/api",
     "test:domain": "npm run test --workspace=@spray-paragon/domain",

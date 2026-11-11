@@ -8,8 +8,8 @@ import type {
   TestRun,
   Sample,
   DeviceConfiguration,
-  WizardProgress,
 } from '@spray-paragon/domain';
+import { evaluateWizardProgress } from '@spray-paragon/domain';
 import { Status } from '../../components/ui/Status';
 import { ActionBar } from '../../components/ui/ActionBar';
 import { createFinalReportCsv } from '../../../application/reporting/createFinalReportCsv';
@@ -30,7 +30,7 @@ import { Step05ResultSummary } from './wizard/Step05ResultSummary';
 
 function getMaxAllowedStep(testRun: TestRun): WizardStep {
   if (testRun.status === 'FINALIZED') return 5;
-  const wp = testRun.wizardProgress;
+  const wp = evaluateWizardProgress(testRun);
   if (!wp?.step1Completed) return 1;
   if (!wp?.step2Completed) return 2;
   if (!wp?.step3Completed) return 3;
@@ -113,7 +113,12 @@ export function TestExecutionWizardPage() {
         completed.add(4);
         completed.add(5);
       } else {
-        const wp = testRun.wizardProgress;
+        const wp = evaluateWizardProgress(testRun, {
+          sampleCode: sample.sampleCode,
+          deviceType: sample.deviceConfiguration?.deviceType,
+          strokeMm: testRun.setpoints?.strokeMm,
+          holdingTimeS: testRun.setpoints ? String(testRun.setpoints.pressDurationMs / 1000) : undefined,
+        });
         if (wp?.step1Completed) completed.add(1);
         if (wp?.step2Completed) completed.add(2);
         if (wp?.step3Completed) completed.add(3);
@@ -152,7 +157,8 @@ export function TestExecutionWizardPage() {
 
   // Save Draft
   const handleSaveDraft = async (): Promise<boolean> => {
-    if (!context || !formData || isReadOnly || isSaving) return true;
+    if (!context || !formData || isReadOnly) return true;
+    if (isSaving) return false;
     setIsSaving(true);
     setSaveStatus(null);
 
@@ -207,14 +213,13 @@ export function TestExecutionWizardPage() {
       const executionMeasurements = parseExecutionMeasurementsFromForm(formData);
       const operationalDerivedMetrics = computeLiveOperationalMetrics(formData);
 
-      const currentWp = testRun.wizardProgress ?? {};
-      const updatedWp: WizardProgress = {
-        ...currentWp,
-        step1Completed: step >= 1 ? true : currentWp.step1Completed,
-        step2Completed: step >= 2 ? true : currentWp.step2Completed,
-        step3Completed: step >= 3 ? true : currentWp.step3Completed,
-        step4Completed: step >= 4 ? true : currentWp.step4Completed,
-      };
+      // Evaluate actual step completion using domain evaluator
+      const updatedWp = evaluateWizardProgress(testRun, {
+        sampleCode: formData.sampleCode,
+        deviceType: formData.deviceType,
+        strokeMm: formData.strokeMm,
+        holdingTimeS: formData.holdingTimeS,
+      });
 
       const updatedTr = await kodePengujianRepository.updateTestRun(kp.id, testRun.id, {
         setpoints,
@@ -247,12 +252,24 @@ export function TestExecutionWizardPage() {
   };
 
   const handleNextStep = async () => {
-    if (!formData) return;
+    if (!formData || isSaving) return;
     if (!isReadOnly) {
       const ok = await handleSaveDraft();
       if (!ok) return;
     }
     if (step < 5) {
+      if (step === 4) {
+        const wp = evaluateWizardProgress(context?.testRun ?? { status: 'PENDING' }, {
+          sampleCode: formData.sampleCode,
+          deviceType: formData.deviceType,
+          strokeMm: formData.strokeMm,
+          holdingTimeS: formData.holdingTimeS,
+        });
+        if (!wp.step4Completed) {
+          setSaveStatus('Eksekusi penangkapan frame (Capture) harus diselesaikan sebelum melihat ringkasan hasil.');
+          return;
+        }
+      }
       const nextStep = (step + 1) as WizardStep;
       setStep(nextStep);
       setSearchParams({ step: nextStep.toString() });
@@ -509,10 +526,11 @@ export function TestExecutionWizardPage() {
                 <button
                   type="button"
                   onClick={handleNextStep}
+                  disabled={isSaving}
                   className="btn btn-primary !min-h-[30px] px-4 text-xs font-medium"
                   id="btn-selanjutnya"
                 >
-                  Selanjutnya &rarr;
+                  {isSaving ? 'Menyimpan...' : 'Selanjutnya \u2192'}
                 </button>
               )}
 

@@ -44,6 +44,23 @@ export type ObservationObjective =
   | 'Kecepatan pengeringan'
   | 'Distribusi droplet';
 
+export const VALID_OBSERVATION_OBJECTIVES: readonly ObservationObjective[] = [
+  'Panjang lintasan',
+  'Sebaran',
+  'Sudut kontak',
+  'Kecepatan pengeringan',
+  'Distribusi droplet',
+] as const;
+
+export function isObservationObjective(val: unknown): val is ObservationObjective {
+  return typeof val === 'string' && (VALID_OBSERVATION_OBJECTIVES as readonly string[]).includes(val);
+}
+
+export function normalizeLegacyObservationObjectives(raw?: unknown): ObservationObjective[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(isObservationObjective);
+}
+
 export interface AerosolPackagingSpec {
   actuatorCode?: string;
   canOrBottleCode?: string;
@@ -117,14 +134,14 @@ export interface KodePengujian {
   operatorId: string;
   operatorName: string;
   calculationStandard?: string;
-  storageCondition?: string;
-  bottlePosition?: string;
+  storageCondition?: StorageCondition | string;
+  bottlePosition?: StoragePosition | string;
   notes?: string;
   kuf?: string;
   trialObjective?: string;
   benchmark?: string;
   trialType?: TrialType;
-  observationObjectives?: ObservationObjective[] | string[];
+  observationObjectives?: ObservationObjective[];
   metadata?: Record<string, unknown>;
   sync?: SyncMetadata;
   samples: Sample[];
@@ -141,8 +158,8 @@ export interface Sample {
   kodePengujianId: string;
   sampleCode?: string;
   positionInRun: number;
-  storageCondition?: string;
-  bottlePosition?: string;
+  storageCondition?: StorageCondition | string;
+  bottlePosition?: StoragePosition | string;
   deviceConfiguration?: DeviceConfiguration;
   usagePattern?: UsagePattern;
   notes?: string;
@@ -174,7 +191,7 @@ export interface TestRun {
   finalReport?: FinalAnalysisReport;
   executionMeasurements?: ExecutionMeasurements;
   operationalDerivedMetrics?: OperationalDerivedMetrics;
-  observationObjectives?: ObservationObjective[] | string[];
+  observationObjectives?: ObservationObjective[];
   wizardProgress?: WizardProgress;
   acquisitionDate?: string;
   failureReason?: string;
@@ -243,14 +260,14 @@ export function createKodePengujian(input: {
   operatorId: string;
   operatorName: string;
   calculationStandard?: string;
-  storageCondition?: string;
-  bottlePosition?: string;
+  storageCondition?: StorageCondition | string;
+  bottlePosition?: StoragePosition | string;
   notes?: string;
   kuf?: string;
   trialObjective?: string;
   benchmark?: string;
   trialType?: TrialType;
-  observationObjectives?: ObservationObjective[] | string[];
+  observationObjectives?: ObservationObjective[];
   metadata?: Record<string, unknown>;
   id?: string;
   now?: string;
@@ -292,8 +309,8 @@ export function createKodePengujian(input: {
 }
 
 export interface EffectiveSampleContext {
-  storageCondition?: string;
-  bottlePosition?: string;
+  storageCondition?: StorageCondition | string;
+  bottlePosition?: StoragePosition | string;
 }
 
 /**
@@ -313,8 +330,8 @@ export function getEffectiveSampleContext(
 export function addSample(kp: KodePengujian, input: {
   sampleCode?: string;
   positionInRun?: number;
-  storageCondition?: string;
-  bottlePosition?: string;
+  storageCondition?: StorageCondition | string;
+  bottlePosition?: StoragePosition | string;
   deviceConfiguration?: DeviceConfiguration;
   usagePattern?: UsagePattern;
   notes?: string;
@@ -361,8 +378,9 @@ export function createTestRun(kp: KodePengujian, input: {
   wizardProgress?: WizardProgress;
   executionMeasurements?: ExecutionMeasurements;
   operationalDerivedMetrics?: OperationalDerivedMetrics;
-  observationObjectives?: ObservationObjective[] | string[];
+  observationObjectives?: ObservationObjective[];
   acquisitionDate?: string;
+  captureSession?: CaptureSession;
   notes?: string;
   metadata?: Record<string, unknown>;
   id?: string;
@@ -390,6 +408,7 @@ export function createTestRun(kp: KodePengujian, input: {
     operationalDerivedMetrics: input.operationalDerivedMetrics,
     observationObjectives: input.observationObjectives,
     acquisitionDate: input.acquisitionDate,
+    captureSession: input.captureSession,
     notes: input.notes,
     metadata: input.metadata,
     status: 'PENDING',
@@ -583,12 +602,13 @@ export function finalizeTestRun(kp: KodePengujian, testRunId: string, report: Fi
   const sample = kp.samples.find(s => s.id === tr.sampleId);
   const isAerosol = sample?.deviceConfiguration?.deviceType === 'Aerosol';
 
-  // Authoritative operational metrics snapshot: recalculate from execution measurements
+  // Authoritative operational metrics snapshot: recalculate strictly from execution measurements.
+  // Never trust caller-supplied derived metrics snapshot in report.
   const measurements: ExecutionMeasurements | undefined = tr.executionMeasurements
     ? { ...tr.executionMeasurements }
     : report.operationalMetrics?.measurements;
 
-  let derived: OperationalDerivedMetrics | undefined = report.operationalMetrics?.derived;
+  let derived: OperationalDerivedMetrics | undefined = undefined;
   if (measurements) {
     const dischargedMassG = calculateDischargedMass(measurements.initialGrossWeightG, measurements.finalGrossWeightG);
     const dischargeRateGPerS = calculateDischargeRate(dischargedMassG, measurements.actualPressDurationS);
@@ -874,4 +894,62 @@ function mapBatchStatusToTestRunStatus(status: BatchStatus): TestRunStatus {
     case 'ABORTED': return 'ABORTED';
     default: return 'PENDING';
   }
+}
+
+/**
+ * Evaluates operational wizard progression criteria cleanly.
+ *
+ * Distinguishes "Draft Saved" from "Step Completed":
+ * - Step 1: Identifikasi Sampel requires sampleCode to be non-empty.
+ * - Step 2: Konfigurasi Device requires deviceType.
+ * - Step 3: Parameter Pengujian requires stroke and holding time.
+ * - Step 4: Eksekusi & Data Pengujian requires real capture evidence (CaptureSession with saved frames or moments),
+ *           NOT merely entering draft measurements.
+ */
+export function evaluateWizardProgress(
+  testRun: Pick<TestRun, 'status' | 'captureSession' | 'wizardProgress'>,
+  formData?: {
+    sampleCode?: string;
+    deviceType?: DeviceType;
+    strokeMm?: number | string;
+    holdingTimeS?: number | string;
+  }
+): WizardProgress {
+  if (testRun.status === 'FINALIZED') {
+    return {
+      step1Completed: true,
+      step2Completed: true,
+      step3Completed: true,
+      step4Completed: true,
+    };
+  }
+
+  const currentWp = testRun.wizardProgress ?? {};
+
+  const step1Completed = formData?.sampleCode !== undefined
+    ? Boolean(formData.sampleCode.trim())
+    : Boolean(currentWp.step1Completed);
+
+  const step2Completed = step1Completed && (formData?.deviceType !== undefined
+    ? Boolean(formData.deviceType)
+    : Boolean(currentWp.step2Completed));
+
+  const step3Completed = step2Completed && (formData?.strokeMm !== undefined && formData?.holdingTimeS !== undefined
+    ? Boolean(String(formData.strokeMm).trim() !== '' && String(formData.holdingTimeS).trim() !== '')
+    : Boolean(currentWp.step3Completed));
+
+  const hasCaptureEvidence = Boolean(
+    testRun.captureSession &&
+    ((testRun.captureSession.realSideFrames && testRun.captureSession.realSideFrames.length > 0) ||
+     (testRun.captureSession.synchronizedMoments && testRun.captureSession.synchronizedMoments.length > 0))
+  );
+
+  const step4Completed = step3Completed && hasCaptureEvidence;
+
+  return {
+    step1Completed,
+    step2Completed,
+    step3Completed,
+    step4Completed,
+  };
 }

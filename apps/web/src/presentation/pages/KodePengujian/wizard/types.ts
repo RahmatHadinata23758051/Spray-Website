@@ -112,7 +112,7 @@ export function initWizardFormData(
     acquisitionDate: testRun.acquisitionDate || new Date().toISOString().slice(0, 10),
     trialObjective: kp.trialObjective || '',
     storagePosition: sample.bottlePosition || kp.bottlePosition || 'Tegak',
-    storageCondition: sample.storageCondition || kp.storageCondition || 'Suhu Ruang',
+    storageCondition: sample.storageCondition || kp.storageCondition || 'Ruang',
     benchmark: kp.benchmark || '',
     trialType: kp.trialType || 'Lab',
     sampleCode: sample.sampleCode || sample.id,

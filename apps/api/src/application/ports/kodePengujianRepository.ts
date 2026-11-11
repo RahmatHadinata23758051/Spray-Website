@@ -14,6 +14,8 @@ import type {
   TrialType,
   ObservationObjective,
   WizardProgress,
+  StoragePosition,
+  StorageCondition,
 } from '@spray-paragon/domain';
 import type { RemoteSyncPayload, RemoteSyncResponse } from '@spray-paragon/contracts';
 
@@ -28,13 +30,13 @@ export interface CreateKodePengujianInput {
   operatorId: string;
   operatorName: string;
   calculationStandard?: string;
-  storageCondition?: string;
-  bottlePosition?: string;
+  storageCondition?: StorageCondition | string;
+  bottlePosition?: StoragePosition | string;
   kuf?: string;
   trialObjective?: string;
   benchmark?: string;
   trialType?: TrialType;
-  observationObjectives?: ObservationObjective[] | string[];
+  observationObjectives?: ObservationObjective[];
   notes?: string;
   metadata?: Record<string, unknown>;
   id?: string;
@@ -45,13 +47,13 @@ export interface KodePengujianParentMetadata {
   formulaNumber?: string;
   testPeriod?: string;
   calculationStandard?: string;
-  storageCondition?: string;
-  bottlePosition?: string;
+  storageCondition?: StorageCondition | string;
+  bottlePosition?: StoragePosition | string;
   kuf?: string;
   trialObjective?: string;
   benchmark?: string;
   trialType?: TrialType;
-  observationObjectives?: ObservationObjective[] | string[];
+  observationObjectives?: ObservationObjective[];
   notes?: string;
   metadata?: Record<string, unknown>;
   defaultRecipeId?: string;
@@ -61,8 +63,8 @@ export interface KodePengujianParentMetadata {
 export interface CreateSampleInput {
   sampleCode?: string;
   positionInRun?: number;
-  storageCondition?: string;
-  bottlePosition?: string;
+  storageCondition?: StorageCondition | string;
+  bottlePosition?: StoragePosition | string;
   deviceConfiguration?: DeviceConfiguration;
   usagePattern?: UsagePattern;
   notes?: string;
@@ -73,8 +75,8 @@ export interface CreateSampleInput {
 export interface UpdateSampleInput {
   sampleCode?: string;
   positionInRun?: number;
-  storageCondition?: string;
-  bottlePosition?: string;
+  storageCondition?: StorageCondition | string;
+  bottlePosition?: StoragePosition | string;
   deviceConfiguration?: DeviceConfiguration;
   usagePattern?: UsagePattern;
   notes?: string;
@@ -93,9 +95,10 @@ export interface CreateTestRunInput {
   repetitionIndex?: number;
   executionMeasurements?: ExecutionMeasurements;
   operationalDerivedMetrics?: OperationalDerivedMetrics;
-  observationObjectives?: ObservationObjective[] | string[];
+  observationObjectives?: ObservationObjective[];
   wizardProgress?: WizardProgress;
   acquisitionDate?: string;
+  captureSession?: CaptureSession;
   notes?: string;
   metadata?: Record<string, unknown>;
   id?: string;
@@ -105,7 +108,7 @@ export interface UpdateTestRunInput {
   setpoints?: TestRunSetpoints;
   executionMeasurements?: ExecutionMeasurements;
   operationalDerivedMetrics?: OperationalDerivedMetrics;
-  observationObjectives?: ObservationObjective[] | string[];
+  observationObjectives?: ObservationObjective[];
   wizardProgress?: WizardProgress;
   acquisitionDate?: string;
   captureSession?: CaptureSession;

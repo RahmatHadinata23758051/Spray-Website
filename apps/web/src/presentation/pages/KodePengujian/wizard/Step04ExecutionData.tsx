@@ -135,7 +135,7 @@ export function Step04ExecutionData({
               label="Tekanan Awal (bar)"
               hint={
                 <span className="inline-flex items-center gap-1">
-                  <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL / SENSOR</span>
+                  <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL — input manometer</span>
                   <span>Tekanan sebelum semprot</span>
                 </span>
               }
@@ -155,7 +155,7 @@ export function Step04ExecutionData({
               label="Tekanan Setelah (bar)"
               hint={
                 <span className="inline-flex items-center gap-1">
-                  <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL / SENSOR</span>
+                  <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL — input manometer</span>
                   <span>Tekanan sesudah semprot</span>
                 </span>
               }
@@ -177,7 +177,7 @@ export function Step04ExecutionData({
           label="Bobot Awal Bruto (g)"
           hint={
             <span className="inline-flex items-center gap-1">
-              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL / TIMBANGAN</span>
+              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL — input timbangan</span>
               <span>Berat sebelum semprot</span>
             </span>
           }
@@ -198,7 +198,7 @@ export function Step04ExecutionData({
           label="Bobot Akhir Bruto (g)"
           hint={
             <span className="inline-flex items-center gap-1">
-              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL / TIMBANGAN</span>
+              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL — input timbangan</span>
               <span>Berat sesudah semprot</span>
             </span>
           }
@@ -219,8 +219,8 @@ export function Step04ExecutionData({
           label="Durasi Tekan Aktual (s)"
           hint={
             <span className="inline-flex items-center gap-1">
-              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">HARDWARE</span>
-              <span>Waktu riil aktuator menekan</span>
+              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL — integrasi hardware pending</span>
+              <span>Waktu riil penekanan aktuator</span>
             </span>
           }
           required

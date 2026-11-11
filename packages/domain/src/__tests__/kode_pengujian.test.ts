@@ -12,6 +12,8 @@ import {
   getEffectiveSampleContext,
   resetIdCounters,
   DomainInvariantError,
+  normalizeLegacyObservationObjectives,
+  evaluateWizardProgress,
 } from '../kode-pengujian/index';
 import {
   createBatchDraft,
@@ -987,6 +989,165 @@ describe('Kode Pengujian Domain Foundation (P1B)', () => {
         expect(report.side).toBeDefined();
         expect(report.front).toBeUndefined();
         expect(report.analysisSource).toBe('simulation');
+      });
+    });
+
+    describe('W11.1 Flow Integrity & Calculation Authority', () => {
+      it('normalizeLegacyObservationObjectives preserves valid objectives and filters unknown strings', () => {
+        const raw = ['Panjang lintasan', 'Unknown Objective', 'Sebaran', 123, null];
+        const normalized = normalizeLegacyObservationObjectives(raw);
+        expect(normalized).toEqual(['Panjang lintasan', 'Sebaran']);
+      });
+
+      it('finalizeTestRun recalculates derived metrics strictly from executionMeasurements and never trusts caller snapshot', () => {
+        let kp = createKodePengujian({
+          productId: 'p-1',
+          productSnapshot: dummyProduct,
+          operatorId: '550e8400-e29b-41d4-a716-446655440000',
+          operatorName: 'Operator 1',
+        });
+        kp = addSample(kp, { sampleCode: 'S-1', deviceConfiguration: { deviceType: 'Aerosol' } });
+        const sampleId = kp.samples[0].id;
+        const res = createTestRun(kp, {
+          sampleId,
+          recipeId: 'r-1',
+          recipeSnapshot: dummyRecipeA,
+          setpoints: dummySetpointsA,
+          fixture: 'nominal-01',
+          operatorId: '550e8400-e29b-41d4-a716-446655440000',
+          operatorName: 'Operator 1',
+          executionMeasurements: {
+            initialGrossWeightG: 120.0,
+            finalGrossWeightG: 118.0, // 2.0g mass
+            actualPressDurationS: 2.0, // 1.0 g/s rate
+            initialPressureBar: 4.5,
+            finalPressureBar: 4.0, // 0.5 bar drop
+          },
+        });
+        kp = res.kp;
+        const trId = res.testRun.id;
+
+        // Transition to ANALYZING then REVIEW_REQUIRED
+        kp = startTestRunCapture(kp, trId);
+        const dummyDraft = {
+          calibration: {
+            side: createCalibrationSnapshot({
+              camera: 'side',
+              referenceDistanceMm: 100,
+              anchorA: { x: 100, y: 100 },
+              anchorB: { x: 200, y: 100 },
+            }),
+          },
+          manualAdjustments: {},
+          operatorNotes: 'ok',
+        };
+        kp = updateTestRunAnalysisDraft(kp, trId, dummyDraft);
+        kp = requestTestRunReview(kp, trId);
+
+        // Caller passes a fake derived metric in report snapshot
+        const rawReport = createDummyReport(trId, sampleId);
+        const reportWithFakeMetrics: FinalAnalysisReport = {
+          ...rawReport,
+          operationalMetrics: {
+            derived: {
+              dischargedMassG: 999.999, // FAKE caller value
+              dischargeRateGPerS: 888.888, // FAKE caller value
+              pressureDropBar: 777.77, // FAKE caller value
+            },
+          },
+        };
+
+        const finalizedKp = finalizeTestRun(kp, trId, reportWithFakeMetrics);
+        const finalizedTr = finalizedKp.testRuns[0];
+        const finalMetrics = finalizedTr.finalReport?.operationalMetrics?.derived;
+
+        // Must be recalculated strictly from executionMeasurements:
+        expect(finalMetrics?.dischargedMassG).toBe(2.0);
+        expect(finalMetrics?.dischargeRateGPerS).toBe(1.0);
+        expect(finalMetrics?.pressureDropBar).toBe(0.5);
+      });
+
+      it('finalizeTestRun preserves signed negative numbers (tare drift and pressure rise)', () => {
+        let kp = createKodePengujian({
+          productId: 'p-1',
+          productSnapshot: dummyProduct,
+          operatorId: '550e8400-e29b-41d4-a716-446655440000',
+          operatorName: 'Operator 1',
+        });
+        kp = addSample(kp, { sampleCode: 'S-1', deviceConfiguration: { deviceType: 'Aerosol' } });
+        const sampleId = kp.samples[0].id;
+        const res = createTestRun(kp, {
+          sampleId,
+          recipeId: 'r-1',
+          recipeSnapshot: dummyRecipeA,
+          setpoints: dummySetpointsA,
+          fixture: 'nominal-01',
+          operatorId: '550e8400-e29b-41d4-a716-446655440000',
+          operatorName: 'Operator 1',
+          executionMeasurements: {
+            initialGrossWeightG: 100.0,
+            finalGrossWeightG: 101.5, // Tare drift anomaly: -1.5g
+            actualPressDurationS: 2.0, // -0.75 g/s
+            initialPressureBar: 4.0,
+            finalPressureBar: 4.3, // Pressure rise anomaly: -0.3 bar
+          },
+        });
+        kp = res.kp;
+        const trId = res.testRun.id;
+
+        kp = startTestRunCapture(kp, trId);
+        kp = updateTestRunAnalysisDraft(kp, trId, {
+          calibration: {
+            side: createCalibrationSnapshot({
+              camera: 'side',
+              referenceDistanceMm: 100,
+              anchorA: { x: 100, y: 100 },
+              anchorB: { x: 200, y: 100 },
+            }),
+          },
+          manualAdjustments: {},
+          operatorNotes: 'anomaly test',
+        });
+        kp = requestTestRunReview(kp, trId);
+
+        const rawReport = createDummyReport(trId, sampleId);
+        const finalizedKp = finalizeTestRun(kp, trId, rawReport);
+        const finalMetrics = finalizedKp.testRuns[0].finalReport?.operationalMetrics?.derived;
+
+        expect(finalMetrics?.dischargedMassG).toBe(-1.5);
+        expect(finalMetrics?.dischargeRateGPerS).toBe(-0.75);
+        expect(finalMetrics?.pressureDropBar).toBe(-0.3);
+      });
+
+      it('evaluateWizardProgress requires real capture evidence to complete Step 4', () => {
+        const withoutCapture = evaluateWizardProgress(
+          { status: 'PENDING', captureSession: undefined },
+          { sampleCode: 'SMP-1', deviceType: 'Aerosol', strokeMm: 10, holdingTimeS: 1.5 }
+        );
+        expect(withoutCapture.step1Completed).toBe(true);
+        expect(withoutCapture.step2Completed).toBe(true);
+        expect(withoutCapture.step3Completed).toBe(true);
+        expect(withoutCapture.step4Completed).toBe(false);
+
+        const withCapture = evaluateWizardProgress(
+          {
+            status: 'CAPTURING',
+            captureSession: {
+              scenario: 'nominal-01',
+              synchronizedMoments: [],
+              realSideFrames: [{ frameId: 'f-1', frameIndex: 1, timestampMs: 100, assetPath: 'path' }],
+              startedAt: '2026-11-11T20:00:00Z',
+            },
+          },
+          { sampleCode: 'SMP-1', deviceType: 'Aerosol', strokeMm: 10, holdingTimeS: 1.5 }
+        );
+        expect(withCapture.step4Completed).toBe(true);
+
+        const finalized = evaluateWizardProgress({ status: 'FINALIZED' });
+        expect(finalized.step1Completed).toBe(true);
+        expect(finalized.step2Completed).toBe(true);
+        expect(finalized.step3Completed).toBe(true);
+        expect(finalized.step4Completed).toBe(true);
       });
     });
   });

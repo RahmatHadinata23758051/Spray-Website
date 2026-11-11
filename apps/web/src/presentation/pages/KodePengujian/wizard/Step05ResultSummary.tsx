@@ -377,7 +377,7 @@ export function Step05ResultSummary({
               + Tambah Repetisi (Add Replication)
             </button>
             <div className="hidden group-hover:block absolute bottom-full right-0 mb-1.5 w-64 p-2 bg-text-primary text-surface text-[10px] rounded shadow-md z-10">
-              [Belum Aktif - Menunggu Klarifikasi Semantik Paragon: Apakah membuat baris repetisi baru pada sampel yang sama atau test run baru]
+              Menunggu klarifikasi Paragon: apakah repetisi menjalankan TestRun baru pada sampel fisik yang sama, atau membuat sampel fisik baru beserta TestRun baru.
             </div>
           </div>
 
