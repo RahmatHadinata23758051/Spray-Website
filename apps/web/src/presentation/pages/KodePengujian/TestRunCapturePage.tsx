@@ -961,18 +961,24 @@ export function TestRunCapturePage() {
   const backPath = returnToWizard && context
     ? `/kode-pengujian/${context.kp.id}/samples/${context.sample.id}/runs/${context.testRun.id}/execute?step=4`
     : `/kode-pengujian/${kpId}`;
-  const backLabel = returnToWizard ? 'Kembali ke Wizard' : 'Kembali ke Kode Pengujian';
+  const backLabel = returnToWizard ? 'Kembali ke Eksekusi' : 'Kembali ke Kode Pengujian';
 
   return (
     <div className="flex flex-col h-full space-y-6 max-w-[1320px] mx-auto w-full">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border-subtle pb-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-base font-bold text-text-primary">{kp.id}</span>
-            <span className="text-text-muted">/</span>
-            <span className="font-mono text-base font-bold text-text-primary">{sample.sampleCode || sample.id}</span>
-            <span className="text-text-muted">/</span>
-            <span className="font-mono text-base font-bold text-text-primary">{testRun.id}</span>
+            {returnToWizard ? (
+              <span className="text-base font-bold text-text-primary">Pengujian Spray / Capture</span>
+            ) : (
+              <>
+                <span className="font-mono text-base font-bold text-text-primary">{kp.id}</span>
+                <span className="text-text-muted">/</span>
+                <span className="font-mono text-base font-bold text-text-primary">{sample.sampleCode || sample.id}</span>
+                <span className="text-text-muted">/</span>
+                <span className="font-mono text-base font-bold text-text-primary">{testRun.id}</span>
+              </>
+            )}
             <span className="text-text-muted">•</span>
             <span className="text-sm font-semibold text-text-secondary">{testRun.recipeSnapshot.name}</span>
             <span className="text-text-muted">•</span>

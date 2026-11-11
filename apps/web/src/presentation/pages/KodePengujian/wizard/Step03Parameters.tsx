@@ -5,7 +5,6 @@ import { FormSection } from '../../../components/ui/FormSection';
 import { FormField } from '../../../components/ui/FormField';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
-import { Status } from '../../../components/ui/Status';
 import type { ObservationObjective } from '@spray-paragon/domain';
 import { secondsToPressDurationMs } from '@spray-paragon/domain';
 
@@ -50,37 +49,25 @@ export function Step03Parameters({
   const convertedMs = secondsToPressDurationMs(currentSeconds);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-surface-subtle/40 border border-border-subtle rounded-md p-3.5 flex items-start justify-between">
-        <div>
-          <h2 className="text-sm font-bold text-text-primary">03. Parameter Uji & Sasaran Observasi</h2>
-          <p className="text-xs text-text-muted mt-0.5">
-            Tentukan sasaran pengamatan visual, mode gaya aktuator, durasi penekanan, dan dimensi geometri botol.
-          </p>
-        </div>
-        <Status tone="info">Langkah 3 dari 5</Status>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-sm font-bold text-text-primary">03. Parameter Uji & Sasaran Observasi</h2>
       </div>
 
       {/* Observation Objectives */}
-      <div className="border border-border-default bg-surface rounded-md p-4 space-y-3">
-        <div className="border-b border-border-subtle pb-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary">
-            Sasaran Pengamatan (Observation Objectives)
-          </h3>
-          <p className="text-[11px] text-text-muted mt-0.5">
-            Pilih parameter yang menjadi fokus verifikasi dan evaluasi pada pengujian ini
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+      <div className="space-y-2">
+        <label className="text-xs font-semibold text-text-secondary block">
+          Sasaran Observasi
+        </label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
           {ALL_OBJECTIVES.map((item) => {
             const isChecked = formData.observationObjectives.includes(item.id);
             return (
               <label
                 key={item.id}
-                className={`flex items-start gap-2.5 p-2.5 rounded border text-xs cursor-pointer transition-colors ${
+                className={`flex items-start gap-2 p-2 rounded border text-xs cursor-pointer transition-colors ${
                   isChecked
-                    ? 'border-primary/50 bg-primary/5 text-text-primary'
+                    ? 'border-primary/50 bg-primary/5 text-text-primary font-medium'
                     : 'border-border-default hover:border-border-strong text-text-secondary bg-surface'
                 } ${isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
@@ -89,12 +76,12 @@ export function Step03Parameters({
                   checked={isChecked}
                   disabled={isReadOnly}
                   onChange={() => handleObjectiveToggle(item.id)}
-                  className="mt-0.5 rounded border-border-strong text-primary focus:ring-primary"
+                  className="mt-0.5 rounded border-border-strong text-primary focus:ring-primary h-3.5 w-3.5"
                 />
                 <div className="min-w-0">
-                  <div className="font-medium">{item.label}</div>
+                  <div>{item.label}</div>
                   {item.note && (
-                    <div className="text-[10px] text-text-muted mt-0.5">{item.note}</div>
+                    <div className="text-[10px] text-text-muted mt-0.5 leading-tight">{item.note}</div>
                   )}
                 </div>
               </label>
@@ -103,21 +90,18 @@ export function Step03Parameters({
         </div>
       </div>
 
-      {/* Force Mode & Setpoint */}
-      <FormSection
-        title="Pengaturan Gaya Tekan (Actuator Force)"
-        description="Pilih mode gaya normal berdasarkan preset standar atau kustom (tidak normal)"
-      >
+      {/* Parameter Mesin */}
+      <FormSection title="Parameter Mesin">
         <FormField label="Mode Gaya Tekan" required>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1.5 p-0.5 bg-surface-subtle border border-border-subtle rounded">
             <button
               type="button"
               disabled={isReadOnly}
               onClick={() => onChange({ forceMode: 'Normal' })}
-              className={`py-1.5 px-3 rounded text-xs font-semibold border transition-all ${
+              className={`py-1 px-2.5 rounded text-xs font-semibold transition-all ${
                 isNormalForce
-                  ? 'border-primary bg-primary text-white shadow-xs'
-                  : 'border-border-default hover:border-border-strong text-text-secondary bg-surface'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Normal (Preset)
@@ -126,10 +110,10 @@ export function Step03Parameters({
               type="button"
               disabled={isReadOnly}
               onClick={() => onChange({ forceMode: 'Tidak Normal' })}
-              className={`py-1.5 px-3 rounded text-xs font-semibold border transition-all ${
+              className={`py-1 px-2.5 rounded text-xs font-semibold transition-all ${
                 !isNormalForce
-                  ? 'border-primary bg-primary text-white shadow-xs'
-                  : 'border-border-default hover:border-border-strong text-text-secondary bg-surface'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Tidak Normal (Manual)
@@ -138,11 +122,7 @@ export function Step03Parameters({
         </FormField>
 
         {isNormalForce ? (
-          <FormField
-            label="Preset Gaya Tekan (N)"
-            hint="Preset gaya adalah fixture sementara menunggu konfirmasi standar resmi Paragon"
-            required
-          >
+          <FormField label="Preset Gaya Tekan (N)" required>
             <Select
               value={formData.normalForcePresetN}
               onChange={(e) => onChange({ normalForcePresetN: Number(e.target.value) })}
@@ -150,17 +130,13 @@ export function Step03Parameters({
             >
               {normalPresets.map((preset) => (
                 <option key={preset} value={preset}>
-                  {preset} N (Preset Standar)
+                  {preset} N
                 </option>
               ))}
             </Select>
           </FormField>
         ) : (
-          <FormField
-            label="Gaya Tekan Kustom (N)"
-            hint="Kekuatan tekan manual aktuator"
-            required
-          >
+          <FormField label="Gaya Tekan Kustom (N)" required>
             <Input
               type="number"
               step="1"
@@ -172,13 +148,7 @@ export function Step03Parameters({
             />
           </FormField>
         )}
-      </FormSection>
 
-      {/* Duration & Geometry Setpoints */}
-      <FormSection
-        title="Pengaturan Durasi & Geometri Botol"
-        description="Setting parameter durasi penekanan, stroke dispenser, tinggi botol, dan luas penampang"
-      >
         <FormField
           label="Setting Durasi Tekan / Holding Time (s)"
           hint={
@@ -200,24 +170,8 @@ export function Step03Parameters({
         </FormField>
 
         <FormField
-          label="Setting Tinggi Tekan / Stroke (mm)"
-          hint="Kedalaman langkah mekanis penekanan aktuator"
-          required
-        >
-          <Input
-            type="number"
-            step="0.1"
-            value={formData.strokeMm}
-            onChange={(e) => onChange({ strokeMm: e.target.value })}
-            disabled={isReadOnly}
-            placeholder="Contoh: 10.0"
-            mono
-          />
-        </FormField>
-
-        <FormField
           label="Tinggi Botol (mm)"
-          hint="Dimensi ketinggian botol (satuan milimeter)"
+          hint="dimensi ketinggian botol (satuan milimeter)"
           required
         >
           <Input
@@ -231,10 +185,7 @@ export function Step03Parameters({
           />
         </FormField>
 
-        <FormField
-          label="Luas Aktuator (mm²)"
-          hint="Luas bidang kontak ujung aktuator semprot"
-        >
+        <FormField label="Luas Aktuator (mm²)">
           <Input
             type="number"
             step="1"
@@ -242,6 +193,18 @@ export function Step03Parameters({
             onChange={(e) => onChange({ actuatorAreaMm2: e.target.value })}
             disabled={isReadOnly}
             placeholder="Contoh: 150"
+            mono
+          />
+        </FormField>
+
+        <FormField label="Setting Tinggi Tekan / Stroke (mm)" required>
+          <Input
+            type="number"
+            step="0.1"
+            value={formData.strokeMm}
+            onChange={(e) => onChange({ strokeMm: e.target.value })}
+            disabled={isReadOnly}
+            placeholder="Contoh: 10.0"
             mono
           />
         </FormField>

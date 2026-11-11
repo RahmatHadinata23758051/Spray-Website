@@ -3,7 +3,6 @@ import type { WizardFormData } from './types';
 import { FormSection } from '../../../components/ui/FormSection';
 import { FormField } from '../../../components/ui/FormField';
 import { Input } from '../../../components/ui/Input';
-import { Status } from '../../../components/ui/Status';
 import type { DeviceType } from '@spray-paragon/domain';
 
 interface Step02DeviceConfigProps {
@@ -23,7 +22,6 @@ export function Step02DeviceConfig({
     if (isReadOnly) return;
     onChange({
       deviceType: type,
-      // If switching to Non-Aerosol, clear initialPressureBar from measurements if desired, or keep as is
     });
   };
 
@@ -49,59 +47,49 @@ export function Step02DeviceConfig({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-surface-subtle/40 border border-border-subtle rounded-md p-3.5 flex items-start justify-between">
-        <div>
-          <h2 className="text-sm font-bold text-text-primary">02. Konfigurasi Device / Kemasan</h2>
-          <p className="text-xs text-text-muted mt-0.5">
-            Pilih jenis kemasan dan definisikan spesifikasi komponen botol, aktuator, pump, valve, atau gas.
-          </p>
-        </div>
-        <Status tone="info">Langkah 2 dari 5</Status>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-sm font-bold text-text-primary">02. Konfigurasi Device / Kemasan</h2>
       </div>
 
       {/* Device Type Selector */}
-      <div className="border border-border-default bg-surface rounded-md p-4 space-y-3">
-        <label className="text-xs font-semibold text-text-secondary block">
-          Tipe Kemasan / Sistem Dispenser <span className="text-semantic-danger font-bold">*</span>
-        </label>
-        <div className="grid grid-cols-2 gap-3 max-w-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-surface border border-border-default rounded-md">
+        <div>
+          <span className="text-xs font-semibold text-text-secondary block">
+            Tipe Kemasan / Dispenser <span className="text-semantic-danger font-bold">*</span>
+          </span>
+        </div>
+        <div className="inline-flex rounded-md p-0.5 bg-surface-subtle border border-border-subtle">
           <button
             type="button"
             disabled={isReadOnly}
             onClick={() => handleDeviceTypeChange('Non-Aerosol')}
-            className={`flex flex-col items-center justify-center p-3 rounded border text-xs font-medium transition-all ${
+            className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
               !isAerosol
-                ? 'border-primary bg-primary/5 text-primary font-bold shadow-xs'
-                : 'border-border-default hover:border-border-strong text-text-secondary bg-surface'
+                ? 'bg-primary text-white shadow-xs'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
-            <span className="text-sm font-bold">Non-Aerosol</span>
-            <span className="text-[11px] text-text-muted mt-0.5">Pump / Trigger Spray / Botol</span>
+            Non-Aerosol
           </button>
-
           <button
             type="button"
             disabled={isReadOnly}
             onClick={() => handleDeviceTypeChange('Aerosol')}
-            className={`flex flex-col items-center justify-center p-3 rounded border text-xs font-medium transition-all ${
+            className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
               isAerosol
-                ? 'border-primary bg-primary/5 text-primary font-bold shadow-xs'
-                : 'border-border-default hover:border-border-strong text-text-secondary bg-surface'
+                ? 'bg-primary text-white shadow-xs'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
-            <span className="text-sm font-bold">Aerosol</span>
-            <span className="text-[11px] text-text-muted mt-0.5">Canister Bertekanan + Gas</span>
+            Aerosol
           </button>
         </div>
       </div>
 
       {/* Conditional Fields: Aerosol */}
       {isAerosol ? (
-        <FormSection
-          title="Spesifikasi Komponen Aerosol"
-          description="Lengkapi kode aktuator, kaleng, valve, komposisi gas, dan kondisi awal kaleng"
-        >
+        <FormSection title="Spesifikasi Komponen Aerosol">
           <FormField label="Kode Aktuator" required>
             <Input
               value={formData.aerosolSpec.actuatorCode}
@@ -132,7 +120,7 @@ export function Step02DeviceConfig({
             />
           </FormField>
 
-          <FormField label="Rasio Gas" hint="Perbandingan konsentrasi gas propelan">
+          <FormField label="Rasio Gas">
             <Input
               value={formData.aerosolSpec.gasRatio}
               onChange={(e) => handleAerosolChange('gasRatio', e.target.value)}
@@ -142,20 +130,16 @@ export function Step02DeviceConfig({
             />
           </FormField>
 
-          <FormField label="Jenis Gas" hint="Zat propelan yang digunakan">
+          <FormField label="Jenis Gas">
             <Input
               value={formData.aerosolSpec.gasType}
               onChange={(e) => handleAerosolChange('gasType', e.target.value)}
               disabled={isReadOnly}
-              placeholder="Contoh: Butane / Propane / DME"
+              placeholder="Contoh: Butane / Propane"
             />
           </FormField>
 
-          <FormField
-            label="Tekanan Awal (bar)"
-            hint="Tekanan sebelum penekanan dimulai"
-            required
-          >
+          <FormField label="Tekanan Awal (bar)" required>
             <Input
               type="number"
               step="0.01"
@@ -167,11 +151,7 @@ export function Step02DeviceConfig({
             />
           </FormField>
 
-          <FormField
-            label="Bobot Awal Bruto (g)"
-            hint="Berat total botol/kaleng sebelum uji"
-            required
-          >
+          <FormField label="Bobot Awal Bruto (g)" required>
             <Input
               type="number"
               step="0.01"
@@ -185,10 +165,7 @@ export function Step02DeviceConfig({
         </FormSection>
       ) : (
         /* Conditional Fields: Non-Aerosol */
-        <FormSection
-          title="Spesifikasi Komponen Non-Aerosol"
-          description="Lengkapi kode botol, pompa (pump), dan bobot awal sebelum pengujian"
-        >
+        <FormSection title="Spesifikasi Komponen Non-Aerosol">
           <FormField label="Kode Botol" required>
             <Input
               value={formData.nonAerosolSpec.bottleCode}
@@ -209,11 +186,7 @@ export function Step02DeviceConfig({
             />
           </FormField>
 
-          <FormField
-            label="Bobot Awal Bruto (g)"
-            hint="Berat total botol sebelum uji"
-            required
-          >
+          <FormField label="Bobot Awal Bruto (g)" required>
             <Input
               type="number"
               step="0.01"

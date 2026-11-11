@@ -587,7 +587,7 @@ export function KodePengujianDetailPage() {
                                   `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/capture`
                                 )
                               }
-                              className="btn btn-secondary !min-h-[28px] !py-0.5 px-2 text-[11px]"
+                              className="text-[11px] text-text-muted hover:text-text-primary px-1.5 transition-colors underline-offset-2 hover:underline"
                               title="Buka studio capture kamera langsung"
                               id={`btn-studio-capture-${tr.id}`}
                             >
@@ -607,7 +607,7 @@ export function KodePengujianDetailPage() {
                               className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
                               id={`btn-lanjut-pengujian-${tr.id}`}
                             >
-                              Lanjutkan Pengujian
+                              Lanjutkan
                             </button>
                             <button
                               type="button"
@@ -616,7 +616,7 @@ export function KodePengujianDetailPage() {
                                   `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/capture`
                                 )
                               }
-                              className="btn btn-secondary !min-h-[28px] !py-0.5 px-2 text-[11px]"
+                              className="text-[11px] text-text-muted hover:text-text-primary px-1.5 transition-colors underline-offset-2 hover:underline"
                               title="Buka studio capture kamera langsung"
                             >
                               Studio Capture
@@ -635,7 +635,7 @@ export function KodePengujianDetailPage() {
                               className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
                               id={`btn-buka-analisis-${tr.id}`}
                             >
-                              Lanjutkan Pengujian
+                              Lanjutkan
                             </button>
                             <button
                               type="button"
@@ -644,7 +644,7 @@ export function KodePengujianDetailPage() {
                                   `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/analysis`
                                 )
                               }
-                              className="btn btn-secondary !min-h-[28px] !py-0.5 px-2 text-[11px]"
+                              className="text-[11px] text-text-muted hover:text-text-primary px-1.5 transition-colors underline-offset-2 hover:underline"
                               title="Buka ruang analisis kamera langsung"
                             >
                               Studio Analisis
@@ -663,7 +663,7 @@ export function KodePengujianDetailPage() {
                               className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
                               id={`btn-tinjau-analisis-${tr.id}`}
                             >
-                              Tinjau Pengujian
+                              Lanjutkan
                             </button>
                             <button
                               type="button"
@@ -672,7 +672,7 @@ export function KodePengujianDetailPage() {
                                   `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/analysis`
                                 )
                               }
-                              className="btn btn-secondary !min-h-[28px] !py-0.5 px-2 text-[11px]"
+                              className="text-[11px] text-text-muted hover:text-text-primary px-1.5 transition-colors underline-offset-2 hover:underline"
                               title="Buka tinjauan analisis langsung"
                             >
                               Studio Analisis

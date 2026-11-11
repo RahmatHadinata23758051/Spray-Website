@@ -72,29 +72,24 @@ export function Step05ResultSummary({
     : formData.leakage;
 
   return (
-    <div className="space-y-6">
-      {/* Banner status */}
-      <div className="bg-surface-subtle/40 border border-border-subtle rounded-md p-3.5 flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-text-primary">
-              05. Ringkasan & Hasil Akhir Pengujian
-            </h2>
-            {isFinalized ? (
-              <Status tone="success">Finalized (Terkunci)</Status>
-            ) : (
-              <Status tone="warning">Draf Belum Difinalisasi</Status>
-            )}
-          </div>
-          <p className="text-xs text-text-muted mt-0.5">
-            Ringkasan komprehensif data formulasi, spesifikasi kemasan, pengukuran fisik mesin, dan visual CV.
-          </p>
+    <div className="space-y-5">
+      {/* Header status */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-border-subtle">
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-sm font-bold text-text-primary">
+            05. Ringkasan & Hasil Akhir Pengujian
+          </h2>
+          {isFinalized ? (
+            <Status tone="success">Finalized</Status>
+          ) : (
+            <Status tone="neutral">Draf</Status>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onDownloadCsv}
-            className="btn btn-secondary !min-h-[30px] px-3 text-xs font-semibold flex items-center gap-1.5"
+            className="btn btn-secondary !min-h-[28px] !py-0.5 px-3 text-xs font-semibold flex items-center gap-1.5"
             id="btn-export-csv"
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -109,247 +104,179 @@ export function Step05ResultSummary({
         </div>
       </div>
 
-      {/* KPI Cards: Derived Operational Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="border border-border-default bg-surface p-4 rounded-md">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            Discharged Mass
-          </div>
-          <div className="font-mono text-2xl font-bold text-primary mt-1">
-            {operationalMetrics?.dischargedMassG !== undefined
-              ? `${operationalMetrics.dischargedMassG.toFixed(3)} g`
-              : '—'}
-          </div>
-          <div className="text-[11px] text-text-muted mt-1">
-            Massa formula tersemprot
-          </div>
+      {/* Ringkasan: Compact Identity Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 bg-surface border border-border-default rounded-md text-xs">
+        <div>
+          <span className="text-[10px] text-text-muted block">Produk</span>
+          <span className="font-semibold text-text-primary truncate block" title={formData.productName}>
+            {formData.productName}
+          </span>
         </div>
-
-        <div className="border border-border-default bg-surface p-4 rounded-md">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            Discharge Rate
-          </div>
-          <div className="font-mono text-2xl font-bold text-primary mt-1">
-            {operationalMetrics?.dischargeRateGPerS !== undefined
-              ? `${operationalMetrics.dischargeRateGPerS.toFixed(3)} g/s`
-              : '—'}
-          </div>
-          <div className="text-[11px] text-text-muted mt-1">
-            Laju alir per detik
-          </div>
+        <div>
+          <span className="text-[10px] text-text-muted block">Sampel</span>
+          <span className="font-mono font-medium text-text-primary block">
+            {formData.sampleCode || '—'}
+          </span>
         </div>
-
-        {isAerosol ? (
-          <div className="border border-border-default bg-surface p-4 rounded-md">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-              Pressure Drop
-            </div>
-            <div className="font-mono text-2xl font-bold text-primary mt-1">
-              {operationalMetrics?.pressureDropBar !== undefined
-                ? `${operationalMetrics.pressureDropBar.toFixed(2)} bar`
-                : '—'}
-            </div>
-            <div className="text-[11px] text-text-muted mt-1">
-              Penurunan tekanan kanister
-            </div>
-          </div>
-        ) : (
-          <div className="border border-border-default bg-surface p-4 rounded-md">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-              Status Kebocoran
-            </div>
-            <div className="font-mono text-2xl font-bold mt-1">
-              {displayLeakage === 'Tidak' ? (
-                <span className="text-semantic-success">Aman (Tidak)</span>
-              ) : displayLeakage === 'Ya' ? (
-                <span className="text-semantic-danger">Bocor (Ya)</span>
-              ) : (
-                '—'
-              )}
-            </div>
-            <div className="text-[11px] text-text-muted mt-1">
-              Observasi fisik seal & pump
-            </div>
-          </div>
-        )}
-
-        <div className="border border-border-default bg-surface p-4 rounded-md">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            Spray Length (CV)
-          </div>
-          <div className="font-mono text-2xl font-bold text-text-primary mt-1">
-            {finalReport?.side?.sprayLength?.final !== undefined
-              ? `${finalReport.side.sprayLength.final.toFixed(1)} mm`
-              : '—'}
-          </div>
-          <div className="text-[11px] text-text-muted mt-1">
-            Panjang semprotan Side Camera
-          </div>
+        <div>
+          <span className="text-[10px] text-text-muted block">Trial</span>
+          <span className="font-medium text-text-primary block">{formData.trialType}</span>
+        </div>
+        <div>
+          <span className="text-[10px] text-text-muted block">Device</span>
+          <span className="font-medium text-text-primary block">{formData.deviceType}</span>
+        </div>
+        <div>
+          <span className="text-[10px] text-text-muted block">Tanggal</span>
+          <span className="font-mono text-text-primary block">{formData.acquisitionDate}</span>
         </div>
       </div>
 
-      {/* Summary Data Sections */}
+      {/* 2-Column Technical Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Identitas Produk & Studi */}
-        <div className="border border-border-default bg-surface rounded-md p-4 space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary border-b border-border-subtle pb-2">
-            Identitas Produk & Parameter Studi
-          </h3>
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-            <div>
-              <dt className="text-text-muted text-[11px]">Nama Produk</dt>
-              <dd className="font-semibold text-text-primary">{formData.productName}</dd>
+        {/* Left Column: Hasil Operasional & Kamera */}
+        <div className="space-y-4">
+          {/* Hasil Operasional */}
+          <div className="bg-surface border border-border-default rounded-md overflow-hidden">
+            <div className="bg-surface-subtle px-3 py-1.5 border-b border-border-subtle text-xs font-bold uppercase tracking-wider text-text-primary">
+              Hasil Operasional
             </div>
+            <div className="divide-y divide-border-subtle text-xs font-mono">
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="font-sans text-text-secondary">Discharged Mass</span>
+                <span className="font-bold text-text-primary">
+                  {operationalMetrics?.dischargedMassG !== undefined
+                    ? `${operationalMetrics.dischargedMassG.toFixed(3)} g`
+                    : '—'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="font-sans text-text-secondary">Discharge Rate</span>
+                <span className="font-bold text-text-primary">
+                  {operationalMetrics?.dischargeRateGPerS !== undefined
+                    ? `${operationalMetrics.dischargeRateGPerS.toFixed(3)} g/s`
+                    : '—'}
+                </span>
+              </div>
+              {isAerosol && (
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="font-sans text-text-secondary">Pressure Drop</span>
+                  <span className="font-bold text-text-primary">
+                    {operationalMetrics?.pressureDropBar !== undefined
+                      ? `${operationalMetrics.pressureDropBar.toFixed(2)} bar`
+                      : '—'}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between px-3 py-2 font-sans">
+                <span className="text-text-secondary">Kebocoran</span>
+                <span className="font-semibold text-text-primary">
+                  {displayLeakage === 'Tidak' ? (
+                    <span className="text-semantic-success">Tidak</span>
+                  ) : displayLeakage === 'Ya' ? (
+                    <span className="text-semantic-danger">Ya</span>
+                  ) : (
+                    '—'
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Hasil Analisis Kamera */}
+          <div className="bg-surface border border-border-default rounded-md overflow-hidden">
+            <div className="bg-surface-subtle px-3 py-1.5 border-b border-border-subtle text-xs font-bold uppercase tracking-wider text-text-primary">
+              Hasil Analisis Kamera
+            </div>
+            <div className="divide-y divide-border-subtle text-xs font-mono">
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="font-sans text-text-secondary">Spray Length</span>
+                <span className="font-bold text-text-primary">
+                  {finalReport?.side?.sprayLength?.final !== undefined
+                    ? `${finalReport.side.sprayLength.final.toFixed(1)} mm`
+                    : '—'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="font-sans text-text-secondary">Spray Angle</span>
+                <span className="font-bold text-text-primary">
+                  {finalReport?.side?.sprayAngle?.final !== undefined
+                    ? `${finalReport.side.sprayAngle.final.toFixed(1)}°`
+                    : '—'}
+                </span>
+              </div>
+              {finalReport?.side?.verticalSpread?.final !== undefined && (
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="font-sans text-text-secondary">Vertical Spread</span>
+                  <span className="font-bold text-text-primary">
+                    {finalReport.side.verticalSpread.final.toFixed(1)} mm
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Detail Pengujian */}
+        <div className="bg-surface border border-border-default rounded-md overflow-hidden">
+          <div className="bg-surface-subtle px-3 py-1.5 border-b border-border-subtle text-xs font-bold uppercase tracking-wider text-text-primary">
+            Detail Pengujian
+          </div>
+          <dl className="p-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
             <div>
-              <dt className="text-text-muted text-[11px]">No. Formula</dt>
+              <dt className="text-text-muted text-[10px]">No. Formula</dt>
               <dd className="font-mono font-medium text-text-primary">{formData.formulaNumber || '—'}</dd>
             </div>
             <div>
-              <dt className="text-text-muted text-[11px]">No. Batch / Lot</dt>
+              <dt className="text-text-muted text-[10px]">No. Batch / Lot</dt>
               <dd className="font-mono font-medium text-text-primary">{formData.lotNumber || '—'}</dd>
             </div>
             <div>
-              <dt className="text-text-muted text-[11px]">KUF</dt>
+              <dt className="text-text-muted text-[10px]">KUF</dt>
               <dd className="font-mono font-medium text-text-primary">{formData.kuf || '—'}</dd>
             </div>
             <div>
-              <dt className="text-text-muted text-[11px]">Jenis Trial</dt>
-              <dd className="font-semibold text-text-primary">{formData.trialType}</dd>
+              <dt className="text-text-muted text-[10px]">Benchmark</dt>
+              <dd className="text-text-primary">{formData.benchmark || '—'}</dd>
             </div>
             <div>
-              <dt className="text-text-muted text-[11px]">Tanggal Pengambilan</dt>
-              <dd className="font-mono text-text-primary">{formData.acquisitionDate}</dd>
-            </div>
-            <div className="col-span-2">
-              <dt className="text-text-muted text-[11px]">Tujuan Trial</dt>
-              <dd className="text-text-secondary">{formData.trialObjective || '—'}</dd>
-            </div>
-          </dl>
-        </div>
-
-        {/* Konfigurasi Kemasan & Kondisi */}
-        <div className="border border-border-default bg-surface rounded-md p-4 space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary border-b border-border-subtle pb-2">
-            Spesifikasi Kemasan & Kondisi Botol
-          </h3>
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-            <div>
-              <dt className="text-text-muted text-[11px]">Tipe Kemasan</dt>
-              <dd className="font-semibold text-text-primary">{formData.deviceType}</dd>
+              <dt className="text-text-muted text-[10px]">Posisi / Kondisi</dt>
+              <dd className="text-text-primary">{formData.storagePosition} / {formData.storageCondition}</dd>
             </div>
             <div>
-              <dt className="text-text-muted text-[11px]">Pola Penggunaan</dt>
+              <dt className="text-text-muted text-[10px]">Pola Pakai</dt>
               <dd className="text-text-primary">{formData.usagePattern}</dd>
             </div>
             <div>
-              <dt className="text-text-muted text-[11px]">Posisi Penyimpanan</dt>
-              <dd className="text-text-primary">{formData.storagePosition}</dd>
-            </div>
-            <div>
-              <dt className="text-text-muted text-[11px]">Kondisi Penyimpanan</dt>
-              <dd className="text-text-primary">{formData.storageCondition}</dd>
-            </div>
-            {isAerosol ? (
-              <>
-                <div>
-                  <dt className="text-text-muted text-[11px]">Kode Aktuator / Kaleng</dt>
-                  <dd className="font-mono text-text-primary">
-                    {formData.aerosolSpec.actuatorCode || '—'} / {formData.aerosolSpec.canBottleCode || '—'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted text-[11px]">Gas & Rasio</dt>
-                  <dd className="font-mono text-text-primary">
-                    {formData.aerosolSpec.gasType || '—'} ({formData.aerosolSpec.gasRatio || '—'})
-                  </dd>
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <dt className="text-text-muted text-[11px]">Kode Botol</dt>
-                  <dd className="font-mono text-text-primary">{formData.nonAerosolSpec.bottleCode || '—'}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted text-[11px]">Kode Pump</dt>
-                  <dd className="font-mono text-text-primary">{formData.nonAerosolSpec.pumpCode || '—'}</dd>
-                </div>
-              </>
-            )}
-          </dl>
-        </div>
-
-        {/* Setpoints Mesin */}
-        <div className="border border-border-default bg-surface rounded-md p-4 space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary border-b border-border-subtle pb-2">
-            Setpoints & Geometri Mesin
-          </h3>
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs font-mono">
-            <div>
-              <dt className="font-sans text-text-muted text-[11px]">Mode Gaya Tekan</dt>
-              <dd className="font-bold text-text-primary">
-                {formData.forceMode === 'Normal'
-                  ? `${formData.normalForcePresetN} N (Normal)`
-                  : `${formData.customForceN} N (Tidak Normal)`}
+              <dt className="text-text-muted text-[10px]">Gaya Tekan</dt>
+              <dd className="font-mono text-text-primary">
+                {formData.forceMode === 'Normal' ? `${formData.normalForcePresetN} N` : `${formData.customForceN} N`}
               </dd>
             </div>
             <div>
-              <dt className="font-sans text-text-muted text-[11px]">Durasi Tekan / Holding Time</dt>
-              <dd className="text-text-primary">{formData.holdingTimeS} s</dd>
-            </div>
-            <div>
-              <dt className="font-sans text-text-muted text-[11px]">Tinggi Botol</dt>
-              <dd className="text-text-primary">{formData.bottleHeightMm} mm</dd>
-            </div>
-            <div>
-              <dt className="font-sans text-text-muted text-[11px]">Setting Stroke</dt>
-              <dd className="text-text-primary">{formData.strokeMm} mm</dd>
-            </div>
-          </dl>
-        </div>
-
-        {/* Data Aktual Mesin & Kebocoran */}
-        <div className="border border-border-default bg-surface rounded-md p-4 space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary border-b border-border-subtle pb-2">
-            Data Aktual Mesin & Pengamatan Lapangan
-          </h3>
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs font-mono">
-            <div>
-              <dt className="font-sans text-text-muted text-[11px]">Bobot Awal / Akhir Bruto</dt>
-              <dd className="text-text-primary">
-                {displayInitialWeight || '—'} g / {displayFinalWeight || '—'} g
+              <dt className="text-text-muted text-[10px]">Durasi Tekan (Set / Aktual)</dt>
+              <dd className="font-mono text-text-primary">
+                {formData.holdingTimeS} s {displayActualDuration ? `/ ${displayActualDuration} s` : ''}
               </dd>
             </div>
             <div>
-              <dt className="font-sans text-text-muted text-[11px]">Durasi Tekan Aktual</dt>
-              <dd className="text-text-primary">{displayActualDuration ? `${displayActualDuration} s` : '—'}</dd>
+              <dt className="text-text-muted text-[10px]">Tinggi / Stroke</dt>
+              <dd className="font-mono text-text-primary">{formData.bottleHeightMm} mm / {formData.strokeMm} mm</dd>
+            </div>
+            <div>
+              <dt className="text-text-muted text-[10px]">Bobot Awal / Akhir</dt>
+              <dd className="font-mono text-text-primary">{displayInitialWeight || '—'} g / {displayFinalWeight || '—'} g</dd>
             </div>
             {isAerosol && (
               <div>
-                <dt className="font-sans text-text-muted text-[11px]">Tekanan Awal / Sesudah</dt>
-                <dd className="text-text-primary">
-                  {displayInitialPressure || '—'} bar / {displayFinalPressure || '—'} bar
-                </dd>
+                <dt className="text-text-muted text-[10px]">Tekanan Awal / Akhir</dt>
+                <dd className="font-mono text-text-primary">{displayInitialPressure || '—'} bar / {displayFinalPressure || '—'} bar</dd>
               </div>
             )}
-            <div>
-              <dt className="font-sans text-text-muted text-[11px]">Kebocoran</dt>
-              <dd className="font-sans font-semibold">
-                {displayLeakage === 'Tidak' ? (
-                  <span className="text-semantic-success">Tidak</span>
-                ) : displayLeakage === 'Ya' ? (
-                  <span className="text-semantic-danger">Ya</span>
-                ) : (
-                  '—'
-                )}
-              </dd>
-            </div>
             <div className="col-span-2">
-              <dt className="font-sans text-text-muted text-[11px]">Sasaran Observasi Terpilih</dt>
-              <dd className="font-sans text-text-secondary mt-0.5">
-                {formData.observationObjectives.length > 0
-                  ? formData.observationObjectives.join(', ')
-                  : 'Tidak ada sasaran khusus'}
+              <dt className="text-text-muted text-[10px]">Sasaran Observasi</dt>
+              <dd className="text-text-secondary mt-0.5">
+                {formData.observationObjectives.length > 0 ? formData.observationObjectives.join(', ') : '—'}
               </dd>
             </div>
           </dl>
@@ -357,22 +284,22 @@ export function Step05ResultSummary({
       </div>
 
       {/* Action Footer */}
-      <div className="pt-4 border-t border-border-default flex flex-wrap items-center justify-between gap-3">
+      <div className="pt-3 border-t border-border-default flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={onBackToKp}
-          className="btn btn-secondary !min-h-[32px] px-4 text-xs font-medium"
+          className="btn btn-secondary !min-h-[30px] px-3.5 text-xs font-medium"
         >
           &larr; Kembali ke Detail Kode Pengujian
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* Add Replication button - disabled per client audit requirements */}
           <div className="relative group">
             <button
               type="button"
               disabled
-              className="btn btn-secondary !min-h-[32px] px-3.5 text-xs font-medium opacity-50 cursor-not-allowed"
+              className="btn btn-secondary !min-h-[30px] px-3 text-xs font-medium opacity-50 cursor-not-allowed"
             >
               + Tambah Repetisi (Add Replication)
             </button>
@@ -384,7 +311,7 @@ export function Step05ResultSummary({
           <button
             type="button"
             onClick={onDownloadCsv}
-            className="btn btn-primary !min-h-[32px] px-4 text-xs font-semibold"
+            className="btn btn-primary !min-h-[30px] px-4 text-xs font-semibold"
           >
             Unduh Hasil (CSV)
           </button>

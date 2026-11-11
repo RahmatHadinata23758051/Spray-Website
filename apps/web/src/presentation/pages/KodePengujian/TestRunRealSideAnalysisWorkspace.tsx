@@ -24,6 +24,8 @@ export interface TestRunRealSideAnalysisWorkspaceProps {
   testRun: TestRun;
   onBack: () => void;
   onTestRunUpdated?: (updated: TestRun) => void;
+  returnToWizard?: boolean;
+  backLabel?: string;
 }
 
 export function TestRunRealSideAnalysisWorkspace({
@@ -32,6 +34,8 @@ export function TestRunRealSideAnalysisWorkspace({
   testRun,
   onBack,
   onTestRunUpdated,
+  returnToWizard,
+  backLabel,
 }: TestRunRealSideAnalysisWorkspaceProps) {
   const [preparation, setPreparation] = useState<Preparation>({ status: 'loading' });
   const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
@@ -195,11 +199,17 @@ export function TestRunRealSideAnalysisWorkspace({
       <div className="flex items-center justify-between rounded-panel border border-border-default bg-surface px-4 py-3 shadow-sm text-sm">
         <div className="flex flex-wrap items-center gap-4 sm:gap-6">
           <div className="flex items-center gap-2 font-mono font-bold text-text-primary">
-            <span>{kp.id}</span>
-            <span className="text-text-muted">/</span>
-            <span>{sample.sampleCode || sample.id}</span>
-            <span className="text-text-muted">/</span>
-            <span className="text-primary">{testRun.id}</span>
+            {returnToWizard ? (
+              <span>Pengujian Spray / Analisis</span>
+            ) : (
+              <>
+                <span>{kp.id}</span>
+                <span className="text-text-muted">/</span>
+                <span>{sample.sampleCode || sample.id}</span>
+                <span className="text-text-muted">/</span>
+                <span className="text-primary">{testRun.id}</span>
+              </>
+            )}
           </div>
           <div className="h-4 w-px bg-border-strong hidden sm:block" />
           <div className="flex items-center gap-2">
@@ -228,7 +238,7 @@ export function TestRunRealSideAnalysisWorkspace({
           onClick={onBack}
           className="text-xs font-semibold hover:text-primary transition-colors text-text-secondary flex items-center gap-1 shrink-0"
         >
-          <span>&larr;</span> Kembali ke Kode Pengujian
+          <span>&larr;</span> {backLabel ?? 'Kembali ke Kode Pengujian'}
         </button>
       </div>
 

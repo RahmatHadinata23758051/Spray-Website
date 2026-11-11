@@ -123,6 +123,8 @@ export function TestRunAnalysisPage() {
           testRun={testRun}
           onBack={handleBack}
           onTestRunUpdated={handleTestRunUpdated}
+          returnToWizard={returnToWizard}
+          backLabel={returnToWizard ? 'Kembali ke Eksekusi' : 'Kembali ke Kode Pengujian'}
         />
       ) : (
         <TestRunSimulationAnalysisWorkspace
@@ -131,6 +133,8 @@ export function TestRunAnalysisPage() {
           testRun={testRun}
           onBack={handleBack}
           onTestRunUpdated={handleTestRunUpdated}
+          returnToWizard={returnToWizard}
+          backLabel={returnToWizard ? 'Kembali ke Eksekusi' : 'Kembali ke Kode Pengujian'}
         />
       )}
     </div>

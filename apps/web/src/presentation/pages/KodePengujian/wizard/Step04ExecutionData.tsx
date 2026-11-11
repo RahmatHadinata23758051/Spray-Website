@@ -6,7 +6,6 @@ import { FormField } from '../../../components/ui/FormField';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Textarea } from '../../../components/ui/Textarea';
-import { Status } from '../../../components/ui/Status';
 import type { TestRun, LeakageStatus } from '@spray-paragon/domain';
 
 interface Step04ExecutionDataProps {
@@ -42,103 +41,48 @@ export function Step04ExecutionData({
     captureSession?.realSideFrames?.length ??
     captureSession?.synchronizedMoments?.length ??
     0;
-  const hasBaseline = Boolean(captureSession?.realSideBaseline);
-
   const analysisDraft = testRun.analysisDraft;
   const finalReport = testRun.finalReport;
   const hasAnalysis = Boolean(analysisDraft || finalReport);
-  const primaryId = analysisDraft?.primaryCaptureMomentId;
-  const autoResult = primaryId && analysisDraft?.sideAutomaticAnalysis ? analysisDraft.sideAutomaticAnalysis[primaryId] : undefined;
-  const autoMeasurements = autoResult?.measurements;
-  const draftSprayLength = autoMeasurements?.sprayLength?.auto;
-  const draftSprayAngle = autoMeasurements?.sprayAngle?.auto;
 
   return (
-    <div className="space-y-6">
-      <div className="bg-surface-subtle/40 border border-border-subtle rounded-md p-3.5 flex items-start justify-between">
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-sm font-bold text-text-primary">
+          04. Eksekusi Pengujian & Data Lapangan
+        </h2>
+      </div>
+
+      {/* A. Capture Kamera */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-surface border border-border-default rounded-md">
         <div>
-          <h2 className="text-sm font-bold text-text-primary">
-            04. Eksekusi Pengujian & Data Lapangan
-          </h2>
-          <p className="text-xs text-text-muted mt-0.5">
-            Lakukan akuisisi kamera, catat pembacaan sensor mesin & data fisik botol, dan tinjau hasil analisis CV.
-          </p>
+          <div className="text-xs font-bold uppercase tracking-wider text-text-primary">Capture Kamera</div>
+          <div className="text-xs text-text-secondary mt-0.5 flex items-center gap-1.5 font-mono">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                hasCapture ? 'bg-semantic-success' : 'bg-semantic-warning'
+              }`}
+            />
+            <span>{hasCapture ? `${frameCount} frame • video tersimpan` : 'Status: Belum ada data'}</span>
+          </div>
         </div>
-        <Status tone="info">Langkah 4 dari 5</Status>
+        <button
+          type="button"
+          onClick={onOpenCapture}
+          className="btn btn-primary !min-h-[30px] px-3.5 text-xs font-semibold self-start sm:self-auto"
+          id="btn-buka-capture"
+        >
+          {hasCapture ? 'Ulangi / Buka Capture' : 'Buka Capture'}
+        </button>
       </div>
 
-      {/* Sub-phase 04A: Kamera & Video Capture */}
-      <div className="border border-border-default bg-surface rounded-md p-4 space-y-3">
-        <div className="flex items-center justify-between border-b border-border-subtle pb-2">
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary flex items-center gap-2">
-              <span>04A. Akuisisi Kamera & Video (Capture)</span>
-              <span className="font-mono text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-semibold">
-                SYSTEM / HARDWARE
-              </span>
-            </h3>
-            <p className="text-[11px] text-text-muted mt-0.5">
-              Status rekaman video kecepatan tinggi dan frame sinkron Side Camera
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onOpenCapture}
-            className="btn btn-primary !min-h-[30px] px-3.5 text-xs font-medium"
-            id="btn-buka-capture"
-          >
-            {hasCapture ? 'Ulangi / Buka Studio Capture' : 'Buka Studio Pengambilan Data (Capture)'}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-          <div className="p-2.5 rounded bg-surface-subtle/50 border border-border-subtle">
-            <div className="text-[11px] text-text-muted">Status Tangkapan</div>
-            <div className="font-semibold text-xs text-text-primary mt-1 flex items-center gap-1.5">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  hasCapture ? 'bg-semantic-success' : 'bg-semantic-warning'
-                }`}
-              />
-              {hasCapture ? `${frameCount} Frame Tersimpan` : 'Belum Ada Frame'}
-            </div>
-          </div>
-
-          <div className="p-2.5 rounded bg-surface-subtle/50 border border-border-subtle">
-            <div className="text-[11px] text-text-muted">Mode Kamera</div>
-            <div className="font-semibold text-xs text-text-primary mt-1 font-mono">
-              {captureSession?.captureMode === 'real' ? 'Real Hardware Stream' : 'Simulation Fixture'}
-            </div>
-          </div>
-
-          <div className="p-2.5 rounded bg-surface-subtle/50 border border-border-subtle">
-            <div className="text-[11px] text-text-muted">Baseline Pra-Spray</div>
-            <div className="font-semibold text-xs text-text-primary mt-1">
-              {hasBaseline ? (
-                <span className="text-semantic-success font-medium">Terverifikasi</span>
-              ) : (
-                <span className="text-text-muted">Auto / Menunggu Sesi</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sub-phase 04B: Data Aktual Mesin & Pengukuran Fisik */}
-      <FormSection
-        title="04B. Data Aktual Mesin & Pengukuran Fisik"
-        description="Catat nilai aktual dari pembacaan timbangan analitik, manometer tekanan, dan pengamatan kebocoran"
-      >
+      {/* B. Data Aktual Mesin & Fisik */}
+      <FormSection title="Data Aktual">
         {isAerosol && (
           <>
             <FormField
               label="Tekanan Awal (bar)"
-              hint={
-                <span className="inline-flex items-center gap-1">
-                  <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL — input manometer</span>
-                  <span>Tekanan sebelum semprot</span>
-                </span>
-              }
+              hint={<span className="text-[10px] text-text-muted">MANUAL — input manometer</span>}
             >
               <Input
                 type="number"
@@ -153,12 +97,7 @@ export function Step04ExecutionData({
 
             <FormField
               label="Tekanan Setelah (bar)"
-              hint={
-                <span className="inline-flex items-center gap-1">
-                  <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL — input manometer</span>
-                  <span>Tekanan sesudah semprot</span>
-                </span>
-              }
+              hint={<span className="text-[10px] text-text-muted">MANUAL — input manometer</span>}
             >
               <Input
                 type="number"
@@ -175,12 +114,7 @@ export function Step04ExecutionData({
 
         <FormField
           label="Bobot Awal Bruto (g)"
-          hint={
-            <span className="inline-flex items-center gap-1">
-              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL — input timbangan</span>
-              <span>Berat sebelum semprot</span>
-            </span>
-          }
+          hint={<span className="text-[10px] text-text-muted">MANUAL — input timbangan</span>}
           required
         >
           <Input
@@ -196,12 +130,7 @@ export function Step04ExecutionData({
 
         <FormField
           label="Bobot Akhir Bruto (g)"
-          hint={
-            <span className="inline-flex items-center gap-1">
-              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL — input timbangan</span>
-              <span>Berat sesudah semprot</span>
-            </span>
-          }
+          hint={<span className="text-[10px] text-text-muted">MANUAL — input timbangan</span>}
           required
         >
           <Input
@@ -217,12 +146,7 @@ export function Step04ExecutionData({
 
         <FormField
           label="Durasi Tekan Aktual (s)"
-          hint={
-            <span className="inline-flex items-center gap-1">
-              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL — integrasi hardware pending</span>
-              <span>Waktu riil penekanan aktuator</span>
-            </span>
-          }
+          hint={<span className="text-[10px] text-text-muted">MANUAL — integrasi hardware pending</span>}
           required
         >
           <Input
@@ -238,12 +162,7 @@ export function Step04ExecutionData({
 
         <FormField
           label="Kedalaman Stroke Aktual"
-          hint={
-            <span className="inline-flex items-center gap-1">
-              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL — integrasi hardware pending</span>
-              <span>Satuan menunggu konfirmasi Paragon</span>
-            </span>
-          }
+          hint={<span className="text-[10px] text-text-muted">MANUAL — integrasi hardware pending</span>}
         >
           <Input
             type="number"
@@ -259,10 +178,13 @@ export function Step04ExecutionData({
         <FormField
           label="Kebocoran"
           hint={
-            <span className="inline-flex items-center gap-1">
-              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL</span>
-              <span>Sesuai form client (Ya / Tidak)</span>
-            </span>
+            formData.leakage === 'Tidak' ? (
+              <span className="text-[10px] text-semantic-success font-medium">Aman (Tidak Bocor)</span>
+            ) : formData.leakage === 'Ya' ? (
+              <span className="text-[10px] text-semantic-danger font-medium">Terdeteksi Bocor</span>
+            ) : (
+              <span className="text-[10px] text-text-muted">MANUAL</span>
+            )
           }
           required
         >
@@ -272,19 +194,14 @@ export function Step04ExecutionData({
             disabled={isReadOnly}
           >
             <option value="">-- Pilih Status Kebocoran --</option>
-            <option value="Tidak">Tidak (Tidak ada kebocoran)</option>
-            <option value="Ya">Ya (Terdapat kebocoran)</option>
+            <option value="Tidak">Tidak</option>
+            <option value="Ya">Ya</option>
           </Select>
         </FormField>
 
         <FormField
           label="Waktu Pengeringan (s)"
-          hint={
-            <span className="inline-flex items-center gap-1">
-              <span className="font-mono text-[10px] bg-surface-subtle text-text-muted px-1 rounded">MANUAL</span>
-              <span>Waktu kering pada media uji</span>
-            </span>
-          }
+          hint={<span className="text-[10px] text-text-muted">MANUAL</span>}
         >
           <Input
             type="number"
@@ -306,226 +223,83 @@ export function Step04ExecutionData({
             value={formData.observationNotes}
             onChange={(e) => onChange({ observationNotes: e.target.value })}
             disabled={isReadOnly}
-            placeholder="Catatan visual tambahan selama spray berlangsung..."
+            placeholder="Catatan visual atau anomali pengujian..."
           />
         </FormField>
       </FormSection>
 
-      {/* Live Operational Metrics Preview */}
-      {liveMetrics && (
-        <div className="border border-primary/20 bg-primary/5 rounded-md p-4 space-y-3">
-          <div className="text-xs font-bold uppercase tracking-wider text-primary flex items-center justify-between">
-            <span>Kalkulasi Metrik Operasional (Live Derived Metrics)</span>
-            <span className="text-[10px] font-mono text-text-muted font-normal">
-              Formula Standar Paragon
+      {/* C. Analisis Kamera */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-surface border border-border-default rounded-md">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-wider text-text-primary">Analisis Kamera</div>
+          <div className="text-xs text-text-secondary mt-0.5 flex items-center gap-1.5 font-mono">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                finalReport ? 'bg-semantic-success' : hasAnalysis ? 'bg-primary' : 'bg-text-muted'
+              }`}
+            />
+            <span>
+              {finalReport
+                ? 'Finalized'
+                : analysisDraft
+                ? 'Review diperlukan'
+                : hasCapture
+                ? 'Siap dianalisis'
+                : 'Belum dianalisis'}
             </span>
           </div>
-          {((liveMetrics.dischargedMassG !== undefined && liveMetrics.dischargedMassG < 0) ||
-            (liveMetrics.pressureDropBar !== undefined && liveMetrics.pressureDropBar < 0)) && (
-            <div className="bg-semantic-warning/10 border border-semantic-warning/30 rounded p-2 text-xs text-semantic-warning flex items-center gap-2">
-              <span className="font-bold">Perhatian:</span>
-              <span>Terdeteksi nilai negatif (kemungkinan drift tare atau anomali sensor). Nilai bertanda negatif dipertahankan sesuai formula analitik.</span>
-            </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="bg-surface p-3 rounded border border-border-subtle">
-              <div className="text-[11px] text-text-muted">Discharged Mass</div>
-              <div className="font-mono text-base font-bold text-text-primary mt-1">
+        </div>
+        <button
+          type="button"
+          onClick={onOpenAnalysis}
+          disabled={!hasCapture}
+          className={`btn !min-h-[30px] px-3.5 text-xs font-semibold self-start sm:self-auto ${
+            hasCapture ? 'btn-primary' : 'btn-secondary opacity-50 cursor-not-allowed'
+          }`}
+          id="btn-buka-analisis"
+        >
+          {hasAnalysis ? 'Tinjau Analisis' : 'Buka Analisis'}
+        </button>
+      </div>
+
+      {/* D. Operational Metrics (Compact Technical Readout) */}
+      {liveMetrics && (
+        <div className="p-3 bg-surface border border-border-default rounded-md space-y-2">
+          <div className="text-xs font-bold uppercase tracking-wider text-text-primary border-b border-border-subtle pb-1.5 flex items-center justify-between">
+            <span>Metrik Operasional</span>
+            <span className="text-[10px] font-mono text-text-muted">Live Kalkulasi</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 font-mono">
+            <div className="flex items-center justify-between p-2 bg-surface-subtle/50 rounded border border-border-subtle">
+              <span className="font-sans text-xs text-text-muted">Discharged Mass</span>
+              <span className="text-sm font-bold text-text-primary">
                 {liveMetrics.dischargedMassG !== undefined ? `${liveMetrics.dischargedMassG.toFixed(3)} g` : '—'}
-              </div>
-              <div className="text-[10px] text-text-muted mt-0.5">Bobot Awal - Bobot Akhir</div>
+              </span>
             </div>
-
-            <div className="bg-surface p-3 rounded border border-border-subtle">
-              <div className="text-[11px] text-text-muted">Discharge Rate</div>
-              <div className="font-mono text-base font-bold text-text-primary mt-1">
+            <div className="flex items-center justify-between p-2 bg-surface-subtle/50 rounded border border-border-subtle">
+              <span className="font-sans text-xs text-text-muted">Discharge Rate</span>
+              <span className="text-sm font-bold text-text-primary">
                 {liveMetrics.dischargeRateGPerS !== undefined ? `${liveMetrics.dischargeRateGPerS.toFixed(3)} g/s` : '—'}
-              </div>
-              <div className="text-[10px] text-text-muted mt-0.5">Massa / Durasi Tekan</div>
+              </span>
             </div>
-
             {isAerosol && (
-              <div className="bg-surface p-3 rounded border border-border-subtle">
-                <div className="text-[11px] text-text-muted">Pressure Drop</div>
-                <div className="font-mono text-base font-bold text-text-primary mt-1">
+              <div className="flex items-center justify-between p-2 bg-surface-subtle/50 rounded border border-border-subtle">
+                <span className="font-sans text-xs text-text-muted">Pressure Drop</span>
+                <span className="text-sm font-bold text-text-primary">
                   {liveMetrics.pressureDropBar !== undefined ? `${liveMetrics.pressureDropBar.toFixed(2)} bar` : '—'}
-                </div>
-                <div className="text-[10px] text-text-muted mt-0.5">Tekanan Awal - Tekanan Akhir</div>
+                </span>
               </div>
             )}
           </div>
+          {((liveMetrics.dischargedMassG !== undefined && liveMetrics.dischargedMassG < 0) ||
+            (liveMetrics.pressureDropBar !== undefined && liveMetrics.pressureDropBar < 0)) && (
+            <div className="p-2 rounded bg-semantic-warning/10 border border-semantic-warning/20 text-[11px] text-semantic-warning font-sans flex items-center gap-1.5">
+              <span className="font-bold">Anomali:</span>
+              <span>Terdeteksi nilai negatif (kemungkinan drift tare atau penurunan tekanan). Nilai bertanda tetap dipertahankan.</span>
+            </div>
+          )}
         </div>
       )}
-
-      {/* Sub-phase 04C: Analisis Kamera CV */}
-      <div className="border border-border-default bg-surface rounded-md p-4 space-y-3">
-        <div className="flex items-center justify-between border-b border-border-subtle pb-2">
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary flex items-center gap-2">
-              <span>04C. Analisis Citra Komputer (Computer Vision)</span>
-              <span className="font-mono text-[10px] bg-secondary/10 text-secondary px-1.5 py-0.5 rounded font-semibold">
-                AI / COMPUTER VISION
-              </span>
-            </h3>
-            <p className="text-[11px] text-text-muted mt-0.5">
-              Deteksi geometri spray otomatis, koreksi manual operator, dan verifikasi frame
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onOpenAnalysis}
-            disabled={!hasCapture}
-            className={`btn !min-h-[30px] px-3.5 text-xs font-medium ${
-              hasCapture ? 'btn-primary' : 'btn-secondary opacity-50 cursor-not-allowed'
-            }`}
-            id="btn-buka-analisis"
-          >
-            {hasAnalysis ? 'Tinjau / Buka Workspace Analisis' : 'Buka Ruang Analisis Kamera (CV)'}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-          <div className="p-2.5 rounded bg-surface-subtle/50 border border-border-subtle">
-            <div className="text-[11px] text-text-muted">Status Analisis</div>
-            <div className="font-semibold text-xs text-text-primary mt-1">
-              {finalReport ? (
-                <span className="text-semantic-success font-medium">Finalized</span>
-              ) : analysisDraft ? (
-                <span className="text-primary font-medium">Draf Analisis Tersimpan</span>
-              ) : hasCapture ? (
-                <span className="text-semantic-warning font-medium">Siap Dianalisis</span>
-              ) : (
-                <span className="text-text-muted">Menunggu Capture</span>
-              )}
-            </div>
-          </div>
-
-          <div className="p-2.5 rounded bg-surface-subtle/50 border border-border-subtle">
-            <div className="text-[11px] text-text-muted">Panjang Lintasan (Spray Length)</div>
-            <div className="font-semibold text-xs text-text-primary mt-1 font-mono">
-              {finalReport?.side?.sprayLength?.final !== undefined
-                ? `${finalReport.side.sprayLength.final.toFixed(1)} mm`
-                : draftSprayLength !== undefined
-                ? `${draftSprayLength.toFixed(1)} mm (auto)`
-                : '—'}
-            </div>
-          </div>
-
-          <div className="p-2.5 rounded bg-surface-subtle/50 border border-border-subtle">
-            <div className="text-[11px] text-text-muted">Sudut Semprot (Spray Angle)</div>
-            <div className="font-semibold text-xs text-text-primary mt-1 font-mono">
-              {finalReport?.side?.sprayAngle?.final !== undefined
-                ? `${finalReport.side.sprayAngle.final.toFixed(1)}°`
-                : draftSprayAngle !== undefined
-                ? `${draftSprayAngle.toFixed(1)}° (auto)`
-                : '—'}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sub-phase 04D: Tinjauan Pengukuran Gabungan (Review Measurement) */}
-      <div className="border border-border-default bg-surface rounded-md p-4 space-y-3">
-        <div className="border-b border-border-subtle pb-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary">
-            04D. Tinjauan Data Gabungan (Measurement Review)
-          </h3>
-          <p className="text-[11px] text-text-muted mt-0.5">
-            Perbandingan metrik CV otomatis, penyesuaian operator, dan pembacaan fisik sebelum finalisasi
-          </p>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs border border-border-subtle">
-            <thead>
-              <tr className="bg-surface-subtle border-b border-border-subtle text-text-secondary">
-                <th className="py-2 px-3 text-left font-semibold">Parameter / Metrik</th>
-                <th className="py-2 px-3 text-left font-semibold">Sumber Data</th>
-                <th className="py-2 px-3 text-right font-semibold">Nilai Terukur</th>
-                <th className="py-2 px-3 text-center font-semibold">Status / Verifikasi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-subtle font-mono">
-              <tr>
-                <td className="py-2 px-3 font-sans text-text-primary font-medium">Panjang Lintasan (Spray Length)</td>
-                <td className="py-2 px-3 text-text-muted font-sans">Side Camera (CV)</td>
-                <td className="py-2 px-3 text-right font-bold">
-                  {finalReport?.side?.sprayLength?.final ?? draftSprayLength ?? '—'} mm
-                </td>
-                <td className="py-2 px-3 text-center font-sans">
-                  {finalReport?.side?.sprayLength?.adjusted ? (
-                    <span className="text-[10px] bg-secondary/10 text-secondary px-1.5 py-0.5 rounded">Disesuaikan Operator</span>
-                  ) : finalReport ? (
-                    <span className="text-[10px] bg-semantic-success/10 text-semantic-success px-1.5 py-0.5 rounded">Otomatis Terverifikasi</span>
-                  ) : (
-                    <span className="text-[10px] text-text-muted">Draft</span>
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2 px-3 font-sans text-text-primary font-medium">Sudut Semprot (Spray Angle)</td>
-                <td className="py-2 px-3 text-text-muted font-sans">Side Camera (CV)</td>
-                <td className="py-2 px-3 text-right font-bold">
-                  {finalReport?.side?.sprayAngle?.final ?? draftSprayAngle ?? '—'}°
-                </td>
-                <td className="py-2 px-3 text-center font-sans">
-                  {finalReport?.side?.sprayAngle?.adjusted ? (
-                    <span className="text-[10px] bg-secondary/10 text-secondary px-1.5 py-0.5 rounded">Disesuaikan Operator</span>
-                  ) : finalReport ? (
-                    <span className="text-[10px] bg-semantic-success/10 text-semantic-success px-1.5 py-0.5 rounded">Otomatis Terverifikasi</span>
-                  ) : (
-                    <span className="text-[10px] text-text-muted">Draft</span>
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2 px-3 font-sans text-text-primary font-medium">Discharged Mass</td>
-                <td className="py-2 px-3 text-text-muted font-sans">Timbangan Lapangan</td>
-                <td className="py-2 px-3 text-right font-bold">
-                  {liveMetrics?.dischargedMassG !== undefined ? `${liveMetrics.dischargedMassG.toFixed(3)} g` : '—'}
-                </td>
-                <td className="py-2 px-3 text-center font-sans">
-                  {liveMetrics?.dischargedMassG !== undefined ? (
-                    <span className="text-[10px] bg-semantic-success/10 text-semantic-success px-1.5 py-0.5 rounded">Terkalkulasi</span>
-                  ) : (
-                    <span className="text-[10px] text-text-muted">Menunggu Bobot</span>
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2 px-3 font-sans text-text-primary font-medium">Discharge Rate</td>
-                <td className="py-2 px-3 text-text-muted font-sans">Turunan Massa / Waktu</td>
-                <td className="py-2 px-3 text-right font-bold">
-                  {liveMetrics?.dischargeRateGPerS !== undefined ? `${liveMetrics.dischargeRateGPerS.toFixed(3)} g/s` : '—'}
-                </td>
-                <td className="py-2 px-3 text-center font-sans">
-                  {liveMetrics?.dischargeRateGPerS !== undefined ? (
-                    <span className="text-[10px] bg-semantic-success/10 text-semantic-success px-1.5 py-0.5 rounded">Terkalkulasi</span>
-                  ) : (
-                    <span className="text-[10px] text-text-muted">Menunggu Durasi</span>
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2 px-3 font-sans text-text-primary font-medium">Status Kebocoran</td>
-                <td className="py-2 px-3 text-text-muted font-sans">Observasi Visual Operator</td>
-                <td className="py-2 px-3 text-right font-bold font-sans">
-                  {formData.leakage || '—'}
-                </td>
-                <td className="py-2 px-3 text-center font-sans">
-                  {formData.leakage === 'Tidak' ? (
-                    <span className="text-[10px] bg-semantic-success/10 text-semantic-success px-1.5 py-0.5 rounded">Aman (Tidak Bocor)</span>
-                  ) : formData.leakage === 'Ya' ? (
-                    <span className="text-[10px] bg-semantic-danger/10 text-semantic-danger px-1.5 py-0.5 rounded">Terdeteksi Bocor</span>
-                  ) : (
-                    <span className="text-[10px] text-text-muted">Belum Diisi</span>
-                  )}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 }

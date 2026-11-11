@@ -352,10 +352,10 @@ export function TestExecutionWizardPage() {
   return (
     <div className="flex flex-col min-h-screen bg-surface-subtle/30">
       {/* Top Header / Breadcrumb Bar */}
-      <header className="bg-surface border-b border-border-default px-5 py-3">
-        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <header className="bg-surface border-b border-border-default px-4 py-2 sm:px-6">
+        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
           <div className="space-y-0.5">
-            <div className="flex items-center gap-2 text-[11px] text-text-muted">
+            <div className="flex items-center gap-1.5 font-mono text-[11px] text-text-muted">
               <button
                 type="button"
                 onClick={handleBackToKp}
@@ -364,25 +364,26 @@ export function TestExecutionWizardPage() {
                 {kp.id}
               </button>
               <span>/</span>
-              <span>Sampel {sample.sampleCode || sample.id}</span>
+              <span>{sample.sampleCode || sample.id}</span>
               <span>/</span>
-              <span className="font-mono text-text-primary font-medium">{testRun.id}</span>
+              <span className="text-text-primary font-semibold">{testRun.id}</span>
             </div>
-            <h1 className="text-sm font-bold text-text-primary flex items-center gap-2">
-              <span>Wizard Eksekusi Pengujian Spray</span>
-              <span className="font-mono text-xs font-normal text-text-muted">
-                ({kp.productSnapshot?.productName || kp.id})
-              </span>
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-bold text-text-primary">
+                Pengujian Spray
+              </h1>
+              {isReadOnly ? (
+                <div className="flex items-center gap-1.5">
+                  <Status tone="success">Finalized</Status>
+                  <span className="text-[10px] text-text-muted">Mode Pratinjau Terkunci</span>
+                </div>
+              ) : (
+                <Status tone="info">{testRun.status}</Status>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            {isReadOnly ? (
-              <Status tone="success">Finalized (Read-Only)</Status>
-            ) : (
-              <Status tone="info">Status: {testRun.status}</Status>
-            )}
-
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleBackToKp}
@@ -393,24 +394,6 @@ export function TestExecutionWizardPage() {
           </div>
         </div>
       </header>
-
-      {/* Read-only notification banner if finalized */}
-      {isReadOnly && (
-        <div className="bg-semantic-warning/10 border-b border-semantic-warning/30 px-5 py-2">
-          <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-semantic-warning">
-            <span className="font-medium">
-              Mode Pratinjau Terkunci: Pengujian ini telah difinalisasi. Semua data parameter dan pengukuran terkunci permanen.
-            </span>
-            <button
-              type="button"
-              onClick={handleDownloadCsv}
-              className="underline font-semibold hover:text-text-primary"
-            >
-              Unduh CSV
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Stepper Navigation */}
       <WizardStepper
@@ -488,29 +471,21 @@ export function TestExecutionWizardPage() {
       {/* Sticky Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-20">
         <ActionBar
-          info={
-            <div className="flex items-center gap-3 font-mono text-[11px]">
-              <span>KP: {kp.id}</span>
-              <span>•</span>
-              <span>Sampel: {sample.sampleCode || sample.id}</span>
-              <span>•</span>
-              <span>Langkah {step} dari 5</span>
-            </div>
+          leftContent={
+            !isReadOnly && step < 5 ? (
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                disabled={isSaving}
+                className="btn btn-secondary !min-h-[30px] px-3.5 text-xs font-medium"
+                id="btn-simpan-draf"
+              >
+                {isSaving ? 'Menyimpan...' : 'Simpan Draf'}
+              </button>
+            ) : null
           }
           actions={
             <>
-              {!isReadOnly && step < 5 && (
-                <button
-                  type="button"
-                  onClick={handleSaveDraft}
-                  disabled={isSaving}
-                  className="btn btn-secondary !min-h-[30px] px-3.5 text-xs font-medium"
-                  id="btn-simpan-draf"
-                >
-                  {isSaving ? 'Menyimpan...' : 'Simpan Draf'}
-                </button>
-              )}
-
               {step > 1 && (
                 <button
                   type="button"
@@ -518,7 +493,7 @@ export function TestExecutionWizardPage() {
                   className="btn btn-secondary !min-h-[30px] px-3.5 text-xs font-medium"
                   id="btn-sebelumnya"
                 >
-                  &larr; Sebelumnya
+                  Sebelumnya
                 </button>
               )}
 
@@ -530,7 +505,7 @@ export function TestExecutionWizardPage() {
                   className="btn btn-primary !min-h-[30px] px-4 text-xs font-medium"
                   id="btn-selanjutnya"
                 >
-                  {isSaving ? 'Menyimpan...' : 'Selanjutnya \u2192'}
+                  {isSaving ? 'Menyimpan...' : 'Selanjutnya'}
                 </button>
               )}
 

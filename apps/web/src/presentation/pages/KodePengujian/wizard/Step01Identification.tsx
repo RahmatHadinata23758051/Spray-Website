@@ -4,7 +4,6 @@ import { FormSection } from '../../../components/ui/FormSection';
 import { FormField } from '../../../components/ui/FormField';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
-import { Status } from '../../../components/ui/Status';
 import type { TrialType, UsagePattern } from '@spray-paragon/domain';
 
 const STANDARD_STORAGE_POSITIONS = ['Tegak', 'Tidur'] as const;
@@ -41,26 +40,18 @@ export function Step01Identification({
   const isLegacyCondition = Boolean(formData.storageCondition && !STANDARD_STORAGE_CONDITIONS.includes(formData.storageCondition as (typeof STANDARD_STORAGE_CONDITIONS)[number]));
 
   return (
-    <div className="space-y-6">
-      <div className="bg-surface-subtle/40 border border-border-subtle rounded-md p-3.5 flex items-start justify-between">
-        <div>
-          <h2 className="text-sm font-bold text-text-primary">01. Identifikasi Sampel & Konteks Studi</h2>
-          <p className="text-xs text-text-muted mt-0.5">
-            Lengkapi data administratif pengujian, identitas formula, serta parameter penyimpanan sampel fisik.
-          </p>
-        </div>
-        <Status tone="info">Langkah 1 dari 5</Status>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-sm font-bold text-text-primary">01. Identifikasi Sampel & Konteks Studi</h2>
       </div>
 
-      <FormSection
-        title="Identitas Produk & Formula"
-        description="Informasi produk dan formula yang menjadi acuan pengujian"
-      >
-        <FormField label="Nama Produk" hint="Identitas produk acuan dari master produk (Read-Only)">
+      <FormSection title="Produk & Trial">
+        <FormField label="Nama Produk">
           <Input
             value={formData.productName}
-            disabled={true}
-            placeholder="Contoh: Hair Spray Extra Hold"
+            readOnly
+            className="bg-surface-subtle/50 text-text-primary cursor-default border-border-subtle"
+            placeholder="Nama Produk"
           />
         </FormField>
 
@@ -87,7 +78,7 @@ export function Step01Identification({
           />
         </FormField>
 
-        <FormField label="KUF (Kode Unik Formula)">
+        <FormField label="KUF">
           <Input
             value={formData.kuf}
             onChange={(e) => onChange({ kuf: e.target.value })}
@@ -103,39 +94,35 @@ export function Step01Identification({
             onChange={(e) => onChange({ trialType: e.target.value as TrialType })}
             disabled={isReadOnly}
           >
-            <option value="Lab">Lab (Pengujian Laboratorium)</option>
+            <option value="Lab">Lab</option>
             <option value="PS">PS (Pilot Scale)</option>
             <option value="MP">MP (Mass Production)</option>
           </Select>
         </FormField>
 
-        <FormField label="Benchmark" hint="Produk pembanding jika ada">
+        <FormField label="Benchmark">
           <Input
             value={formData.benchmark}
             onChange={(e) => onChange({ benchmark: e.target.value })}
             disabled={isReadOnly}
-            placeholder="Contoh: Standard Commercial A"
+            placeholder="Contoh: Standar Komersial A"
           />
         </FormField>
 
         <FormField
           label="Tujuan Trial"
           className="md:col-span-2 lg:col-span-3"
-          hint="Deskripsikan objektif utama dari pengujian ini"
         >
           <Input
             value={formData.trialObjective}
             onChange={(e) => onChange({ trialObjective: e.target.value })}
             disabled={isReadOnly}
-            placeholder="Contoh: Evaluasi performa aktuator baru terhadap persebaran semprotan"
+            placeholder="Tujuan trial pengujian..."
           />
         </FormField>
       </FormSection>
 
-      <FormSection
-        title="Spesimen Fisik & Kondisi Penyimpanan"
-        description="Identifikasi sampel botol yang diuji dan riwayat penyimpanan"
-      >
+      <FormSection title="Sampel">
         <FormField label="Kode Unik Sampel" required>
           <Input
             value={formData.sampleCode}
