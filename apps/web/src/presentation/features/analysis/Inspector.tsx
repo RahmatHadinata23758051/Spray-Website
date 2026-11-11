@@ -80,7 +80,7 @@ export function Inspector({
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-text-secondary">{row.label}</span>
                   {!row.value.adjusted && (
-                    <strong data-testid={`inspector-${camera}-${metricSlug(row.idLabel)}`} className="font-mono text-text-primary text-sm font-bold text-right">
+                    <strong data-testid={`inspector-${camera}-${metricSlug(row.idLabel)}`} className="font-mono text-text-primary text-sm font-medium text-right">
                       {row.format(selectMeasurementValue(row.value))}
                     </strong>
                   )}
@@ -92,8 +92,8 @@ export function Inspector({
                       <strong className="font-mono text-text-muted text-xs text-right line-through">{row.format(row.value.auto)}</strong>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-semibold text-text-secondary">{isEditingMeasurement ? 'Pratinjau Koreksi' : 'Hasil Final'}</span>
-                      <strong data-testid={`inspector-${camera}-${metricSlug(row.idLabel)}`} className="font-mono text-primary text-sm font-bold text-right">{row.format(selectMeasurementValue(row.value))}</strong>
+                      <span className="text-[10px] font-medium text-text-secondary">{isEditingMeasurement ? 'Pratinjau Koreksi' : 'Hasil Final'}</span>
+                      <strong data-testid={`inspector-${camera}-${metricSlug(row.idLabel)}`} className="font-mono text-primary text-sm font-medium text-right">{row.format(selectMeasurementValue(row.value))}</strong>
                     </div>
                   </div>
                 )}
@@ -118,7 +118,7 @@ export function Inspector({
                   role="tab"
                   aria-label={tool === 'Length' ? 'Panjang' : tool === 'Spread' ? 'Sebaran' : tool === 'Angle' ? 'Sudut' : 'Arah'}
                   aria-selected={activeSideTool === tool}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-md transition-colors ${activeSideTool === tool ? 'bg-primary text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${activeSideTool === tool ? 'bg-primary text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
                   onClick={() => onSetActiveSideTool(tool)}
                 >
                   {tool === 'Length' ? 'Panjang' : tool === 'Spread' ? 'Sebaran' : tool === 'Angle' ? 'Sudut' : 'Arah'}
@@ -134,8 +134,8 @@ export function Inspector({
                     <strong className="font-mono text-text-primary text-right">{fmt.cm(sideMeasurements.sprayLength.auto)}</strong>
                   </div>
                   <div className={`flex justify-between text-xs py-1 ${sideMeasurements.sprayLength.adjusted ? 'bg-semantic-warning-soft/50 px-2 rounded-md' : ''}`}>
-                    <span className="text-text-secondary font-semibold">Pratinjau Koreksi</span>
-                    <strong data-testid="inspector-side-spray-length" className="font-mono text-primary text-sm font-bold text-right">{fmt.cm(selectMeasurementValue(sideMeasurements.sprayLength))}</strong>
+                    <span className="text-text-secondary font-medium">Pratinjau Koreksi</span>
+                    <strong data-testid="inspector-side-spray-length" className="font-mono text-primary text-sm font-medium text-right">{fmt.cm(selectMeasurementValue(sideMeasurements.sprayLength))}</strong>
                   </div>
                 </>
               )}
@@ -150,8 +150,8 @@ export function Inspector({
                     <strong className="font-mono text-text-primary text-right">{fmt.mm(sideMeasurements.verticalSpread.auto)}</strong>
                   </div>
                   <div className={`flex justify-between text-xs py-1 ${sideMeasurements.verticalSpread.adjusted ? 'bg-semantic-warning-soft/50 px-2 rounded-md' : ''}`}>
-                    <span className="text-text-secondary font-semibold">Pratinjau Koreksi</span>
-                    <strong data-testid="inspector-side-vertical-spread" className="font-mono text-primary text-sm font-bold text-right">{fmt.mm(selectMeasurementValue(sideMeasurements.verticalSpread))}</strong>
+                    <span className="text-text-secondary font-medium">Pratinjau Koreksi</span>
+                    <strong data-testid="inspector-side-vertical-spread" className="font-mono text-primary text-sm font-medium text-right">{fmt.mm(selectMeasurementValue(sideMeasurements.verticalSpread))}</strong>
                   </div>
                 </>
               )}
@@ -162,8 +162,8 @@ export function Inspector({
                     <strong className="font-mono text-text-primary text-right">{fmt.deg(sideMeasurements.sprayAngle.auto)}</strong>
                   </div>
                   <div className={`flex justify-between text-xs py-1 ${sideMeasurements.sprayAngle.adjusted ? 'bg-semantic-warning-soft/50 px-2 rounded-md' : ''}`}>
-                    <span className="text-text-secondary font-semibold">Pratinjau Koreksi</span>
-                    <strong data-testid="inspector-side-spray-angle" className="font-mono text-primary text-sm font-bold text-right">{fmt.deg(selectMeasurementValue(sideMeasurements.sprayAngle))}</strong>
+                    <span className="text-text-secondary font-medium">Pratinjau Koreksi</span>
+                    <strong data-testid="inspector-side-spray-angle" className="font-mono text-primary text-sm font-medium text-right">{fmt.deg(selectMeasurementValue(sideMeasurements.sprayAngle))}</strong>
                   </div>
                 </>
               )}
@@ -174,8 +174,8 @@ export function Inspector({
                     <strong className="font-mono text-text-primary text-right">{fmt.deg(sideMeasurements.directionOffset.auto)}</strong>
                   </div>
                   <div className={`flex justify-between text-xs py-1 ${sideMeasurements.directionOffset.adjusted ? 'bg-semantic-warning-soft/50 px-2 rounded-md' : ''}`}>
-                    <span className="text-text-secondary font-semibold">Pratinjau Koreksi</span>
-                    <strong data-testid="inspector-side-direction-offset" className="font-mono text-primary text-sm font-bold text-right">{fmt.deg(selectMeasurementValue(sideMeasurements.directionOffset))}</strong>
+                    <span className="text-text-secondary font-medium">Pratinjau Koreksi</span>
+                    <strong data-testid="inspector-side-direction-offset" className="font-mono text-primary text-sm font-medium text-right">{fmt.deg(selectMeasurementValue(sideMeasurements.directionOffset))}</strong>
                   </div>
                 </>
               )}
@@ -224,16 +224,16 @@ export function Inspector({
         <h3 className="inspector-header">Kalibrasi ({camera === 'side' ? 'Samping' : 'Depan'})</h3>
         {calibration ? (
           <dl className="space-y-1.5 text-xs">
-            <div className="flex justify-between"><dt className="text-text-muted">Referensi</dt><dd className="font-mono font-bold text-text-primary text-right">{calibration.referenceDistanceMm} mm</dd></div>
+            <div className="flex justify-between"><dt className="text-text-muted">Referensi</dt><dd className="font-mono font-medium text-text-primary text-right">{calibration.referenceDistanceMm} mm</dd></div>
             <div className="flex justify-between"><dt className="text-text-muted">Titik A</dt><dd className="font-mono text-text-secondary text-right">{formatPointPx(calibration.anchorA)}</dd></div>
             <div className="flex justify-between"><dt className="text-text-muted">Titik B</dt><dd className="font-mono text-text-secondary text-right">{formatPointPx(calibration.anchorB)}</dd></div>
-            <div className="flex justify-between"><dt className="text-text-muted">{isCalibrating ? 'Pratinjau Skala' : 'Skala'}</dt><dd className="font-mono text-text-primary font-semibold text-right" data-testid="inspector-scale">{calibration.scaleMmPerPx.toFixed(3)} mm / px</dd></div>
-            <div className="flex justify-between"><dt className="text-text-muted">Status</dt><dd className={`font-semibold text-right ${calibration.adjusted ? 'text-semantic-warning' : 'text-semantic-success'}`}>{calibration.adjusted ? `Disesuaikan oleh ${calibration.adjustedBy}` : 'Terkalibrasi'}</dd></div>
+            <div className="flex justify-between"><dt className="text-text-muted">{isCalibrating ? 'Pratinjau Skala' : 'Skala'}</dt><dd className="font-mono text-text-primary font-medium text-right" data-testid="inspector-scale">{calibration.scaleMmPerPx.toFixed(3)} mm / px</dd></div>
+            <div className="flex justify-between"><dt className="text-text-muted">Status</dt><dd className={`font-medium text-right ${calibration.adjusted ? 'text-semantic-warning' : 'text-semantic-success'}`}>{calibration.adjusted ? `Disesuaikan oleh ${calibration.adjustedBy}` : 'Terkalibrasi'}</dd></div>
           </dl>
         ) : (
           <dl className="space-y-1 text-xs">
-            <div className="flex justify-between"><dt className="text-text-muted">Status skala</dt><dd className="text-semantic-success font-semibold text-right">Terkalibrasi</dd></div>
-            <div className="flex justify-between"><dt className="text-text-muted">Mode koordinat</dt><dd className="text-text-primary font-semibold text-right">Fisik (mm)</dd></div>
+            <div className="flex justify-between"><dt className="text-text-muted">Status skala</dt><dd className="text-semantic-success font-medium text-right">Terkalibrasi</dd></div>
+            <div className="flex justify-between"><dt className="text-text-muted">Mode koordinat</dt><dd className="text-text-primary font-medium text-right">Fisik (mm)</dd></div>
           </dl>
         )}
         {camera === 'side' && calibration && onSideOrientationChange && (
@@ -291,11 +291,11 @@ export function Inspector({
         <section className="inspector-section space-y-3">
           <h3 className="inspector-header">Momen Tangkapan</h3>
           <dl className="space-y-1.5 text-xs">
-            <div className="flex justify-between"><dt className="text-text-muted">Tangkapan</dt><dd className="font-mono font-bold text-text-primary text-right">#{String(moment.frameIndex + 1).padStart(3, '0')} · {moment.frameIndex + 1} dari {totalMomentsCount}</dd></div>
+            <div className="flex justify-between"><dt className="text-text-muted">Tangkapan</dt><dd className="font-mono font-medium text-text-primary text-right">#{String(moment.frameIndex + 1).padStart(3, '0')} · {moment.frameIndex + 1} dari {totalMomentsCount}</dd></div>
             <div className="flex justify-between"><dt className="text-text-muted">Waktu</dt><dd className="font-mono text-text-primary text-right">{moment.timestampMs} ms</dd></div>
-            <div className="flex justify-between"><dt className="text-text-muted">Fase</dt><dd className="font-semibold text-text-primary text-right">{phaseLabel(moment.phase)}</dd></div>
+            <div className="flex justify-between"><dt className="text-text-muted">Fase</dt><dd className="font-medium text-text-primary text-right">{phaseLabel(moment.phase)}</dd></div>
             <div className="flex justify-between"><dt className="text-text-muted">Status sinkron</dt><dd className="font-mono text-text-secondary text-right">{moment.syncStatus} · Δ {moment.timestampDeltaMs} ms</dd></div>
-            <div className="flex justify-between"><dt className="text-text-muted">Rekomendasi</dt><dd className={`font-semibold text-right ${moment.recommended ? 'text-semantic-warning' : 'text-text-secondary'}`}>{moment.recommended ? 'Direkomendasikan' : 'Tidak disarankan'}</dd></div>
+            <div className="flex justify-between"><dt className="text-text-muted">Rekomendasi</dt><dd className={`font-medium text-right ${moment.recommended ? 'text-semantic-warning' : 'text-text-secondary'}`}>{moment.recommended ? 'Direkomendasikan' : 'Tidak disarankan'}</dd></div>
           </dl>
         </section>
       )}

@@ -42,7 +42,7 @@ export function Step01Identification({
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-sm font-bold text-text-primary">01. Identifikasi Sampel & Konteks Studi</h2>
+        <h2 className="text-sm font-semibold text-text-primary">01. Identifikasi Sampel & Konteks Studi</h2>
       </div>
 
       <FormSection title="Produk & Trial">
@@ -65,10 +65,7 @@ export function Step01Identification({
           />
         </FormField>
 
-        <FormField
-          label="No. Batch"
-          hint="Nomor batch sesuai identitas pengujian Paragon"
-        >
+        <FormField label="No. Batch">
           <Input
             value={formData.lotNumber}
             onChange={(e) => onChange({ lotNumber: e.target.value })}
@@ -159,7 +156,7 @@ export function Step01Identification({
             isPositionOverridden
               ? `Override khusus sampel (Default KP: ${defaultBottlePosition})`
               : defaultBottlePosition
-              ? `Mewarisi default KP (${defaultBottlePosition})`
+              ? `Default KP: ${defaultBottlePosition}`
               : undefined
           }
         >
@@ -187,7 +184,7 @@ export function Step01Identification({
             isStorageOverridden
               ? `Override khusus sampel (Default KP: ${defaultStorageCondition})`
               : defaultStorageCondition
-              ? `Mewarisi default KP (${defaultStorageCondition})`
+              ? `Default KP: ${defaultStorageCondition}`
               : undefined
           }
         >

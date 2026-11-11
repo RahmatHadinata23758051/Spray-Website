@@ -49,14 +49,14 @@ export function Step02DeviceConfig({
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-sm font-bold text-text-primary">02. Konfigurasi Device / Kemasan</h2>
+        <h2 className="text-sm font-semibold text-text-primary">02. Konfigurasi Device / Kemasan</h2>
       </div>
 
       {/* Device Type Selector */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-surface border border-border-default rounded-md">
         <div>
-          <span className="text-xs font-semibold text-text-secondary block">
-            Tipe Kemasan / Dispenser <span className="text-semantic-danger font-bold">*</span>
+          <span className="text-xs font-medium text-text-secondary block">
+            Tipe Kemasan / Dispenser <span className="text-semantic-danger font-medium">*</span>
           </span>
         </div>
         <div className="inline-flex rounded-md p-0.5 bg-surface-subtle border border-border-subtle">
@@ -64,7 +64,7 @@ export function Step02DeviceConfig({
             type="button"
             disabled={isReadOnly}
             onClick={() => handleDeviceTypeChange('Non-Aerosol')}
-            className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
+            className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
               !isAerosol
                 ? 'bg-primary text-white shadow-xs'
                 : 'text-text-secondary hover:text-text-primary'
@@ -76,7 +76,7 @@ export function Step02DeviceConfig({
             type="button"
             disabled={isReadOnly}
             onClick={() => handleDeviceTypeChange('Aerosol')}
-            className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
+            className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
               isAerosol
                 ? 'bg-primary text-white shadow-xs'
                 : 'text-text-secondary hover:text-text-primary'

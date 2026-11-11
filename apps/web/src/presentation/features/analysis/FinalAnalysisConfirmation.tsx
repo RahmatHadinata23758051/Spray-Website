@@ -34,17 +34,17 @@ export function FinalAnalysisConfirmation({
     <section className="inspector-section space-y-3">
       <div className="flex items-center justify-between pb-2 border-b border-border-subtle">
         <h3 className="inspector-header !mb-0">Finalisasi Analisis</h3>
-        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${status === 'finalized' ? 'bg-semantic-success-soft text-semantic-success' : 'bg-primary-soft text-primary'}`}>{statusLabel}</span>
+        <span className={`text-[10px] font-medium uppercase px-2 py-0.5 rounded-full ${status === 'finalized' ? 'bg-semantic-success-soft text-semantic-success' : 'bg-primary-soft text-primary'}`}>{statusLabel}</span>
       </div>
       <div className="space-y-4 pt-1">
         <p className="text-xs text-text-secondary leading-relaxed">Konfirmasi operator diperlukan sebelum analisis ini difinalisasi.</p>
-        {!primaryMoment && <p className="text-xs font-semibold text-semantic-warning bg-semantic-warning-soft p-2.5 rounded-md">Pilih tepat satu Momen Tangkapan Utama sebelum konfirmasi.</p>}
+        {!primaryMoment && <p className="text-xs font-medium text-semantic-warning bg-semantic-warning-soft p-2.5 rounded-md">Pilih tepat satu Momen Tangkapan Utama sebelum konfirmasi.</p>}
         {primaryMoment && sideMeasurements && frontMeasurements && (
           <dl className="space-y-1.5 text-xs bg-surface-subtle p-3 rounded-lg border border-border-subtle">
-            <div className="flex justify-between"><dt className="text-text-muted">Tangkapan Utama</dt><dd className="font-mono font-bold text-text-primary">#{String(primaryMoment.frameIndex).padStart(3, '0')} · {primaryMoment.timestampMs} ms</dd></div>
-            <div className="flex justify-between"><dt className="text-text-muted">Tangkapan Dipilih</dt><dd className="font-semibold text-text-primary">{selectedCount} / 10</dd></div>
-            <div className="flex justify-between"><dt className="text-text-muted">Kamera Samping akhir</dt><dd className="font-mono font-semibold text-text-primary">{fmt.cm(selectMeasurementValue(sideMeasurements.sprayLength))} · {fmt.deg(selectMeasurementValue(sideMeasurements.sprayAngle))} · {fmt.mm(selectMeasurementValue(sideMeasurements.verticalSpread))}</dd></div>
-            <div className="flex justify-between"><dt className="text-text-muted">Kamera Depan akhir</dt><dd className="font-mono font-semibold text-text-primary">{fmt.area(selectMeasurementValue(frontMeasurements.sprayArea))} · Ø {fmt.mm(selectMeasurementValue(frontMeasurements.equivalentDiameter))} · {selectMeasurementValue(frontMeasurements.circularity).toFixed(2)}</dd></div>
+            <div className="flex justify-between"><dt className="text-text-muted">Tangkapan Utama</dt><dd className="font-mono font-medium text-text-primary">#{String(primaryMoment.frameIndex).padStart(3, '0')} · {primaryMoment.timestampMs} ms</dd></div>
+            <div className="flex justify-between"><dt className="text-text-muted">Tangkapan Dipilih</dt><dd className="font-medium text-text-primary">{selectedCount} / 10</dd></div>
+            <div className="flex justify-between"><dt className="text-text-muted">Kamera Samping akhir</dt><dd className="font-mono font-medium text-text-primary">{fmt.cm(selectMeasurementValue(sideMeasurements.sprayLength))} · {fmt.deg(selectMeasurementValue(sideMeasurements.sprayAngle))} · {fmt.mm(selectMeasurementValue(sideMeasurements.verticalSpread))}</dd></div>
+            <div className="flex justify-between"><dt className="text-text-muted">Kamera Depan akhir</dt><dd className="font-mono font-medium text-text-primary">{fmt.area(selectMeasurementValue(frontMeasurements.sprayArea))} · Ø {fmt.mm(selectMeasurementValue(frontMeasurements.equivalentDiameter))} · {selectMeasurementValue(frontMeasurements.circularity).toFixed(2)}</dd></div>
             <div className="flex justify-between"><dt className="text-text-muted">Kalibrasi Samping</dt><dd className="text-text-secondary">{calibrations.side.adjusted ? `Disesuaikan oleh ${calibrations.side.adjustedBy}` : 'Terkalibrasi'}</dd></div>
             <div className="flex justify-between"><dt className="text-text-muted">Kalibrasi Depan</dt><dd className="text-text-secondary">{calibrations.front.adjusted ? `Disesuaikan oleh ${calibrations.front.adjustedBy}` : 'Terkalibrasi'}</dd></div>
             <div className="flex justify-between"><dt className="text-text-muted">Pengukuran Samping</dt><dd className="text-text-secondary">{hasAdjustedMeasurement(sideMeasurements) ? 'Penyesuaian manual' : 'Otomatis diterima'}</dd></div>

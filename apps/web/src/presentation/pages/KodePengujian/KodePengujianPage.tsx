@@ -103,19 +103,19 @@ export function KodePengujianPage() {
         <div className="rounded-md border border-border-default bg-surface shadow-sm overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 border-b border-border-subtle bg-surface">
             <div className="flex flex-wrap items-center gap-3 flex-1">
-              <div className="text-xs font-bold text-text-primary uppercase tracking-wider">
+              <div className="text-xs font-medium text-text-secondary">
                 {filteredItems.length} Kode Pengujian
               </div>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   placeholder="Cari ID, Produk, Lot, Operator..."
-                  className="form-input !h-8 w-[260px] text-xs"
+                  className="form-input !h-8 w-[260px] text-xs font-normal"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <select
-                  className="form-select !h-8 w-[140px] text-xs"
+                  className="form-select !h-8 w-[140px] text-xs font-normal"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -130,7 +130,7 @@ export function KodePengujianPage() {
             <Link
               to="/kode-pengujian/new"
               aria-label="Buat Kode Pengujian"
-              className="btn btn-primary !min-h-[30px] px-3.5 text-xs font-semibold"
+              className="btn btn-primary !min-h-[30px] px-3.5 text-xs font-medium"
             >
               Buat Kode Pengujian
             </Link>
@@ -156,8 +156,8 @@ export function KodePengujianPage() {
                 <tr>
                   <td colSpan={10} className="text-center py-8 text-text-muted text-xs">
                     {searchQuery || statusFilter
-                      ? 'Tidak ada kode pengujian yang cocok dengan filter.'
-                      : 'Belum ada kode pengujian. Buat kode pengujian baru untuk memulai.'}
+                      ? 'Tidak ada hasil yang cocok.'
+                      : 'Belum ada kode pengujian.'}
                   </td>
                 </tr>
               ) : (
@@ -179,7 +179,7 @@ export function KodePengujianPage() {
                       className="hover:bg-surface-subtle transition-colors cursor-pointer"
                       onClick={() => navigate(`/kode-pengujian/${kp.id}`)}
                     >
-                      <td className="font-mono font-bold text-primary">
+                      <td className="font-mono font-medium text-primary">
                         <Link
                           to={`/kode-pengujian/${kp.id}`}
                           onClick={(e) => e.stopPropagation()}
@@ -190,7 +190,7 @@ export function KodePengujianPage() {
                       </td>
                       <td className="text-text-secondary text-xs">{fmt.date(kp.createdAt)}</td>
                       <td>
-                        <div className="font-semibold text-text-primary text-xs">
+                        <div className="font-medium text-text-primary text-xs">
                           {kp.productSnapshot?.productName || '—'}
                         </div>
                         <div className="font-mono text-[11px] text-text-muted">
@@ -199,7 +199,7 @@ export function KodePengujianPage() {
                       </td>
                       <td className="font-mono text-xs">{kp.productLot || '—'}</td>
                       <td className="text-xs text-text-secondary">{kp.testPeriod || '—'}</td>
-                      <td className="text-xs font-semibold">{sampleCount} Sampel</td>
+                      <td className="text-xs font-medium">{sampleCount} Sampel</td>
                       <td className="text-xs text-text-secondary">
                         <span className="inline-block px-2 py-0.5 rounded bg-surface-subtle text-text-primary font-medium text-[11px]">
                           {progressText}

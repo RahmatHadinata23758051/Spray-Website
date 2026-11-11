@@ -57,23 +57,23 @@ export function DashboardPage() {
       <div className="flex items-center justify-end border-b border-border-subtle pb-4">
         <button 
           onClick={() => navigate('/batches/new')} 
-          className="btn btn-primary shadow-sm"
+          className="btn btn-primary font-medium shadow-sm"
         >
           Batch Baru
         </button>
       </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_360px]">
-        <Panel title="Batch Terkini" className="h-full">
+        <Panel title="Batch terkini" className="h-full">
           {!latestBatch ? (
             <p className="text-sm text-text-muted">Belum ada data batch.</p>
           ) : (
             <div className="space-y-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="font-mono text-xl font-bold text-text-primary tracking-tight">{latestBatch.id}</div>
-                  <div className="mt-1 text-base font-semibold text-text-secondary">{getProductName(latestBatch)}</div>
-                  <div className="mt-0.5 font-mono text-xs font-semibold text-text-muted">{getSampleId(latestBatch)}</div>
+                  <div className="font-mono text-xl font-semibold text-text-primary tracking-tight">{latestBatch.id}</div>
+                  <div className="mt-1 text-base font-medium text-text-secondary">{getProductName(latestBatch)}</div>
+                  <div className="mt-0.5 font-mono text-xs font-medium text-text-muted">{getSampleId(latestBatch)}</div>
                 </div>
                 <Status tone={latestBatch.status === 'FINALIZED' ? 'success' : latestBatch.status === 'FAILED' ? 'danger' : latestBatch.status === 'REVIEW_REQUIRED' ? 'warning' : 'neutral'}>
                   {formatStatus(latestBatch.status)}
@@ -82,21 +82,21 @@ export function DashboardPage() {
 
               <div className="grid grid-cols-2 gap-4 border-y border-border-subtle py-4 text-sm">
                 <div>
-                  <div className="text-xs font-semibold text-text-muted uppercase tracking-wide">Dibuat</div>
-                  <div className="font-semibold text-text-primary mt-1">
+                  <div className="text-xs font-medium text-text-muted">Dibuat</div>
+                  <div className="font-medium text-text-primary mt-1">
                     {new Date(latestBatch.createdAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-text-muted uppercase tracking-wide">Operator</div>
-                  <div className="font-semibold text-text-primary mt-1">{getOperatorName(latestBatch)}</div>
+                  <div className="text-xs font-medium text-text-muted">Operator</div>
+                  <div className="font-medium text-text-primary mt-1">{getOperatorName(latestBatch)}</div>
                 </div>
               </div>
 
               <div>
                 <button
                   onClick={() => navigateToBatch(latestBatch)}
-                  className="btn btn-secondary w-full"
+                  className="btn btn-secondary w-full font-medium"
                 >
                   {latestBatch.status === 'FINALIZED' ? 'Buka Hasil' : latestBatch.status === 'DRAFT' ? 'Lanjutkan Setup' : latestBatch.status === 'REVIEW_REQUIRED' ? 'Tinjau Analisis' : 'Lihat Detail Batch'}
                 </button>
@@ -105,7 +105,7 @@ export function DashboardPage() {
           )}
         </Panel>
 
-        <Panel title={`Perlu Ditinjau (${awaitingReview.length})`} className="h-full">
+        <Panel title={`Perlu ditinjau (${awaitingReview.length})`} className="h-full">
           {awaitingReview.length === 0 ? (
             <p className="text-sm text-text-muted">Tidak ada batch yang menunggu tinjauan.</p>
           ) : (
@@ -114,13 +114,13 @@ export function DashboardPage() {
                 return (
                   <div key={b.id} className="flex items-center justify-between py-3.5 gap-4">
                     <div className="min-w-0">
-                      <div className="font-mono text-sm font-bold text-text-primary tracking-tight">{b.id}</div>
+                      <div className="font-mono text-sm font-semibold text-text-primary tracking-tight">{b.id}</div>
                       <div className="truncate text-xs font-medium text-text-secondary mt-0.5">{getProductName(b)}</div>
-                      <div className="text-[11px] font-semibold text-text-muted mt-0.5">{new Date(b.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div className="text-[11px] font-medium text-text-muted mt-0.5">{new Date(b.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
                     <button
                       onClick={() => navigateToBatch(b)}
-                      className="btn btn-secondary !min-h-8 !px-3 !py-1 text-xs shrink-0"
+                      className="btn btn-secondary !min-h-8 !px-3 !py-1 text-xs font-medium shrink-0"
                     >
                       Tinjau
                     </button>
@@ -132,7 +132,7 @@ export function DashboardPage() {
         </Panel>
       </div>
 
-      <Panel title="Riwayat Finalisasi Terkini">
+      <Panel title="Riwayat finalisasi">
         {finalizedBatches.length === 0 ? (
           <p className="text-sm text-text-muted">Belum ada batch yang difinalisasi.</p>
         ) : (
@@ -159,7 +159,7 @@ export function DashboardPage() {
 
                 return (
                   <tr key={b.id}>
-                    <td className="font-mono font-bold">{b.id}</td>
+                    <td className="font-mono font-medium text-primary">{b.id}</td>
                     <td className="font-medium text-text-secondary">{getProductName(b)}</td>
                     <td className="font-medium">{getOperatorName(b)}</td>
                     <td className="text-text-muted">{finalizedAtText}</td>
@@ -167,7 +167,7 @@ export function DashboardPage() {
                     <td className="text-right">
                       <button
                         onClick={() => navigateToBatch(b)}
-                        className="btn btn-tertiary !min-h-8 !px-3 !py-1 text-xs"
+                        className="btn btn-tertiary !min-h-8 !px-3 !py-1 text-xs font-medium"
                       >
                         Buka Hasil
                       </button>

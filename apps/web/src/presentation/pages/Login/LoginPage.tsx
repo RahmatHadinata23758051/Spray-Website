@@ -42,7 +42,7 @@ export function LoginPage() {
             />
           </div>
           <div className="text-right">
-            <span className="text-[11px] font-bold tracking-[0.18em] text-slate-500 uppercase select-none font-sans">
+            <span className="text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase select-none font-sans">
               SPRAYBOT
             </span>
           </div>
@@ -52,11 +52,11 @@ export function LoginPage() {
         <div className="relative p-8 pl-9 md:p-10 md:pl-11">
           {/* Header Title */}
           <div className="mb-8">
-            <h1 className="text-[24px] font-bold leading-tight tracking-tight text-slate-900">
+            <h1 className="text-[24px] font-semibold leading-tight tracking-tight text-slate-900">
               Masuk ke Spraybot
             </h1>
             <p className="mt-1.5 text-[14px] leading-relaxed text-slate-500">
-              Sistem Pengujian dan Analisis Spray
+              Sistem Uji Semprot Botol
             </p>
           </div>
 
@@ -64,7 +64,7 @@ export function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
             <div>
-              <label className="block text-[13px] font-semibold text-slate-700 mb-2">
+              <label className="block text-[13px] font-medium text-slate-700 mb-2">
                 Email
               </label>
               <input 
@@ -78,7 +78,7 @@ export function LoginPage() {
 
             {/* Kata Sandi Field */}
             <div>
-              <label className="block text-[13px] font-semibold text-slate-700 mb-2">
+              <label className="block text-[13px] font-medium text-slate-700 mb-2">
                 Kata Sandi
               </label>
               <div className="relative">
@@ -93,7 +93,7 @@ export function LoginPage() {
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)} 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] font-semibold text-slate-500 transition-colors hover:text-[#1D8FFF]" 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] font-medium text-slate-500 transition-colors hover:text-[#1D8FFF]" 
                   aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
                 >
                   {showPassword ? 'Sembunyikan' : 'Tampilkan'}
@@ -112,7 +112,7 @@ export function LoginPage() {
                 type="submit" 
                 disabled={!valid || loading} 
                 aria-label="Masuk"
-                className="w-full h-[54px] rounded-[8px] bg-[#1D8FFF] px-4 text-[15px] font-semibold text-white transition-all hover:bg-[#1677D9] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                className="w-full h-[54px] rounded-[8px] bg-[#1D8FFF] px-4 text-[15px] font-medium text-white transition-all hover:bg-[#1677D9] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
               >
                 {loading ? 'Memproses...' : 'Masuk'}
               </button>

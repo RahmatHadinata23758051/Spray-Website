@@ -41,6 +41,7 @@ export function Header({ page }: { page?: Page }) {
     const parts = pathname.split('/').filter(Boolean); // ['kode-pengujian', ':kpId']
     if (parts.length === 2 && parts[1] === 'new') {
       subSectionLabel = 'Kode Pengujian Baru';
+      description = 'Buat konteks pengujian sebelum menambahkan sampel.';
     } else if (parts.length >= 2) {
       description = '';
       kpIdMatch = parts[1];
@@ -59,7 +60,7 @@ export function Header({ page }: { page?: Page }) {
   const isAnalysisWorkspace = pathname.includes('/analysis');
 
   return (
-    <header className={`flex items-center justify-between gap-4 pb-6 pt-2 ${isAnalysisWorkspace ? 'pb-4' : ''}`}>
+    <header className={`flex items-center justify-between gap-4 pb-4 pt-1 ${isAnalysisWorkspace ? 'pb-3' : ''}`}>
       <div className="min-w-0">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-text-muted">
           <span>Spraybot</span>
@@ -77,19 +78,19 @@ export function Header({ page }: { page?: Page }) {
               <span className="font-mono text-text-secondary">{kpIdMatch}</span>
             </>
           )}
-          {subSectionLabel && (
+          {subSectionLabel && subSectionLabel !== 'Detail Kode Pengujian' && subSectionLabel !== 'Detail Batch' && (
             <>
               <ChevronRight size={13} className="text-border-strong shrink-0" />
-              <span className="text-text-primary font-bold">{subSectionLabel}</span>
+              <span className="text-text-primary font-medium">{subSectionLabel}</span>
             </>
           )}
         </div>
-        <div className="mt-1 flex items-baseline gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">
+        <div className="mt-1">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">
             {subSectionLabel ? subSectionLabel : (pageLabels[title as Page] || title)}
           </h1>
           {description && (
-            <p className="hidden truncate text-sm text-text-secondary xl:block">
+            <p className="mt-0.5 text-xs text-text-secondary">
               {description}
             </p>
           )}

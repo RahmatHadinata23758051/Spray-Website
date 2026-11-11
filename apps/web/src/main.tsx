@@ -20,8 +20,8 @@ class AppErrorBoundary extends React.Component<React.PropsWithChildren, { hasErr
       return (
         <main className="flex min-h-screen items-center justify-center bg-[var(--bg-canvas)] px-6">
           <section className="w-full max-w-lg rounded-panel border border-border-default bg-surface p-6 text-center shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-wider text-semantic-danger">Halaman gagal dimuat</p>
-            <h1 className="mt-2 text-xl font-bold text-text-primary">Terjadi kesalahan saat membuka halaman ini.</h1>
+            <p className="text-xs font-semibold uppercase tracking-wider text-semantic-danger">Halaman gagal dimuat</p>
+            <h1 className="mt-2 text-xl font-semibold text-text-primary">Terjadi kesalahan saat membuka halaman ini.</h1>
             <p className="mt-2 text-sm text-text-secondary">Muat ulang halaman atau kembali ke daftar batch untuk melanjutkan.</p>
             {this.state.errorMessage && (
               <p className="mt-3 break-words rounded-md border border-border-default bg-surface-subtle px-3 py-2 text-left font-mono text-[11px] text-text-muted">

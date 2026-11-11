@@ -61,13 +61,13 @@ export const pageLabels: Record<Page, string> = {
 
 export const pageDescriptions: Record<Exclude<Page, 'Login'>, string> = {
   Dashboard: '',
-  Batches: 'Kelola draf, antrean pengujian, dan riwayat batch.',
-  Reports: 'Laporan hasil pengujian yang telah difinalisasi.',
-  Products: 'Master data spesifikasi produk dan parameter pengujian.',
-  Calibration: 'Pemetaan referensi spasial stasiun kamera ganda.',
-  Users: 'Manajemen peran dan hak akses operator workstation.',
-  Settings: 'Konfigurasi environment dan penyimpanan workstation.',
-  KodePengujian: 'Kelola kode pengujian, sampel, dan eksekusi pengujian.',
-  KodePengujianNew: 'Buat kode pengujian baru dengan konteks produk dan formula.',
-  KodePengujianDetail: 'Lihat detail kode pengujian, tambah sampel, dan jalankan pengujian.',
+  Batches: 'Kelola riwayat batch.',
+  Reports: 'Laporan pengujian final.',
+  Products: 'Spesifikasi produk dan parameter pengujian.',
+  Calibration: 'Kalibrasi spasial dual kamera.',
+  Users: 'Hak akses dan peran pengguna.',
+  Settings: 'Konfigurasi workstation.',
+  KodePengujian: 'Kelola sampel dan pengujian.',
+  KodePengujianNew: 'Buat konteks pengujian sebelum menambahkan sampel.',
+  KodePengujianDetail: '',
 };

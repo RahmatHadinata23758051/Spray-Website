@@ -148,7 +148,7 @@ export function MeasurementCorrectionOverlay({
                 <g className="measurement-final-geometry" aria-label="Geometri sebaran akhir operator">
                   <line x1={workingSideGeometry.verticalSpreadTopPx.x} y1={workingSideGeometry.verticalSpreadTopPx.y} x2={workingSideGeometry.verticalSpreadBottomPx.x} y2={workingSideGeometry.verticalSpreadBottomPx.y} stroke="#ff8c00" strokeWidth="2.5" />
                 </g>
-                <text x={spreadLabelX} y={midY} fill="#ff8c00" fontSize="11" fontFamily="IBM Plex Mono" dominantBaseline="middle">{fmt.mm(spreadMm)}</text>
+                <text x={spreadLabelX} y={midY} fill="#ff8c00" fontSize="11" fontFamily="JetBrains Mono" dominantBaseline="middle">{fmt.mm(spreadMm)}</text>
                 {handle('spreadPosition', 'Posisi pengukuran sebaran', { x: workingSideGeometry.verticalSpreadTopPx.x, y: midY }, 'horizontal')}
                 {handle('spreadTop', 'Batas sebaran atas', workingSideGeometry.verticalSpreadTopPx, 'vertical')}
                 {handle('spreadBottom', 'Batas sebaran bawah', workingSideGeometry.verticalSpreadBottomPx, 'vertical')}

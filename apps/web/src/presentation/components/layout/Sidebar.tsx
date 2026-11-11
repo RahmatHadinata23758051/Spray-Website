@@ -31,17 +31,21 @@ export function Sidebar({
 
   return (
     <aside className="app-sidebar">
-      {/* Time Panel */}
-      <WorkstationClock collapsed={collapsed} />
-
-      {/* Spraybot Branding Header */}
+      {/* Spraybot / Paragon Branding Header */}
       {collapsed ? (
-        <div className="flex items-center justify-center border-b border-border-subtle py-4">
-          <img src="/branding/paragon-mark.png" alt="Paragon Logo" className="w-[32px] h-[32px] object-contain" />
+        <div className="flex items-center justify-center border-b border-border-subtle py-3 bg-surface">
+          <img src="/branding/paragon-mark.png" alt="Paragon Logo" className="w-6 h-6 object-contain" />
         </div>
       ) : (
-        <div className="flex items-center justify-center border-b border-border-subtle p-4 bg-white">
-          <img src="/branding/paragon-logo.jpg" alt="Paragon Logo" className="h-11 w-auto max-w-[195px] object-contain mix-blend-multiply" />
+        <div className="flex items-center justify-between border-b border-border-subtle px-3.5 py-3 bg-surface">
+          <img 
+            src="/branding/paragon-logo.jpg" 
+            alt="Paragon Logo" 
+            className="h-7 w-auto max-w-[120px] object-contain mix-blend-multiply" 
+          />
+          <span className="text-[10px] font-mono font-medium tracking-wider text-text-muted uppercase border border-border-subtle px-1.5 py-0.5 rounded bg-surface-subtle">
+            R&amp;D LAB
+          </span>
         </div>
       )}
 
@@ -50,7 +54,7 @@ export function Sidebar({
         {navigation.map(group => (
           <div className="space-y-1" key={group.label}>
             {!collapsed && (
-              <div className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-text-muted">
+              <div className="px-2 pb-1 text-[11px] font-medium uppercase tracking-wider text-text-muted">
                 {group.label}
               </div>
             )}
@@ -63,9 +67,9 @@ export function Sidebar({
                   aria-label={pageLabels[item]} 
                   aria-current={isSelected ? 'page' : undefined} 
                   onClick={() => handleNav(item)} 
-                  className={`nav-item flex w-full items-center ${collapsed ? 'justify-center px-0' : 'gap-2.5 px-3'} rounded-input py-2 text-sm font-semibold transition-colors ${
+                  className={`nav-item flex w-full items-center ${collapsed ? 'justify-center px-0' : 'gap-2.5 px-3'} rounded-input py-2 text-sm font-medium transition-colors ${
                     isSelected 
-                      ? 'nav-item-selected bg-primary text-white font-bold shadow-sm' 
+                      ? 'nav-item-selected bg-primary text-white font-medium shadow-xs' 
                       : 'text-text-secondary hover:bg-surface-subtle hover:text-text-primary'
                   }`}
                 >
@@ -78,29 +82,32 @@ export function Sidebar({
         ))}
       </nav>
 
+      {/* Workstation Clock (Discreet operational utility) */}
+      <WorkstationClock collapsed={collapsed} />
+
       {/* User Section & Settings/Logout */}
       <div className="border-t border-border-subtle p-3 space-y-1">
         {collapsed ? (
           <div className="flex items-center justify-center py-2 mb-1" title="Nadia Putri (Operator)">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary font-bold text-xs">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary font-medium text-xs">
               NP
             </div>
           </div>
         ) : (
           <div className="flex items-center gap-2.5 px-2 py-2 mb-1 rounded-input bg-surface-subtle">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary font-bold text-xs">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary font-medium text-xs">
               NP
             </div>
             <div className="min-w-0">
-              <div className="truncate text-xs font-bold text-text-primary">Nadia Putri</div>
-              <div className="text-[11px] font-semibold text-text-muted">Operator</div>
+              <div className="truncate text-xs font-semibold text-text-primary">Nadia Putri</div>
+              <div className="text-[11px] font-medium text-text-muted">Operator</div>
             </div>
           </div>
         )}
         <button 
-          className={`nav-item flex w-full items-center ${collapsed ? 'justify-center px-0' : 'gap-2.5 px-3'} rounded-input py-2 text-sm font-semibold transition-colors ${
+          className={`nav-item flex w-full items-center ${collapsed ? 'justify-center px-0' : 'gap-2.5 px-3'} rounded-input py-2 text-sm font-medium transition-colors ${
             currentPage === 'Settings' 
-              ? 'nav-item-selected bg-primary text-white font-bold shadow-sm' 
+              ? 'nav-item-selected bg-primary text-white font-medium shadow-xs' 
               : 'text-text-secondary hover:bg-surface-subtle hover:text-text-primary'
           }`}
           title={pageLabels.Settings} 
@@ -111,7 +118,7 @@ export function Sidebar({
           {!collapsed && <span>{pageLabels.Settings}</span>}
         </button>
         <button 
-          className={`flex w-full items-center ${collapsed ? 'justify-center px-0' : 'gap-2.5 px-3'} rounded-input py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors`}
+          className={`flex w-full items-center ${collapsed ? 'justify-center px-0' : 'gap-2.5 px-3'} rounded-input py-2 text-sm font-medium text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors`}
           onClick={() => setCollapsed(v => !v)}
           aria-label={collapsed ? "Perluas sidebar" : "Tutup sidebar"}
           title={collapsed ? "Perluas sidebar" : "Tutup sidebar"}
@@ -124,7 +131,7 @@ export function Sidebar({
           {!collapsed && <span>Sembunyikan</span>}
         </button>
         <button 
-          className={`flex w-full items-center ${collapsed ? 'justify-center px-0' : 'gap-2.5 px-3'} rounded-input py-2 text-sm font-semibold text-text-secondary hover:bg-semantic-danger-soft hover:text-semantic-danger transition-colors`} 
+          className={`flex w-full items-center ${collapsed ? 'justify-center px-0' : 'gap-2.5 px-3'} rounded-input py-2 text-sm font-medium text-text-secondary hover:bg-semantic-danger-soft hover:text-semantic-danger transition-colors`} 
           title="Keluar" 
           aria-label="Keluar" 
           onClick={() => handleNav('Login')}

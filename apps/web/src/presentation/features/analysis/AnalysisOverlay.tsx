@@ -54,7 +54,7 @@ export function AnalysisOverlay({
       const x = i * gridSpacingPx;
       return <g key={`v${i}`}>
         <line x1={x} y1="0" x2={x} y2="360" stroke="#6d8295" strokeWidth="0.8" />
-        <text x={x + 3} y="11" fill="#a9bbca" fontSize="8" fontFamily="IBM Plex Mono">{(i * (spacingMm / 10)).toFixed(0)}cm</text>
+        <text x={x + 3} y="11" fill="#a9bbca" fontSize="8" fontFamily="JetBrains Mono">{(i * (spacingMm / 10)).toFixed(0)}cm</text>
       </g>;
     })}
     {Array.from({ length: numHorizontal + 1 }, (_, i) => {
@@ -88,11 +88,11 @@ export function AnalysisOverlay({
         <line x1={sideGeometry.nozzleOriginPx.x} y1={sideGeometry.nozzleOriginPx.y} x2={sideGeometry.upperBoundaryPx.x} y2={sideGeometry.upperBoundaryPx.y} stroke="#1d8fff" strokeWidth="1.4" />
         <line x1={sideGeometry.nozzleOriginPx.x} y1={sideGeometry.nozzleOriginPx.y} x2={sideGeometry.lowerBoundaryPx.x} y2={sideGeometry.lowerBoundaryPx.y} stroke="#1d8fff" strokeWidth="1.4" />
         <g transform={mirrorTransform}><path d="M202 193 A90 90 0 0 1 201 216" fill="none" stroke="#ffb020" strokeWidth="2" /></g>
-        <text x={sideAngleLabelX} y="211" fill="#ffb020" fontSize="12" fontFamily="IBM Plex Mono">{fmt.deg(selectMeasurementValue(sideMeasurements.sprayAngle))}</text>
+        <text x={sideAngleLabelX} y="211" fill="#ffb020" fontSize="12" fontFamily="JetBrains Mono">{fmt.deg(selectMeasurementValue(sideMeasurements.sprayAngle))}</text>
         <line data-testid="side-display-length-line" x1={sideGeometry.nozzleOriginPx.x} y1="312" x2={sideGeometry.sprayEndpointPx.x} y2="312" stroke="#ffb020" strokeWidth="2" /><line x1={sideGeometry.nozzleOriginPx.x} y1="304" x2={sideGeometry.nozzleOriginPx.x} y2="320" stroke="#ffb020" strokeWidth="2" /><line x1={sideGeometry.sprayEndpointPx.x} y1="304" x2={sideGeometry.sprayEndpointPx.x} y2="320" stroke="#ffb020" strokeWidth="2" />
-        <text data-testid="side-overlay-spray-length" x={sideLengthLabelX} y="304" fill="#ffb020" fontSize="12" fontFamily="IBM Plex Mono">{fmt.cm(selectMeasurementValue(sideMeasurements.sprayLength))}</text>
+        <text data-testid="side-overlay-spray-length" x={sideLengthLabelX} y="304" fill="#ffb020" fontSize="12" fontFamily="JetBrains Mono">{fmt.cm(selectMeasurementValue(sideMeasurements.sprayLength))}</text>
         <line x1={sideGeometry.verticalSpreadTopPx.x} y1={sideGeometry.verticalSpreadTopPx.y} x2={sideGeometry.verticalSpreadBottomPx.x} y2={sideGeometry.verticalSpreadBottomPx.y} stroke="#ffb020" strokeWidth="2" />
-        <text x={sideSpreadLabelX} y={(sideGeometry.verticalSpreadTopPx.y + sideGeometry.verticalSpreadBottomPx.y) / 2} fill="#ffb020" fontSize="11" fontFamily="IBM Plex Mono">{fmt.mm(selectMeasurementValue(sideMeasurements.verticalSpread))}</text>
+        <text x={sideSpreadLabelX} y={(sideGeometry.verticalSpreadTopPx.y + sideGeometry.verticalSpreadBottomPx.y) / 2} fill="#ffb020" fontSize="11" fontFamily="JetBrains Mono">{fmt.mm(selectMeasurementValue(sideMeasurements.verticalSpread))}</text>
       </g>}
     </>}
 
@@ -107,9 +107,9 @@ export function AnalysisOverlay({
         <circle cx={frontGeometry.referenceCenterPx.x} cy={frontGeometry.referenceCenterPx.y} r="5" fill="none" stroke="#8fa3b8" strokeWidth="2" />
         <circle cx={frontGeometry.centroidPx.x} cy={frontGeometry.centroidPx.y} r="5" fill="#ffb020" />
         <line x1={frontGeometry.referenceCenterPx.x} y1={frontGeometry.referenceCenterPx.y} x2={frontGeometry.centroidPx.x} y2={frontGeometry.centroidPx.y} stroke="#ffb020" strokeWidth="2" />
-        <text x="379" y="179" fill="#ffb020" fontSize="11" fontFamily="IBM Plex Mono">Δ {fmt.mm(selectMeasurementValue(frontMeasurements.centroidOffsetX))}, {fmt.mm(selectMeasurementValue(frontMeasurements.centroidOffsetY))}</text>
+        <text x="379" y="179" fill="#ffb020" fontSize="11" fontFamily="JetBrains Mono">Δ {fmt.mm(selectMeasurementValue(frontMeasurements.centroidOffsetX))}, {fmt.mm(selectMeasurementValue(frontMeasurements.centroidOffsetY))}</text>
         <line data-testid="front-display-diameter-line" x1={frontGeometry.referenceCenterPx.x - frontGeometry.equivalentDiameterPx / 2} y1="318" x2={frontGeometry.referenceCenterPx.x + frontGeometry.equivalentDiameterPx / 2} y2="318" stroke="#ffb020" strokeWidth="2"/><line x1={frontGeometry.referenceCenterPx.x - frontGeometry.equivalentDiameterPx / 2} y1="310" x2={frontGeometry.referenceCenterPx.x - frontGeometry.equivalentDiameterPx / 2} y2="326" stroke="#ffb020" strokeWidth="2"/><line x1={frontGeometry.referenceCenterPx.x + frontGeometry.equivalentDiameterPx / 2} y1="310" x2={frontGeometry.referenceCenterPx.x + frontGeometry.equivalentDiameterPx / 2} y2="326" stroke="#ffb020" strokeWidth="2"/>
-        <text x="319" y="309" fill="#ffb020" fontSize="11" fontFamily="IBM Plex Mono">Ø {fmt.mm(selectMeasurementValue(frontMeasurements.equivalentDiameter))}</text>
+        <text x="319" y="309" fill="#ffb020" fontSize="11" fontFamily="JetBrains Mono">Ø {fmt.mm(selectMeasurementValue(frontMeasurements.equivalentDiameter))}</text>
       </g>}
     </>}
 

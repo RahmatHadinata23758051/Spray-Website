@@ -51,12 +51,12 @@ export function Step03Parameters({
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-sm font-bold text-text-primary">03. Parameter Uji & Sasaran Observasi</h2>
+        <h2 className="text-sm font-semibold text-text-primary">03. Parameter Uji & Sasaran Observasi</h2>
       </div>
 
       {/* Observation Objectives */}
       <div className="space-y-2">
-        <label className="text-xs font-semibold text-text-secondary block">
+        <label className="text-xs font-medium text-text-secondary block">
           Sasaran Observasi
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
@@ -98,7 +98,7 @@ export function Step03Parameters({
               type="button"
               disabled={isReadOnly}
               onClick={() => onChange({ forceMode: 'Normal' })}
-              className={`py-1 px-2.5 rounded text-xs font-semibold transition-all ${
+              className={`py-1 px-2.5 rounded text-xs font-medium transition-all ${
                 isNormalForce
                   ? 'bg-primary text-white shadow-xs'
                   : 'text-text-secondary hover:text-text-primary'
@@ -110,7 +110,7 @@ export function Step03Parameters({
               type="button"
               disabled={isReadOnly}
               onClick={() => onChange({ forceMode: 'Tidak Normal' })}
-              className={`py-1 px-2.5 rounded text-xs font-semibold transition-all ${
+              className={`py-1 px-2.5 rounded text-xs font-medium transition-all ${
                 !isNormalForce
                   ? 'bg-primary text-white shadow-xs'
                   : 'text-text-secondary hover:text-text-primary'
@@ -152,7 +152,7 @@ export function Step03Parameters({
         <FormField
           label="Setting Durasi Tekan / Holding Time (s)"
           hint={
-            <span className="font-mono text-primary font-semibold">
+            <span className="font-mono text-primary font-medium">
               Konversi internal mesin: {convertedMs} ms
             </span>
           }
@@ -171,7 +171,7 @@ export function Step03Parameters({
 
         <FormField
           label="Tinggi Botol (mm)"
-          hint="dimensi ketinggian botol (satuan milimeter)"
+          hint="Dimensi ketinggian botol (satuan milimeter)"
           required
         >
           <Input

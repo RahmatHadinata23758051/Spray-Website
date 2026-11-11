@@ -969,18 +969,18 @@ export function TestRunCapturePage() {
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             {returnToWizard ? (
-              <span className="text-base font-bold text-text-primary">Pengujian Spray / Capture</span>
+              <span className="text-base font-semibold text-text-primary">Pengujian Spray / Capture</span>
             ) : (
               <>
-                <span className="font-mono text-base font-bold text-text-primary">{kp.id}</span>
+                <span className="font-mono text-base font-semibold text-text-primary">{kp.id}</span>
                 <span className="text-text-muted">/</span>
-                <span className="font-mono text-base font-bold text-text-primary">{sample.sampleCode || sample.id}</span>
+                <span className="font-mono text-base font-semibold text-text-primary">{sample.sampleCode || sample.id}</span>
                 <span className="text-text-muted">/</span>
-                <span className="font-mono text-base font-bold text-text-primary">{testRun.id}</span>
+                <span className="font-mono text-base font-semibold text-text-primary">{testRun.id}</span>
               </>
             )}
             <span className="text-text-muted">•</span>
-            <span className="text-sm font-semibold text-text-secondary">{testRun.recipeSnapshot.name}</span>
+            <span className="text-sm font-medium text-text-secondary">{testRun.recipeSnapshot.name}</span>
             <span className="text-text-muted">•</span>
             {(() => {
               const hasSavedSession =
@@ -1000,7 +1000,7 @@ export function TestRunCapturePage() {
             })()}
           </div>
           <p className="text-xs text-text-muted">
-            {mode === 'real' ? 'Mode kamera nyata — Side only' : 'Mode simulasi — fixture capture'}
+            {mode === 'real' ? 'Mode kamera nyata — Side only' : 'Mode simulasi'}
             {!isVideoRecordingSupported() && ' · Perekaman video tidak didukung browser'}
           </p>
           <div className="flex items-center gap-2 text-xs text-text-muted">
@@ -1042,7 +1042,7 @@ export function TestRunCapturePage() {
 
           {!isCapturing && testRun.status === 'PENDING' && (
             <>
-              <button onClick={handleStartSimulation} className="btn btn-secondary">Mulai Simulasi</button>
+              <button onClick={handleStartSimulation} className="btn btn-secondary font-medium">Mulai Simulasi</button>
               <label className="flex items-center gap-2 text-xs text-text-secondary">
                 <span>Durasi</span>
                 <input
@@ -1057,40 +1057,40 @@ export function TestRunCapturePage() {
                 />
                 <span>detik</span>
               </label>
-              <button onClick={() => void handleStartRealCapture()} className="btn btn-primary" aria-label="Mulai Pengambilan">
+              <button onClick={() => void handleStartRealCapture()} className="btn btn-primary font-medium" aria-label="Mulai Pengambilan">
                 Mulai Pengambilan Data
               </button>
             </>
           )}
-          {isCapturing && mode === 'simulation' && <button onClick={handleAbortCapture} className="btn btn-danger">Batalkan Akuisisi</button>}
+          {isCapturing && mode === 'simulation' && <button onClick={handleAbortCapture} className="btn btn-danger font-medium">Batalkan Akuisisi</button>}
           {mode === 'real' && isCapturing && (
             <>
-              <button onClick={() => void finishRealCapture()} className="btn btn-primary">Selesaikan Capture</button>
-              <button onClick={handleAbortCapture} className="btn btn-danger">Batalkan Akuisisi</button>
+              <button onClick={() => void finishRealCapture()} className="btn btn-primary font-medium">Selesaikan Capture</button>
+              <button onClick={handleAbortCapture} className="btn btn-danger font-medium">Batalkan Akuisisi</button>
             </>
           )}
           {mode === 'real' && !isCapturing && (realStatus === 'complete' || restoredRealFrameCount > 0) && !hasUnsavedCapture && (
             <>
-              <button onClick={handleProceedToAnalysis} className="btn btn-primary">Lanjut ke Analisis</button>
-              <button onClick={() => handleNavigate(backPath)} className="btn btn-secondary">{backLabel}</button>
-              <button onClick={handleAbortCapture} className="btn btn-danger">Batalkan Akuisisi</button>
+              <button onClick={handleProceedToAnalysis} className="btn btn-primary font-medium">Lanjut ke Analisis</button>
+              <button onClick={() => handleNavigate(backPath)} className="btn btn-secondary font-medium">{backLabel}</button>
+              <button onClick={handleAbortCapture} className="btn btn-danger font-medium">Batalkan Akuisisi</button>
             </>
           )}
           {mode === 'simulation' && !isCapturing && testRun.captureSession?.captureMode === 'simulation' && (testRun.captureSession?.synchronizedMoments?.length ?? 0) > 0 && !hasUnsavedCapture && (
             <>
-              <button onClick={handleProceedToAnalysis} className="btn btn-primary">Lanjut ke Analisis</button>
-              <button onClick={() => handleNavigate(backPath)} className="btn btn-secondary">{backLabel}</button>
-              <button onClick={handleAbortCapture} className="btn btn-danger">Batalkan Akuisisi</button>
+              <button onClick={handleProceedToAnalysis} className="btn btn-primary font-medium">Lanjut ke Analisis</button>
+              <button onClick={() => handleNavigate(backPath)} className="btn btn-secondary font-medium">{backLabel}</button>
+              <button onClick={handleAbortCapture} className="btn btn-danger font-medium">Batalkan Akuisisi</button>
             </>
           )}
           {hasUnsavedCapture && (
             <>
-              <button onClick={() => handleNavigate(backPath)} className="btn btn-secondary">
+              <button onClick={() => handleNavigate(backPath)} className="btn btn-secondary font-medium">
                 {backLabel}
               </button>
-              <button onClick={handleSaveCapture} className="btn btn-primary">Simpan</button>
-              <button onClick={handleRetakeCapture} className="btn btn-secondary">Ulangi Pengambilan</button>
-              <button onClick={handleDiscardCapture} className="btn btn-danger">Buang</button>
+              <button onClick={handleSaveCapture} className="btn btn-primary font-medium">Simpan</button>
+              <button onClick={handleRetakeCapture} className="btn btn-secondary font-medium">Ulangi Pengambilan</button>
+              <button onClick={handleDiscardCapture} className="btn btn-danger font-medium">Buang</button>
             </>
           )}
         </div>
@@ -1267,14 +1267,14 @@ export function TestRunCapturePage() {
       {showNavConfirmation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-labelledby="nav-confirm-title">
           <div className="bg-surface rounded-xl p-6 max-w-md w-full mx-4">
-            <h3 id="nav-confirm-title" className="text-lg font-bold text-text-primary mb-2">Hasil pengambilan data belum disimpan.</h3>
+            <h3 id="nav-confirm-title" className="text-lg font-semibold text-text-primary mb-2">Hasil pengambilan data belum disimpan.</h3>
             <p className="text-sm text-text-secondary mb-6">
               Anda memiliki data tangkapan yang belum disimpan. Apa yang ingin Anda lakukan?
             </p>
             <div className="flex gap-2 justify-end">
-              <button onClick={handleCancelNav} className="btn btn-secondary">Batal</button>
-              <button onClick={handleDiscardAndExit} className="btn btn-danger">Keluar Tanpa Menyimpan</button>
-              <button onClick={handleSaveAndExit} className="btn btn-primary">Simpan & Keluar</button>
+              <button onClick={handleCancelNav} className="btn btn-secondary font-medium">Batal</button>
+              <button onClick={handleDiscardAndExit} className="btn btn-danger font-medium">Keluar Tanpa Menyimpan</button>
+              <button onClick={handleSaveAndExit} className="btn btn-primary font-medium">Simpan & Keluar</button>
             </div>
           </div>
         </div>
@@ -1291,7 +1291,7 @@ function CameraBox({ camera, captureProgress, isCapturing, videoRef, showRealPre
   return (
     <div className="flex flex-col bg-surface rounded-xl overflow-hidden border border-border-default shadow-[0_4px_20px_rgba(16,42,67,0.04)]">
       <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle bg-bg-subtle">
-        <h2 className="text-sm font-bold tracking-tight text-text-primary">Kamera {camera === 'side' ? 'Samping' : 'Depan'}</h2>
+        <h2 className="text-sm font-semibold tracking-tight text-text-primary">Kamera {camera === 'side' ? 'Samping' : 'Depan'}</h2>
         {camera === 'side' && displayCount > 0 && (
           <span className="flex items-center gap-2 text-[11px] font-mono text-text-muted">
             <span>{displayCount} frame</span>

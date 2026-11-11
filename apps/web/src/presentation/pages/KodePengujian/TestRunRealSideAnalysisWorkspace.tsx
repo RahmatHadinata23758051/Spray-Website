@@ -217,18 +217,18 @@ export function TestRunRealSideAnalysisWorkspace({
             <span className="font-semibold text-text-primary text-xs">{testRun.recipeSnapshot.name}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-bold text-[11px] uppercase tracking-wider">Mode</span>
-            <span className="font-mono font-bold text-text-primary">SAMPING SAJA</span>
+            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Mode</span>
+            <span className="font-mono font-medium text-text-primary">SAMPING SAJA</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-bold text-[11px] uppercase tracking-wider">Frame</span>
-            <span className="font-mono font-bold text-text-primary">
+            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Frame</span>
+            <span className="font-mono font-medium text-text-primary">
               {frames.length > 0 ? `${(currentFrame?.frameIndex ?? 0) + 1} / ${frames.length}` : '—'}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-bold text-[11px] uppercase tracking-wider">Waktu</span>
-            <span className="font-mono font-bold text-text-primary">
+            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Waktu</span>
+            <span className="font-mono font-medium text-text-primary">
               {currentFrame ? `${currentFrame.elapsedMs} ms` : '—'}
             </span>
           </div>
@@ -236,7 +236,7 @@ export function TestRunRealSideAnalysisWorkspace({
         </div>
         <button
           onClick={onBack}
-          className="text-xs font-semibold hover:text-primary transition-colors text-text-secondary flex items-center gap-1 shrink-0"
+          className="text-xs font-medium hover:text-primary transition-colors text-text-secondary flex items-center gap-1 shrink-0"
         >
           <span>&larr;</span> {backLabel ?? 'Kembali ke Kode Pengujian'}
         </button>
@@ -252,7 +252,7 @@ export function TestRunRealSideAnalysisWorkspace({
                 onClick={() => setCamera('side')}
                 aria-label="kamera samping"
                 aria-pressed={camera === 'side'}
-                className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+                className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition-colors ${
                   camera === 'side'
                     ? 'bg-workbench border border-workbench-border text-white shadow-sm'
                     : 'text-workbench-muted hover:text-white hover:bg-workbench'
@@ -265,7 +265,7 @@ export function TestRunRealSideAnalysisWorkspace({
                 onClick={() => setCamera('front')}
                 aria-label="kamera depan"
                 aria-pressed={camera === 'front'}
-                className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+                className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition-colors ${
                   camera === 'front'
                     ? 'bg-workbench border border-workbench-border text-white shadow-sm'
                     : 'text-workbench-muted hover:text-white hover:bg-workbench'
@@ -282,7 +282,7 @@ export function TestRunRealSideAnalysisWorkspace({
                     key={value}
                     onClick={() => setMode(value)}
                     aria-pressed={mode === value}
-                    className={`rounded-md px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                    className={`rounded-md px-3 py-1 text-[11px] font-medium uppercase tracking-wider transition-all ${
                       mode === value
                         ? 'bg-workbench-raised text-white shadow-sm border border-workbench-border'
                         : 'text-workbench-muted hover:text-white'
@@ -306,7 +306,7 @@ export function TestRunRealSideAnalysisWorkspace({
 
             {preparation.status === 'error' && (
               <div role="alert" className="max-w-xl px-6 text-center">
-                <p className="text-sm font-bold text-semantic-danger">Persiapan analisis diblokir</p>
+                <p className="text-sm font-semibold text-semantic-danger">Persiapan analisis diblokir</p>
                 <p className="mt-1 text-xs text-workbench-muted">{preparation.message}</p>
                 {(preparation.missingFrameAssetIds.length > 0 || preparation.missingBaselineAssetIds.length > 0) && (
                   <ul className="mt-3 space-y-1 text-left text-[11px] font-mono text-workbench-muted">
@@ -323,7 +323,7 @@ export function TestRunRealSideAnalysisWorkspace({
 
             {preparation.status === 'ready' && camera === 'front' && (
               <div className="max-w-md px-6 text-center" data-testid="front-unavailable">
-                <p className="text-sm font-bold text-white">Kamera Depan tidak tersedia</p>
+                <p className="text-sm font-semibold text-white">Kamera Depan tidak tersedia</p>
                 <p className="mt-1 text-xs text-workbench-muted">
                   Sesi ini hanya menangkap Kamera Samping. Tidak ada frame Depan yang dibuat.
                 </p>
@@ -332,7 +332,7 @@ export function TestRunRealSideAnalysisWorkspace({
 
             {preparation.status === 'ready' && camera === 'side' && currentFrame && (
               <>
-                <div className="absolute top-3 left-3 z-10 text-[11px] font-mono font-bold text-workbench-text tracking-wide bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded border border-workbench-border/60 flex items-center gap-2 shadow-sm">
+                <div className="absolute top-3 left-3 z-10 text-[11px] font-mono font-medium text-workbench-text tracking-wide bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded border border-workbench-border/60 flex items-center gap-2 shadow-sm">
                   <span className="text-white uppercase">SAMPING</span>
                   <span className="text-workbench-muted">•</span>
                   <span>#{String(currentFrame.frameIndex).padStart(3, '0')}</span>
@@ -356,7 +356,7 @@ export function TestRunRealSideAnalysisWorkspace({
                     data-testid="analysis-result-unavailable"
                   >
                     <div className="max-w-md px-6 text-center">
-                      <p className="text-sm font-bold text-white">Hasil analisis belum tersedia</p>
+                      <p className="text-sm font-semibold text-white">Hasil analisis belum tersedia</p>
                       <p className="mt-1 text-xs text-workbench-muted">
                         Mode {mode} menunggu integrasi pipeline CV Samping. Citra asli tetap dapat ditinjau.
                       </p>
@@ -419,15 +419,15 @@ export function TestRunRealSideAnalysisWorkspace({
             <div className="rounded-md border border-border-default bg-surface-subtle p-3 space-y-1.5 text-xs">
               <div className="flex justify-between">
                 <span className="text-text-muted">Kode Pengujian:</span>
-                <span className="font-mono font-bold text-text-primary">{kp.id}</span>
+                <span className="font-mono font-medium text-text-primary">{kp.id}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-muted">Sampel:</span>
-                <span className="font-semibold text-text-primary">{sample.sampleCode || sample.id}</span>
+                <span className="font-medium text-text-primary">{sample.sampleCode || sample.id}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-muted">Pengujian:</span>
-                <span className="font-mono font-bold text-primary">{testRun.id}</span>
+                <span className="font-mono font-medium text-primary">{testRun.id}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-muted">Metodologi:</span>
@@ -467,7 +467,7 @@ export function TestRunRealSideAnalysisWorkspace({
           <section className="inspector-section space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-border-subtle">
               <h3 className="inspector-header !mb-0">Pilihan Laporan</h3>
-              <span className="text-xs font-bold text-text-primary">Tangkapan Dipilih {selectedCount} / 10</span>
+              <span className="text-xs font-medium text-text-primary">Tangkapan Dipilih {selectedCount} / 10</span>
             </div>
             <p className="text-xs text-text-secondary leading-relaxed">
               Pilih satu frame Samping sebagai Utama. Tambahkan hingga sembilan frame Pendukung.
@@ -493,7 +493,7 @@ export function TestRunRealSideAnalysisWorkspace({
               </button>
             </div>
             {selectionError && (
-              <p className="text-xs font-semibold text-semantic-danger bg-semantic-danger-soft p-2 rounded-md" role="alert">
+              <p className="text-xs font-medium text-semantic-danger bg-semantic-danger-soft p-2 rounded-md" role="alert">
                 {selectionError}
               </p>
             )}
@@ -514,20 +514,20 @@ export function TestRunRealSideAnalysisWorkspace({
                     >
                       <div className="flex flex-col">
                         <span
-                          className={`text-[11px] font-bold uppercase tracking-wider ${
+                          className={`text-[11px] font-medium uppercase tracking-wider ${
                             selection.role === 'primary' ? 'text-primary' : 'text-text-muted'
                           }`}
                         >
                           {selection.role === 'primary' ? '★ Utama' : 'Pendukung'}
                         </span>
-                        <strong className="font-mono text-xs text-text-primary mt-0.5">
+                        <strong className="font-mono font-medium text-xs text-text-primary mt-0.5">
                           Tangkapan #{String(frame?.frameIndex ?? 0).padStart(3, '0')} · {frame?.elapsedMs ?? 0} ms
                         </strong>
                       </div>
                       {selection.role === 'supporting' && (
                         <button
                           type="button"
-                          className="text-[11px] font-semibold text-semantic-danger hover:underline px-2"
+                          className="text-[11px] font-medium text-semantic-danger hover:underline px-2"
                           onClick={() => handleRemoveSupporting(selection.captureFrameId)}
                           aria-label={`Hapus Tangkapan Pendukung ${frame?.frameIndex ?? 0}`}
                         >

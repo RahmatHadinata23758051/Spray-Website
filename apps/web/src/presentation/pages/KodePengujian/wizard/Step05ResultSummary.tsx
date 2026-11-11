@@ -76,11 +76,11 @@ export function Step05ResultSummary({
       {/* Header status */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-border-subtle">
         <div className="flex items-center gap-2.5">
-          <h2 className="text-sm font-bold text-text-primary">
+          <h2 className="text-sm font-semibold text-text-primary">
             05. Ringkasan & Hasil Akhir Pengujian
           </h2>
           {isFinalized ? (
-            <Status tone="success">Finalized</Status>
+            <Status tone="success">Final</Status>
           ) : (
             <Status tone="neutral">Draf</Status>
           )}
@@ -89,7 +89,7 @@ export function Step05ResultSummary({
           <button
             type="button"
             onClick={onDownloadCsv}
-            className="btn btn-secondary !min-h-[28px] !py-0.5 px-3 text-xs font-semibold flex items-center gap-1.5"
+            className="btn btn-secondary !min-h-[28px] !py-0.5 px-3 text-xs font-medium flex items-center gap-1.5"
             id="btn-export-csv"
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -108,7 +108,7 @@ export function Step05ResultSummary({
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 bg-surface border border-border-default rounded-md text-xs">
         <div>
           <span className="text-[10px] text-text-muted block">Produk</span>
-          <span className="font-semibold text-text-primary truncate block" title={formData.productName}>
+          <span className="font-medium text-text-primary truncate block" title={formData.productName}>
             {formData.productName}
           </span>
         </div>
@@ -138,13 +138,13 @@ export function Step05ResultSummary({
         <div className="space-y-4">
           {/* Hasil Operasional */}
           <div className="bg-surface border border-border-default rounded-md overflow-hidden">
-            <div className="bg-surface-subtle px-3 py-1.5 border-b border-border-subtle text-xs font-bold uppercase tracking-wider text-text-primary">
-              Hasil Operasional
+            <div className="bg-surface-subtle px-3 py-1.5 border-b border-border-subtle text-xs font-semibold text-text-primary">
+              Hasil operasional
             </div>
             <div className="divide-y divide-border-subtle text-xs font-mono">
               <div className="flex items-center justify-between px-3 py-2">
                 <span className="font-sans text-text-secondary">Discharged Mass</span>
-                <span className="font-bold text-text-primary">
+                <span className="font-medium text-text-primary">
                   {operationalMetrics?.dischargedMassG !== undefined
                     ? `${operationalMetrics.dischargedMassG.toFixed(3)} g`
                     : '—'}
@@ -152,7 +152,7 @@ export function Step05ResultSummary({
               </div>
               <div className="flex items-center justify-between px-3 py-2">
                 <span className="font-sans text-text-secondary">Discharge Rate</span>
-                <span className="font-bold text-text-primary">
+                <span className="font-medium text-text-primary">
                   {operationalMetrics?.dischargeRateGPerS !== undefined
                     ? `${operationalMetrics.dischargeRateGPerS.toFixed(3)} g/s`
                     : '—'}
@@ -161,7 +161,7 @@ export function Step05ResultSummary({
               {isAerosol && (
                 <div className="flex items-center justify-between px-3 py-2">
                   <span className="font-sans text-text-secondary">Pressure Drop</span>
-                  <span className="font-bold text-text-primary">
+                  <span className="font-medium text-text-primary">
                     {operationalMetrics?.pressureDropBar !== undefined
                       ? `${operationalMetrics.pressureDropBar.toFixed(2)} bar`
                       : '—'}
@@ -170,7 +170,7 @@ export function Step05ResultSummary({
               )}
               <div className="flex items-center justify-between px-3 py-2 font-sans">
                 <span className="text-text-secondary">Kebocoran</span>
-                <span className="font-semibold text-text-primary">
+                <span className="font-medium text-text-primary">
                   {displayLeakage === 'Tidak' ? (
                     <span className="text-semantic-success">Tidak</span>
                   ) : displayLeakage === 'Ya' ? (
@@ -185,13 +185,13 @@ export function Step05ResultSummary({
 
           {/* Hasil Analisis Kamera */}
           <div className="bg-surface border border-border-default rounded-md overflow-hidden">
-            <div className="bg-surface-subtle px-3 py-1.5 border-b border-border-subtle text-xs font-bold uppercase tracking-wider text-text-primary">
-              Hasil Analisis Kamera
+            <div className="bg-surface-subtle px-3 py-1.5 border-b border-border-subtle text-xs font-semibold text-text-primary">
+              Hasil analisis kamera
             </div>
             <div className="divide-y divide-border-subtle text-xs font-mono">
               <div className="flex items-center justify-between px-3 py-2">
                 <span className="font-sans text-text-secondary">Spray Length</span>
-                <span className="font-bold text-text-primary">
+                <span className="font-medium text-text-primary">
                   {finalReport?.side?.sprayLength?.final !== undefined
                     ? `${finalReport.side.sprayLength.final.toFixed(1)} mm`
                     : '—'}
@@ -199,7 +199,7 @@ export function Step05ResultSummary({
               </div>
               <div className="flex items-center justify-between px-3 py-2">
                 <span className="font-sans text-text-secondary">Spray Angle</span>
-                <span className="font-bold text-text-primary">
+                <span className="font-medium text-text-primary">
                   {finalReport?.side?.sprayAngle?.final !== undefined
                     ? `${finalReport.side.sprayAngle.final.toFixed(1)}°`
                     : '—'}
@@ -208,7 +208,7 @@ export function Step05ResultSummary({
               {finalReport?.side?.verticalSpread?.final !== undefined && (
                 <div className="flex items-center justify-between px-3 py-2">
                   <span className="font-sans text-text-secondary">Vertical Spread</span>
-                  <span className="font-bold text-text-primary">
+                  <span className="font-medium text-text-primary">
                     {finalReport.side.verticalSpread.final.toFixed(1)} mm
                   </span>
                 </div>
@@ -219,8 +219,8 @@ export function Step05ResultSummary({
 
         {/* Right Column: Detail Pengujian */}
         <div className="bg-surface border border-border-default rounded-md overflow-hidden">
-          <div className="bg-surface-subtle px-3 py-1.5 border-b border-border-subtle text-xs font-bold uppercase tracking-wider text-text-primary">
-            Detail Pengujian
+          <div className="bg-surface-subtle px-3 py-1.5 border-b border-border-subtle text-xs font-semibold text-text-primary">
+            Detail pengujian
           </div>
           <dl className="p-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
             <div>
@@ -290,7 +290,7 @@ export function Step05ResultSummary({
           onClick={onBackToKp}
           className="btn btn-secondary !min-h-[30px] px-3.5 text-xs font-medium"
         >
-          &larr; Kembali ke Detail Kode Pengujian
+          &larr; Detail Kode Pengujian
         </button>
 
         <div className="flex items-center gap-2.5">
@@ -301,17 +301,18 @@ export function Step05ResultSummary({
               disabled
               className="btn btn-secondary !min-h-[30px] px-3 text-xs font-medium opacity-50 cursor-not-allowed"
             >
-              + Tambah Repetisi (Add Replication)
+              + Tambah Repetisi
             </button>
             <div className="hidden group-hover:block absolute bottom-full right-0 mb-1.5 w-64 p-2 bg-text-primary text-surface text-[10px] rounded shadow-md z-10">
-              Menunggu klarifikasi Paragon: apakah repetisi menjalankan TestRun baru pada sampel fisik yang sama, atau membuat sampel fisik baru beserta TestRun baru.
+              Menunggu konfirmasi semantik repetisi sampel.
             </div>
           </div>
 
           <button
             type="button"
             onClick={onDownloadCsv}
-            className="btn btn-primary !min-h-[30px] px-4 text-xs font-semibold"
+            className="btn btn-primary !min-h-[30px] px-4 text-xs font-medium"
+            aria-label="Unduh Hasil (CSV)"
           >
             Unduh Hasil (CSV)
           </button>

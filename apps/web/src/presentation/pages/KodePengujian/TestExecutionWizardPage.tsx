@@ -404,7 +404,7 @@ export function TestExecutionWizardPage() {
       />
 
       {/* Main Form Content Area */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 pb-24">
+      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 pb-6">
         {saveStatus && (
           <div
             className={`mb-4 p-2.5 rounded text-xs border font-medium ${
@@ -469,7 +469,7 @@ export function TestExecutionWizardPage() {
       </main>
 
       {/* Sticky Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-20">
+      <div className="sticky bottom-0 z-20 mt-auto border-t border-border-default bg-surface shadow-xs">
         <ActionBar
           leftContent={
             !isReadOnly && step < 5 ? (

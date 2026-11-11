@@ -54,8 +54,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans Variable"', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'monospace'],
+        sans: ['InterVariable', 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+        mono: ['"JetBrains Mono"', '"SFMono-Regular"', 'Consolas', 'monospace'],
       },
       borderRadius: {
         input: '10px',

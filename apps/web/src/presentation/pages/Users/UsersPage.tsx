@@ -51,10 +51,10 @@ export function UsersPage() {
             placeholder="Cari pengguna..." 
             value={query} 
             onChange={(e) => setQuery(e.target.value)} 
-            className="w-64 rounded-input border border-border-default bg-surface-subtle px-3 py-1.5 text-sm font-medium text-text-primary outline-none transition-colors focus:border-primary focus:bg-surface focus:ring-1 focus:ring-primary"
+            className="w-64 rounded-input border border-border-default bg-surface-subtle px-3 py-1.5 text-sm font-normal text-text-primary outline-none transition-colors focus:border-primary focus:bg-surface focus:ring-1 focus:ring-primary"
           />
         </div>
-        <button type="button" className="btn btn-primary shadow-sm" disabled>
+        <button type="button" className="btn btn-primary font-medium shadow-sm" disabled>
           + Tambah Pengguna
         </button>
       </div>
@@ -63,12 +63,12 @@ export function UsersPage() {
         <table className="w-full text-sm">
           <thead className="bg-surface sticky top-0 z-10 shadow-[0_1px_0_var(--border-default)]">
             <tr>
-              <th className="px-4 py-3 text-left font-bold uppercase tracking-wider text-text-muted text-[11px]">Pengguna</th>
-              <th className="px-4 py-3 text-left font-bold uppercase tracking-wider text-text-muted text-[11px]">Peran</th>
-              <th className="px-4 py-3 text-left font-bold uppercase tracking-wider text-text-muted text-[11px]">Autentikasi</th>
-              <th className="px-4 py-3 text-left font-bold uppercase tracking-wider text-text-muted text-[11px]">Status</th>
-              <th className="px-4 py-3 text-left font-bold uppercase tracking-wider text-text-muted text-[11px]">Terakhir Aktif</th>
-              <th className="px-4 py-3 text-right font-bold uppercase tracking-wider text-text-muted text-[11px]">Tindakan</th>
+              <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider text-text-muted text-[11px]">Pengguna</th>
+              <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider text-text-muted text-[11px]">Peran</th>
+              <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider text-text-muted text-[11px]">Autentikasi</th>
+              <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider text-text-muted text-[11px]">Status</th>
+              <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider text-text-muted text-[11px]">Terakhir Aktif</th>
+              <th className="px-4 py-3 text-right font-semibold uppercase tracking-wider text-text-muted text-[11px]">Tindakan</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle bg-surface">
@@ -76,16 +76,16 @@ export function UsersPage() {
               <tr key={user.id} className="transition-colors hover:bg-surface-subtle group">
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-3">
-                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${user.color} font-bold text-xs`}>
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${user.color} font-medium text-xs`}>
                       {user.initials}
                     </div>
                     <div>
-                      <div className="font-bold text-text-primary tracking-tight">{user.name}</div>
+                      <div className="font-medium text-text-primary tracking-tight">{user.name}</div>
                       <div className="text-[11px] font-mono text-text-muted mt-0.5">{user.email}</div>
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-2.5 font-semibold text-text-secondary">{user.role}</td>
+                <td className="px-4 py-2.5 font-medium text-text-secondary">{user.role}</td>
                 <td className="px-4 py-2.5 font-mono text-xs text-text-muted">{user.auth}</td>
                 <td className="px-4 py-2.5">
                   <Status tone={user.status === 'active' ? 'success' : 'neutral'}>
@@ -96,14 +96,14 @@ export function UsersPage() {
                   {new Date(user.lastActive).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </td>
                 <td className="px-4 py-2.5 text-right">
-                  <button type="button" className="text-xs font-semibold text-primary hover:underline" disabled>Kelola</button>
+                  <button type="button" className="text-xs font-medium text-primary hover:underline" disabled>Kelola</button>
                 </td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-sm font-medium text-text-muted">
-                  Tidak ada pengguna yang cocok dengan pencarian Anda.
+                  Tidak ada pengguna yang cocok.
                 </td>
               </tr>
             )}

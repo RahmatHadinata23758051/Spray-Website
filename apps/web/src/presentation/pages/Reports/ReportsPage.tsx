@@ -71,14 +71,14 @@ export function ReportsPage() {
         <div className="surface-panel surface-panel-large flex flex-col flex-1">
           <div className="flex items-center justify-between p-4 border-b border-border-subtle bg-surface">
             <div className="flex items-center gap-4 flex-1">
-              <div className="text-sm font-semibold text-text-primary">
+              <div className="text-sm font-medium text-text-primary">
                 {filteredBatches.length} Laporan
               </div>
               <div className="flex items-center gap-3">
                 <input 
                   type="text" 
                   placeholder="Cari ID, Produk, Sampel, Operator..." 
-                  className="form-input !min-h-[36px] w-[300px] text-sm"
+                  className="form-input !min-h-[36px] w-[300px] text-sm font-normal"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -109,26 +109,26 @@ export function ReportsPage() {
                 
                 return (
                   <tr key={batch.id}>
-                    <td className="font-mono font-bold tracking-tight text-text-primary">{batch.id}</td>
+                    <td className="font-mono font-medium tracking-tight text-primary">{batch.id}</td>
                     <td>
-                      <div className="font-semibold text-text-primary">{pName}</div>
-                      <div className="text-xs font-semibold text-text-muted mt-0.5">{pCode}</div>
+                      <div className="font-medium text-text-primary">{pName}</div>
+                      <div className="text-xs text-text-muted mt-0.5">{pCode}</div>
                     </td>
-                    <td className="font-mono text-text-secondary font-semibold">{sampleId}</td>
+                    <td className="font-mono text-text-secondary">{sampleId}</td>
                     <td className="font-medium text-text-primary">{operator}</td>
                     <td className="text-text-secondary">{new Date(report.finalizedAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                    <td className="font-mono text-primary font-bold text-xs">{captureInfo}</td>
+                    <td className="font-mono text-primary font-medium text-xs">{captureInfo}</td>
                     <td className="text-right flex items-center justify-end gap-2">
                       <button 
                         onClick={() => navigate(`/batches/${batch.id}/result`)}
-                        className="btn btn-secondary !min-h-8 !px-3 !py-1 text-xs"
+                        className="btn btn-secondary !min-h-8 !px-3 !py-1 text-xs font-medium"
                       >
                         Buka Hasil
                       </button>
                       <button 
                         onClick={() => handleExport(batch)}
                         disabled={exportingId === batch.id}
-                        className="btn btn-secondary !min-h-8 !px-3 !py-1 text-xs"
+                        className="btn btn-secondary !min-h-8 !px-3 !py-1 text-xs font-medium"
                       >
                         {exportingId === batch.id ? 'Mengekspor...' : 'Ekspor CSV'}
                       </button>

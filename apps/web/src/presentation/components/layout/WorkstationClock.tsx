@@ -14,36 +14,37 @@ export function WorkstationClock({
     return () => clearInterval(timer);
   }, []);
 
+  const hours = time.getHours().toString().padStart(2, '0');
+  const minutes = time.getMinutes().toString().padStart(2, '0');
+  const seconds = time.getSeconds().toString().padStart(2, '0');
+  const timeString = `${hours}:${minutes}:${seconds}`;
+
+  const days = ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'];
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'];
+
+  const dayName = days[time.getDay()];
+  const dateNum = time.getDate();
+  const monthName = months[time.getMonth()];
+
   if (collapsed) {
     return (
-      <div className="relative flex items-center justify-center border-b border-border-subtle py-3 px-2 text-center">
-        <div className="font-mono text-xs font-bold text-text-primary tabular-nums">
-          {time.getHours().toString().padStart(2, '0')}<span className="animate-pulse opacity-50">:</span>{time.getMinutes().toString().padStart(2, '0')}
-        </div>
+      <div 
+        className="flex items-center justify-center py-2 px-1 text-center border-t border-border-subtle" 
+        title={`${dayName}, ${dateNum} ${monthName} · ${timeString}`}
+      >
+        <span className="font-mono text-[10px] font-semibold text-text-muted tabular-nums">
+          {hours}:{minutes}
+        </span>
       </div>
     );
   }
 
-  const timeString = `${time.getHours().toString().padStart(2, '0')}.${time.getMinutes().toString().padStart(2, '0')}.${time.getSeconds().toString().padStart(2, '0')}`;
-  
-  const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
-  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'];
-  
-  const dayName = days[time.getDay()];
-  const dateNum = time.getDate();
-  const monthName = months[time.getMonth()];
-  const year = time.getFullYear();
-  
-  const dateString = `${dayName}, ${dateNum} ${monthName} ${year}`;
-
   return (
-    <div className="relative flex flex-col items-center justify-center border-b border-border-subtle py-4 px-4 text-center">
-      <div className="font-sans text-[26px] font-bold tracking-tight text-text-primary tabular-nums leading-none">
-        {timeString}
-      </div>
-      <div className="mt-1.5 font-sans text-[11px] font-bold tracking-widest text-text-muted uppercase">
-        {dateString}
-      </div>
+    <div className="border-t border-border-subtle bg-surface-subtle/50 px-3 py-1.5 flex items-center justify-between text-[11px] font-mono select-none">
+      <span className="tabular-nums font-semibold text-text-secondary">{timeString}</span>
+      <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider">
+        {dayName}, {dateNum} {monthName}
+      </span>
     </div>
   );
 }

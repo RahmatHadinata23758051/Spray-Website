@@ -26,7 +26,7 @@ export function FormSection({
       {title && (
         <div className="flex items-center justify-between border-b border-border-subtle pb-2">
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
               {title}
             </h3>
             {desc && (

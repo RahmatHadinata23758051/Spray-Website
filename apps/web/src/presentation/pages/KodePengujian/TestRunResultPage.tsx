@@ -90,7 +90,7 @@ export function TestRunResultPage() {
             <button
               type="button"
               onClick={handleBack}
-              className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover shadow-sm"
+              className="rounded-sm bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover shadow-sm"
             >
               Kembali ke Kode Pengujian
             </button>
@@ -112,14 +112,14 @@ export function TestRunResultPage() {
           <div className="p-6 space-y-4">
             <Status tone="warning">Hasil Belum Tersedia ({formatStatus(testRun.status)})</Status>
             <p className="text-sm text-text-secondary">
-              Pengujian <strong className="font-mono">{testRun.id}</strong> saat ini dalam status <strong>{formatStatus(testRun.status)}</strong>. Hasil hanya tersedia untuk pengujian yang telah difinalisasi.
+              Pengujian <strong className="font-mono font-medium">{testRun.id}</strong> saat ini dalam status <strong>{formatStatus(testRun.status)}</strong>. Hasil hanya tersedia untuk pengujian yang telah difinalisasi.
             </p>
             <div className="flex gap-3 pt-2">
               {testRun.status === 'ANALYZING' && (
                 <button
                   type="button"
                   onClick={() => navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/analysis`)}
-                  className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover shadow-sm"
+                  className="rounded-sm bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover shadow-sm"
                 >
                   Buka Ruang Kerja Analisis
                 </button>
@@ -127,7 +127,7 @@ export function TestRunResultPage() {
               <button
                 type="button"
                 onClick={handleBack}
-                className="rounded-sm border border-border-subtle bg-bg-surface px-4 py-2 text-sm font-semibold text-text-primary hover:bg-bg-subtle shadow-sm"
+                className="rounded-sm border border-border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-subtle shadow-sm"
               >
                 Kembali ke Kode Pengujian
               </button>
@@ -146,7 +146,7 @@ export function TestRunResultPage() {
       <div className="mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">
+            <h1 className="text-2xl font-semibold text-text-primary">
               Hasil Pengujian <span className="font-mono text-primary">{testRun.id}</span>
             </h1>
             <p className="text-sm text-text-secondary">
@@ -156,7 +156,7 @@ export function TestRunResultPage() {
           <div className="flex gap-2 shrink-0">
             <button
               onClick={handleDownloadCsv}
-              className="rounded-sm border border-border-subtle bg-bg-surface px-4 py-2 text-sm font-semibold text-text-primary hover:bg-bg-subtle shadow-sm flex items-center gap-2"
+              className="rounded-sm border border-border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-subtle shadow-sm flex items-center gap-2"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -165,30 +165,30 @@ export function TestRunResultPage() {
               </svg>
               Unduh CSV
             </button>
-            <button onClick={handleBack} className="rounded-sm border border-border-subtle bg-bg-surface px-4 py-2 text-sm font-semibold text-text-primary hover:bg-bg-subtle shadow-sm">
+            <button onClick={handleBack} className="rounded-sm border border-border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-subtle shadow-sm">
               Kembali
             </button>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-sm">
           <span className="px-3 py-1 bg-surface-subtle rounded border border-border-default">
-            <span className="font-semibold text-text-primary">Status: </span>
+            <span className="font-medium text-text-primary">Status: </span>
             <Status tone="success">Finalized</Status>
           </span>
           <span className="px-3 py-1 bg-surface-subtle rounded border border-border-default">
-            <span className="font-semibold text-text-primary">Finalized by: </span>
+            <span className="font-medium text-text-primary">Finalized by: </span>
             <span className="font-mono text-text-secondary">{report.finalizedBy}</span>
           </span>
           <span className="px-3 py-1 bg-surface-subtle rounded border border-border-default">
-            <span className="font-semibold text-text-primary">Finalized at: </span>
+            <span className="font-medium text-text-primary">Finalized at: </span>
             <span className="font-mono text-text-secondary">{fmt.date(report.finalizedAt)}</span>
           </span>
           <span className="px-3 py-1 bg-surface-subtle rounded border border-border-default">
-            <span className="font-semibold text-text-primary">Analisis: </span>
+            <span className="font-medium text-text-primary">Analisis: </span>
             <span className="font-mono text-text-secondary">{report.analysisSource}</span>
           </span>
           {report.analysisSource === 'simulation' && (
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary-soft px-2.5 py-1 rounded border border-primary/20">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-primary bg-primary-soft px-2.5 py-1 rounded border border-primary/20">
               <span className="h-2 w-2 rounded-full bg-primary" />
               <span>Mode Simulasi — Data Fixture</span>
             </div>
@@ -198,10 +198,10 @@ export function TestRunResultPage() {
 
       <div className="space-y-6">
         {/* Test Context Panel */}
-        <Panel title="Konteks Pengujian">
+        <Panel title="Konteks pengujian">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-3">
-              <h4 className="font-semibold text-text-primary border-b border-border-subtle pb-2">Kode Pengujian</h4>
+              <h4 className="font-medium text-text-primary border-b border-border-subtle pb-2">Kode pengujian</h4>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between"><dt className="text-text-muted">ID</dt><dd className="font-mono text-text-primary">{kp.id}</dd></div>
                 <div className="flex justify-between"><dt className="text-text-muted">Produk</dt><dd className="font-medium text-text-primary">{kp.productSnapshot.productName} ({kp.productSnapshot.productCode})</dd></div>
@@ -212,7 +212,7 @@ export function TestRunResultPage() {
               </dl>
             </div>
             <div className="space-y-3">
-              <h4 className="font-semibold text-text-primary border-b border-border-subtle pb-2">Sampel</h4>
+              <h4 className="font-medium text-text-primary border-b border-border-subtle pb-2">Sampel</h4>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between"><dt className="text-text-muted">Kode Sampel</dt><dd className="font-medium text-text-primary">{sample.sampleCode || sample.id}</dd></div>
                 <div className="flex justify-between"><dt className="text-text-muted">Posisi</dt><dd className="font-mono text-text-secondary">#{sample.positionInRun}</dd></div>
@@ -222,7 +222,7 @@ export function TestRunResultPage() {
               </dl>
             </div>
             <div className="space-y-3">
-              <h4 className="font-semibold text-text-primary border-b border-border-subtle pb-2">Metodologi</h4>
+              <h4 className="font-medium text-text-primary border-b border-border-subtle pb-2">Metodologi</h4>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between"><dt className="text-text-muted">Resep</dt><dd className="font-medium text-text-primary">{testRun.recipeSnapshot.name}</dd></div>
                 <div className="flex justify-between"><dt className="text-text-muted">Setpoint Gaya</dt><dd className="font-mono text-text-secondary">{testRun.setpoints.forceSetpointN} N</dd></div>
@@ -251,30 +251,30 @@ export function TestRunResultPage() {
           const m = raw.measurements ?? {};
 
           return (
-            <Panel title="Metrik & Pengukuran Operasional (Operational Snapshot)">
+            <Panel title="Metrik operasional">
               <div className="space-y-4">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-3 bg-surface-subtle rounded border border-border-default">
                     <div className="text-xs text-text-muted">Discharged Mass</div>
-                    <div className="font-mono text-xl font-bold text-primary mt-1">
+                    <div className="font-mono text-xl font-medium text-primary mt-1">
                       {derived?.dischargedMassG !== undefined ? `${derived.dischargedMassG.toFixed(3)} g` : '—'}
                     </div>
                   </div>
                   <div className="p-3 bg-surface-subtle rounded border border-border-default">
                     <div className="text-xs text-text-muted">Discharge Rate</div>
-                    <div className="font-mono text-xl font-bold text-primary mt-1">
+                    <div className="font-mono text-xl font-medium text-primary mt-1">
                       {derived?.dischargeRateGPerS !== undefined ? `${derived.dischargeRateGPerS.toFixed(3)} g/s` : '—'}
                     </div>
                   </div>
                   <div className="p-3 bg-surface-subtle rounded border border-border-default">
                     <div className="text-xs text-text-muted">Pressure Drop</div>
-                    <div className="font-mono text-xl font-bold text-primary mt-1">
+                    <div className="font-mono text-xl font-medium text-primary mt-1">
                       {derived?.pressureDropBar !== undefined ? `${derived.pressureDropBar.toFixed(2)} bar` : '—'}
                     </div>
                   </div>
                   <div className="p-3 bg-surface-subtle rounded border border-border-default">
                     <div className="text-xs text-text-muted">Kebocoran</div>
-                    <div className="font-mono text-xl font-bold mt-1">
+                    <div className="font-mono text-xl font-medium mt-1">
                       {m.leakage === 'Tidak' ? (
                         <span className="text-semantic-success">Tidak</span>
                       ) : m.leakage === 'Ya' ? (
@@ -287,8 +287,8 @@ export function TestRunResultPage() {
                 </div>
 
                 <div className="p-3 bg-surface-subtle rounded border border-border-default">
-                  <h5 className="font-semibold text-text-primary text-xs uppercase tracking-wider mb-2">
-                    Detail Pengukuran Fisik & Sensor
+                  <h5 className="font-medium text-text-primary text-xs uppercase tracking-wider mb-2">
+                    Detail pengukuran fisik & sensor
                   </h5>
                   <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
                     <div>
@@ -315,7 +315,7 @@ export function TestRunResultPage() {
         })()}
 
         {/* Primary Capture Panel */}
-        <Panel title="Tangkapan Utama">
+        <Panel title="Tangkapan utama">
           <div className="space-y-3">
             <div className="flex justify-between">
               <dt className="text-text-muted">Frame Index</dt>
@@ -341,12 +341,12 @@ export function TestRunResultPage() {
         </Panel>
 
         {/* Side Analysis Panel */}
-        <Panel title="Analisis Samping (Side)">
+        <Panel title="Analisis samping (side)">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               {report.side.calibration && (
                 <div className="space-y-2">
-                  <h5 className="font-semibold text-text-primary">Kalibrasi</h5>
+                  <h5 className="font-medium text-text-primary">Kalibrasi</h5>
                   <dl className="space-y-1 text-xs text-text-secondary">
                     <div className="flex justify-between"><dt>mm/px</dt><dd className="font-mono">{report.side.calibration.scaleMmPerPx.toFixed(4)}</dd></div>
                     <div className="flex justify-between"><dt>Referensi (mm)</dt><dd className="font-mono">{report.side.calibration.referenceDistanceMm}</dd></div>
@@ -356,7 +356,7 @@ export function TestRunResultPage() {
               )}
               {report.side.autoGeometry && (
                 <div className="space-y-2">
-                  <h5 className="font-semibold text-text-primary">Geometri Otomatis (Piksel)</h5>
+                  <h5 className="font-medium text-text-primary">Geometri otomatis (piksel)</h5>
                   <dl className="space-y-1 text-xs text-text-secondary">
                     <div className="flex justify-between"><dt>Nozzle Origin</dt><dd className="font-mono">({report.side.autoGeometry.nozzleOriginPx.x.toFixed(0)}, {report.side.autoGeometry.nozzleOriginPx.y.toFixed(0)})</dd></div>
                     <div className="flex justify-between"><dt>Spray Endpoint</dt><dd className="font-mono">({report.side.autoGeometry.sprayEndpointPx.x.toFixed(0)}, {report.side.autoGeometry.sprayEndpointPx.y.toFixed(0)})</dd></div>
@@ -367,7 +367,7 @@ export function TestRunResultPage() {
               )}
             </div>
             <div className="space-y-2">
-              <h5 className="font-semibold text-text-primary">Pengukuran Final (mm)</h5>
+              <h5 className="font-medium text-text-primary">Pengukuran final (mm)</h5>
               <dl className="grid grid-cols-2 gap-2 text-sm">
                 <div><dt className="text-text-muted">Panjang Spray</dt><dd className="font-mono text-text-primary">{report.side.sprayLength?.final !== undefined ? report.side.sprayLength.final.toFixed(2) : '—'}</dd></div>
                 <div><dt className="text-text-muted">Sudut Spray</dt><dd className="font-mono text-text-primary">{report.side.sprayAngle?.final !== undefined ? report.side.sprayAngle.final.toFixed(2) : '—'}</dd></div>
@@ -386,11 +386,11 @@ export function TestRunResultPage() {
 
         {/* Front Analysis Panel - only if available */}
         {report.front ? (
-          <Panel title="Analisis Depan (Front)">
+          <Panel title="Analisis depan (front)">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <h5 className="font-semibold text-text-primary">Kalibrasi</h5>
+                  <h5 className="font-medium text-text-primary">Kalibrasi</h5>
                   <dl className="space-y-1 text-xs text-text-secondary">
                     <div className="flex justify-between"><dt>mm/px</dt><dd className="font-mono">{report.front.calibration.scaleMmPerPx.toFixed(4)}</dd></div>
                     <div className="flex justify-between"><dt>Referensi (mm)</dt><dd className="font-mono">{report.front.calibration.referenceDistanceMm}</dd></div>
@@ -398,7 +398,7 @@ export function TestRunResultPage() {
                   </dl>
                 </div>
                 <div className="space-y-2">
-                  <h5 className="font-semibold text-text-primary">Pengukuran Otomatis</h5>
+                  <h5 className="font-medium text-text-primary">Pengukuran otomatis</h5>
                   <dl className="space-y-1 text-xs text-text-secondary">
                     <div className="flex justify-between"><dt>Area Spray (mm²)</dt><dd className="font-mono">{report.front.autoGeometry?.sprayAreaPixels ? report.front.autoGeometry.sprayAreaPixels.toFixed(0) + ' px' : '—'}</dd></div>
                     <div className="flex justify-between"><dt>Diameter Ekuivalen (mm)</dt><dd className="font-mono">{report.front.autoGeometry?.equivalentDiameterPx ? report.front.autoGeometry.equivalentDiameterPx.toFixed(1) + ' px' : '—'}</dd></div>
@@ -407,7 +407,7 @@ export function TestRunResultPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <h5 className="font-semibold text-text-primary">Pengukuran Final (mm)</h5>
+                <h5 className="font-medium text-text-primary">Pengukuran final (mm)</h5>
                 <dl className="grid grid-cols-2 gap-2 text-sm">
                   <div><dt className="text-text-muted">Area Spray</dt><dd className="font-mono text-text-primary">{report.front.sprayArea.final.toFixed(2)}</dd></div>
                   <div><dt className="text-text-muted">Diameter Ekuivalen</dt><dd className="font-mono text-text-primary">{report.front.equivalentDiameter.final.toFixed(2)}</dd></div>
@@ -419,19 +419,19 @@ export function TestRunResultPage() {
             </div>
           </Panel>
         ) : (
-          <Panel title="Analisis Depan (Front)">
+          <Panel title="Analisis depan (front)">
             <p className="text-sm text-text-secondary">Data Profil Depan tidak tersedia</p>
           </Panel>
         )}
 
         {/* Supporting Captures Panel */}
         {Boolean(report.supportingCaptures && report.supportingCaptures.length > 0) && (
-          <Panel title="Tangkapan Pendukung">
+          <Panel title="Tangkapan pendukung">
             <div className="space-y-3">
               {report.supportingCaptures.map((cap, idx) => (
                 <div key={cap.captureMomentId} className="p-3 bg-surface-subtle rounded border border-border-default">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-text-primary">Pendukung #{idx + 1}</span>
+                    <span className="font-medium text-text-primary">Pendukung #{idx + 1}</span>
                     <span className="font-mono text-xs text-text-secondary">{cap.captureMomentId}</span>
                   </div>
                   <dl className="grid grid-cols-3 gap-2 text-xs">

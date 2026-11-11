@@ -581,7 +581,7 @@ export function TestRunSimulationAnalysisWorkspace({
       {/* Context Bar */}
       <div className="flex items-center justify-between rounded-panel border border-border-default bg-surface px-4 py-3 shadow-sm text-sm">
         <div className="flex flex-wrap items-center gap-6">
-          <div className="flex items-center gap-2 font-mono font-bold text-text-primary">
+          <div className="flex items-center gap-2 font-mono font-medium text-text-primary">
             {returnToWizard ? (
               <span>Pengujian Spray / Analisis</span>
             ) : (
@@ -596,42 +596,42 @@ export function TestRunSimulationAnalysisWorkspace({
           </div>
           <div className="h-4 w-px bg-border-strong hidden sm:block" />
           <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-bold text-[11px] uppercase tracking-wider">Metodologi</span>
-            <span className="font-semibold text-text-primary text-xs">{testRun.recipeSnapshot.name}</span>
+            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Metodologi</span>
+            <span className="font-medium text-text-primary text-xs">{testRun.recipeSnapshot.name}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-bold text-[11px] uppercase tracking-wider">Mode</span>
-            <span className="font-mono font-bold text-text-primary">SIMULASI (Samping & Depan)</span>
+            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Mode</span>
+            <span className="font-mono font-medium text-text-primary">SIMULASI</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-bold text-[11px] uppercase tracking-wider">Frame</span>
-            <span className="font-mono font-bold text-text-primary">{currentMoment.frameIndex + 1} / {moments.length}</span>
+            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Frame</span>
+            <span className="font-mono font-medium text-text-primary">{currentMoment.frameIndex + 1} / {moments.length}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-bold text-[11px] uppercase tracking-wider">Waktu</span>
-            <span className="font-mono font-bold text-text-primary">{currentMoment.timestampMs} ms</span>
+            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Waktu</span>
+            <span className="font-mono font-medium text-text-primary">{currentMoment.timestampMs} ms</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-bold text-[11px] uppercase tracking-wider">Sinkron</span>
-            <span className="font-mono font-bold text-text-primary">SINKRONISASI · Δ {currentMoment.timestampDeltaMs} ms</span>
+            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Sinkron</span>
+            <span className="font-mono font-medium text-text-primary">Δ {currentMoment.timestampDeltaMs} ms</span>
           </div>
           <Status tone={isStable ? 'success' : 'neutral'}>{isStable ? 'Fase Stabil' : currentMoment.phase}</Status>
           {currentMoment.recommended && (
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-semantic-warning">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-semantic-warning">
               <span className="h-2 w-2 rounded-full bg-semantic-warning" /> Direkomendasikan
             </div>
           )}
           {isReadOnly && (
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
               <span className="h-2 w-2 rounded-full bg-primary" /> Hanya Baca
             </div>
           )}
           {/* Simulation notice */}
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary-soft px-2 py-0.5 rounded">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-primary bg-primary-soft px-2 py-0.5 rounded">
             <span className="h-2 w-2 rounded-full bg-primary" /> Mode Simulasi — Data Fixture
           </div>
         </div>
-        <button onClick={onBack} className="text-xs font-semibold hover:text-primary transition-colors text-text-secondary flex items-center gap-1 shrink-0">
+        <button onClick={onBack} className="text-xs font-medium hover:text-primary transition-colors text-text-secondary flex items-center gap-1 shrink-0">
           <span>&larr;</span> {backLabel ?? 'Kembali ke Kode Pengujian'}
         </button>
       </div>
@@ -639,14 +639,14 @@ export function TestRunSimulationAnalysisWorkspace({
       {isReadOnly && (
         <div className="flex items-center justify-between rounded-panel border border-border-default bg-surface px-4 py-2.5 text-xs shadow-sm">
           <div className="flex items-center gap-2 text-text-secondary">
-            <span className="font-semibold text-text-primary">Status: Final</span>
+            <span className="font-medium text-text-primary">Status: Final</span>
             <span>&bull;</span>
-            <span>Pengujian ini telah difinalisasi. Mode hanya-baca aktif — hasil tidak dapat diubah.</span>
+            <span>Pengujian ini telah difinalisasi. Mode hanya-baca aktif.</span>
           </div>
           <button
             type="button"
             onClick={() => navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/result`)}
-            className="btn btn-secondary !min-h-[28px] !py-1 px-3 text-xs"
+            className="btn btn-secondary !min-h-[28px] !py-1 px-3 text-xs font-medium"
           >
             Buka Hasil &rarr;
           </button>

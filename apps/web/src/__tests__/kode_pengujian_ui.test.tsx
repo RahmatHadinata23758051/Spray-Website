@@ -124,7 +124,7 @@ describe('Phase P2 — Minimal Kode Pengujian UI & Hierarchy', () => {
     );
 
     expect(await screen.findByText(kp.id)).toBeInTheDocument();
-    expect(screen.getByText('Belum ada sampel. Klik "+ Tambah Sampel" untuk menambahkan botol sampel.')).toBeInTheDocument();
+    expect(screen.getByText('Belum ada sampel.')).toBeInTheDocument();
 
     // Add Sample 1
     await user.click(screen.getByRole('button', { name: '+ Tambah Sampel' }));

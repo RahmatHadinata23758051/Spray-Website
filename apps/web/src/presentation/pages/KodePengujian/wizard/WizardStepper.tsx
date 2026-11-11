@@ -57,7 +57,7 @@ export function WizardStepper({
                 aria-current={isCurrent ? 'step' : undefined}
               >
                 <div
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold shrink-0 transition-colors ${
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-medium shrink-0 transition-colors ${
                     isCurrent
                       ? 'bg-primary text-white shadow-xs'
                       : isCompleted
@@ -78,7 +78,7 @@ export function WizardStepper({
                   )}
                 </div>
                 <span
-                  className={`font-semibold truncate text-xs ${
+                  className={`font-medium truncate text-xs ${
                     isCurrent ? 'text-primary' : isCompleted ? 'text-text-primary' : 'text-text-muted'
                   }`}
                 >
