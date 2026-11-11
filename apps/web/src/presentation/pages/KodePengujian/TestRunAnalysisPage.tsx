@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   kodePengujianRepository,
 } from '../../../application/services';
@@ -10,6 +10,8 @@ import { TestRunSimulationAnalysisWorkspace } from './TestRunSimulationAnalysisW
 export function TestRunAnalysisPage() {
   const { kpId, sampleId, runId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnToWizard = searchParams.get('returnTo') === 'wizard';
   const [context, setContext] = useState<{ kp: KodePengujian; sample: Sample; testRun: TestRun } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,12 +85,14 @@ export function TestRunAnalysisPage() {
   }, [kpId, sampleId, runId]);
 
   const handleBack = useCallback(() => {
-    if (context) {
+    if (returnToWizard && context) {
+      navigate(`/kode-pengujian/${context.kp.id}/samples/${context.sample.id}/runs/${context.testRun.id}/execute?step=4`);
+    } else if (context) {
       navigate(`/kode-pengujian/${context.kp.id}`);
     } else if (kpId) {
       navigate(`/kode-pengujian/${kpId}`);
     }
-  }, [context, kpId, navigate]);
+  }, [context, kpId, navigate, returnToWizard]);
 
   const handleTestRunUpdated = useCallback((updatedTr: TestRun) => {
     setContext((c) => (c ? { ...c, testRun: updatedTr } : null));

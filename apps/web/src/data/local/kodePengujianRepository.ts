@@ -359,7 +359,7 @@ export class LocalStorageKodePengujianRepository implements KodePengujianReposit
       sampleId: tr.sampleId,
       recipeId: tr.recipeId,
       recipeSnapshot: tr.recipeSnapshot,
-      setpoints: tr.setpoints,
+      setpoints: patch.setpoints ? { ...tr.setpoints, ...patch.setpoints } : tr.setpoints,
       fixture: tr.fixture,
       operatorId: tr.operatorId,
       operatorName: tr.operatorName,

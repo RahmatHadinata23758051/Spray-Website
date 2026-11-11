@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, uuid, boolean, jsonb, integer, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import type { TestRunSetpoints } from '@spray-paragon/domain';
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -69,7 +70,7 @@ export const testRuns = pgTable('test_runs', {
   sampleId: text('sample_id').notNull().references(() => samples.id, { onDelete: 'restrict' }),
   recipeId: text('recipe_id').notNull(),
   recipeSnapshot: jsonb('recipe_snapshot').$type<{ name: string; forceSetpointN: number; pressDurationMs: number; strokeMm: number }>().notNull(),
-  setpoints: jsonb('setpoints').$type<{ forceSetpointN: number; pressDurationMs: number; strokeMm: number }>().notNull(),
+  setpoints: jsonb('setpoints').$type<TestRunSetpoints>().notNull(),
   fixture: text('fixture', { enum: ['nominal-01', 'direction-offset-01', 'pattern-asymmetry-01', 'alignment-review-01'] }).notNull(),
   captureSession: jsonb('capture_session'),
   analysisDraft: jsonb('analysis_draft'),
@@ -87,9 +88,9 @@ export const testRuns = pgTable('test_runs', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   version: integer('version').notNull().default(1),
 }, (table) => ({
-  kpIdx: index('testrun_kp_idx').on(table.kodePengujianId),
-  sampleIdx: index('testrun_sample_idx').on(table.sampleId),
-  statusIdx: index('testrun_status_idx').on(table.status),
+  kpIdx: index('test_run_kp_idx').on(table.kodePengujianId),
+  sampleIdx: index('test_run_sample_idx').on(table.sampleId),
+  statusIdx: index('test_run_status_idx').on(table.status),
 }));
 
 export const finalResults = pgTable('final_results', {

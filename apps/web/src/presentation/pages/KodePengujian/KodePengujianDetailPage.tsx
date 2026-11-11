@@ -567,74 +567,133 @@ export function KodePengujianDetailPage() {
                       <span>Operator: {tr.operatorName}</span>
                       <div className="flex items-center gap-2">
                         {tr.status === 'PENDING' && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              navigate(
-                                `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/capture`
-                              )
-                            }
-                            className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
-                            id={`btn-mulai-pengujian-${tr.id}`}
-                          >
-                            Mulai Pengujian
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate(
+                                  `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/execute?step=1`
+                                )
+                              }
+                              className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
+                              id={`btn-mulai-pengujian-${tr.id}`}
+                            >
+                              Mulai Pengujian
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate(
+                                  `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/capture`
+                                )
+                              }
+                              className="btn btn-secondary !min-h-[28px] !py-0.5 px-2 text-[11px]"
+                              title="Buka studio capture kamera langsung"
+                              id={`btn-studio-capture-${tr.id}`}
+                            >
+                              Studio Capture
+                            </button>
+                          </div>
                         )}
                         {tr.status === 'CAPTURING' && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              navigate(
-                                `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/capture`
-                              )
-                            }
-                            className="btn btn-secondary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
-                            id={`btn-lanjut-pengujian-${tr.id}`}
-                          >
-                            Buka Pengambilan
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate(
+                                  `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/execute?step=4`
+                                )
+                              }
+                              className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
+                              id={`btn-lanjut-pengujian-${tr.id}`}
+                            >
+                              Lanjutkan Pengujian
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate(
+                                  `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/capture`
+                                )
+                              }
+                              className="btn btn-secondary !min-h-[28px] !py-0.5 px-2 text-[11px]"
+                              title="Buka studio capture kamera langsung"
+                            >
+                              Studio Capture
+                            </button>
+                          </div>
                         )}
                         {tr.status === 'ANALYZING' && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              navigate(
-                                `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/analysis`
-                              )
-                            }
-                            className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
-                            id={`btn-buka-analisis-${tr.id}`}
-                          >
-                            Buka Analisis
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate(
+                                  `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/execute?step=4`
+                                )
+                              }
+                              className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
+                              id={`btn-buka-analisis-${tr.id}`}
+                            >
+                              Lanjutkan Pengujian
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate(
+                                  `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/analysis`
+                                )
+                              }
+                              className="btn btn-secondary !min-h-[28px] !py-0.5 px-2 text-[11px]"
+                              title="Buka ruang analisis kamera langsung"
+                            >
+                              Studio Analisis
+                            </button>
+                          </div>
                         )}
                         {tr.status === 'REVIEW_REQUIRED' && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              navigate(
-                                `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/analysis`
-                              )
-                            }
-                            className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
-                            id={`btn-tinjau-analisis-${tr.id}`}
-                          >
-                            Tinjau Analisis
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate(
+                                  `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/execute?step=4`
+                                )
+                              }
+                              className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
+                              id={`btn-tinjau-analisis-${tr.id}`}
+                            >
+                              Tinjau Pengujian
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate(
+                                  `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/analysis`
+                                )
+                              }
+                              className="btn btn-secondary !min-h-[28px] !py-0.5 px-2 text-[11px]"
+                              title="Buka tinjauan analisis langsung"
+                            >
+                              Studio Analisis
+                            </button>
+                          </div>
                         )}
                         {tr.status === 'FINALIZED' && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              navigate(
-                                `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/result`
-                              )
-                            }
-                            className="btn btn-secondary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
-                            id={`btn-buka-hasil-${tr.id}`}
-                          >
-                            Buka Hasil
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate(
+                                  `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/execute?step=5`
+                                )
+                              }
+                              className="btn btn-secondary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
+                              id={`btn-buka-hasil-${tr.id}`}
+                            >
+                              Lihat Hasil
+                            </button>
+                          </div>
                         )}
                         <span className="font-mono text-[10px]">{fmt.date(tr.createdAt)}</span>
                       </div>

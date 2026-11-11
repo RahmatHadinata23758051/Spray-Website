@@ -1,5 +1,19 @@
 import type { KodePengujianRepository } from '../../../application/ports/kodePengujianRepository';
-import type { KodePengujian, Sample, TestRun, FixtureScenario, CaptureSession, BatchAnalysisDraft, FinalAnalysisReport } from '@spray-paragon/domain';
+import type {
+  KodePengujian,
+  Sample,
+  TestRun,
+  FixtureScenario,
+  CaptureSession,
+  BatchAnalysisDraft,
+  FinalAnalysisReport,
+  TrialType,
+  UsagePattern,
+  ObservationObjective,
+  DeviceConfiguration,
+  ExecutionMeasurements,
+  OperationalDerivedMetrics,
+} from '@spray-paragon/domain';
 import type { CreateKodePengujianInput, KodePengujianParentMetadata, CreateSampleInput, UpdateSampleInput, CreateTestRunInput, UpdateTestRunInput } from '../../../application/ports/kodePengujianRepository';
 import type { RemoteSyncPayload, RemoteSyncResponse } from '@spray-paragon/contracts';
 import type { db as database } from '../client';
@@ -7,7 +21,34 @@ import { kodePengujian, samples, testRuns, finalResults, mediaReferences } from 
 import { eq, and } from 'drizzle-orm';
 import { DomainInvariantError } from '@spray-paragon/domain';
 
+function buildKpMetadata(meta?: Record<string, unknown>, fields?: Partial<KodePengujianParentMetadata>): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...(meta || {}) };
+  if (fields?.kuf !== undefined) result.kuf = fields.kuf;
+  if (fields?.trialObjective !== undefined) result.trialObjective = fields.trialObjective;
+  if (fields?.benchmark !== undefined) result.benchmark = fields.benchmark;
+  if (fields?.trialType !== undefined) result.trialType = fields.trialType;
+  if (fields?.observationObjectives !== undefined) result.observationObjectives = fields.observationObjectives;
+  return result;
+}
+
+function buildSampleMetadata(meta?: Record<string, unknown>, fields?: Partial<UpdateSampleInput | CreateSampleInput>): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...(meta || {}) };
+  if (fields?.deviceConfiguration !== undefined) result.deviceConfiguration = fields.deviceConfiguration;
+  if (fields?.usagePattern !== undefined) result.usagePattern = fields.usagePattern;
+  return result;
+}
+
+function buildTestRunMetadata(meta?: Record<string, unknown>, fields?: Partial<UpdateTestRunInput | CreateTestRunInput>): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...(meta || {}) };
+  if (fields?.executionMeasurements !== undefined) result.executionMeasurements = fields.executionMeasurements;
+  if (fields?.operationalDerivedMetrics !== undefined) result.operationalDerivedMetrics = fields.operationalDerivedMetrics;
+  if (fields?.observationObjectives !== undefined) result.observationObjectives = fields.observationObjectives;
+  if (fields?.acquisitionDate !== undefined) result.acquisitionDate = fields.acquisitionDate;
+  return result;
+}
+
 function mapKpRow(row: typeof kodePengujian.$inferSelect): KodePengujian {
+  const meta = (row.metadata || {}) as Record<string, unknown>;
   return {
     id: row.id,
     status: row.status,
@@ -23,6 +64,11 @@ function mapKpRow(row: typeof kodePengujian.$inferSelect): KodePengujian {
     storageCondition: row.storageCondition ?? undefined,
     bottlePosition: row.bottlePosition ?? undefined,
     notes: row.notes ?? undefined,
+    kuf: (meta.kuf as string) ?? undefined,
+    trialObjective: (meta.trialObjective as string) ?? undefined,
+    benchmark: (meta.benchmark as string) ?? undefined,
+    trialType: (meta.trialType as TrialType) ?? undefined,
+    observationObjectives: (meta.observationObjectives as ObservationObjective[]) ?? undefined,
     metadata: row.metadata ?? undefined,
     sync: undefined,
     samples: [],
@@ -34,6 +80,7 @@ function mapKpRow(row: typeof kodePengujian.$inferSelect): KodePengujian {
 }
 
 function mapSampleRow(row: typeof samples.$inferSelect): Sample {
+  const meta = (row.metadata || {}) as Record<string, unknown>;
   return {
     id: row.id,
     kodePengujianId: row.kodePengujianId,
@@ -41,6 +88,8 @@ function mapSampleRow(row: typeof samples.$inferSelect): Sample {
     positionInRun: row.positionInRun,
     storageCondition: row.storageCondition ?? undefined,
     bottlePosition: row.bottlePosition ?? undefined,
+    deviceConfiguration: (meta.deviceConfiguration as DeviceConfiguration) ?? undefined,
+    usagePattern: (meta.usagePattern as UsagePattern) ?? undefined,
     notes: row.notes ?? undefined,
     metadata: row.metadata ?? undefined,
     status: row.status,
@@ -50,6 +99,7 @@ function mapSampleRow(row: typeof samples.$inferSelect): Sample {
 }
 
 function mapTestRunRow(row: typeof testRuns.$inferSelect): TestRun {
+  const meta = (row.metadata || {}) as Record<string, unknown>;
   return {
     id: row.id,
     kodePengujianId: row.kodePengujianId,
@@ -61,6 +111,10 @@ function mapTestRunRow(row: typeof testRuns.$inferSelect): TestRun {
     captureSession: row.captureSession as CaptureSession | undefined,
     analysisDraft: row.analysisDraft as BatchAnalysisDraft | undefined,
     finalReport: row.finalReport as FinalAnalysisReport | undefined,
+    executionMeasurements: (meta.executionMeasurements as ExecutionMeasurements) ?? undefined,
+    operationalDerivedMetrics: (meta.operationalDerivedMetrics as OperationalDerivedMetrics) ?? undefined,
+    observationObjectives: (meta.observationObjectives as ObservationObjective[]) ?? undefined,
+    acquisitionDate: (meta.acquisitionDate as string) ?? undefined,
     failureReason: row.failureReason ?? undefined,
     repetitionIndex: row.repetitionIndex ?? undefined,
     operatorId: row.operatorId,
@@ -121,6 +175,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
   async create(input: CreateKodePengujianInput): Promise<KodePengujian> {
     const id = input.id ?? `KP-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
     const now = new Date();
+    const meta = buildKpMetadata(input.metadata, input);
 
     await this.dbInstance.insert(kodePengujian).values({
       id,
@@ -137,7 +192,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       storageCondition: input.storageCondition,
       bottlePosition: input.bottlePosition,
       notes: input.notes,
-      metadata: input.metadata,
+      metadata: meta,
       createdAt: now,
       updatedAt: now,
       version: 1,
@@ -157,8 +212,13 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       calculationStandard: input.calculationStandard,
       storageCondition: input.storageCondition,
       bottlePosition: input.bottlePosition,
+      kuf: input.kuf,
+      trialObjective: input.trialObjective,
+      benchmark: input.benchmark,
+      trialType: input.trialType,
+      observationObjectives: input.observationObjectives,
       notes: input.notes,
-      metadata: input.metadata,
+      metadata: meta,
       sync: undefined,
       samples: [],
       testRuns: [],
@@ -173,8 +233,15 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
     if (!existing) throw new DomainInvariantError(`KodePengujian ${id} not found`);
 
     const now = new Date();
+    const meta = buildKpMetadata((existing.metadata || {}) as Record<string, unknown>, patch);
     const updateData: Partial<typeof kodePengujian.$inferInsert> = {
-      ...patch,
+      productLot: patch.productLot,
+      testPeriod: patch.testPeriod,
+      calculationStandard: patch.calculationStandard,
+      storageCondition: patch.storageCondition,
+      bottlePosition: patch.bottlePosition,
+      notes: patch.notes,
+      metadata: meta,
       updatedAt: now,
       version: existing.version + 1,
     };
@@ -190,6 +257,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
     const id = input.id ?? `SMP-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
     const positionInRun = input.positionInRun ?? (await this.dbInstance.select().from(samples).where(eq(samples.kodePengujianId, kpId))).length + 1;
     const now = new Date();
+    const meta = buildSampleMetadata(input.metadata, input);
 
     await this.dbInstance.insert(samples).values({
       id,
@@ -199,7 +267,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       storageCondition: input.storageCondition,
       bottlePosition: input.bottlePosition,
       notes: input.notes,
-      metadata: input.metadata,
+      metadata: meta,
       status: 'CREATED',
       createdAt: now,
       updatedAt: now,
@@ -208,15 +276,17 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
 
     await this.dbInstance.update(kodePengujian).set({ updatedAt: now, version: kp.version + 1 }).where(eq(kodePengujian.id, kpId));
 
-    const sample = {
+    const sample: Sample = {
       id,
       kodePengujianId: kpId,
       sampleCode: input.sampleCode,
       positionInRun,
       storageCondition: input.storageCondition,
       bottlePosition: input.bottlePosition,
+      deviceConfiguration: input.deviceConfiguration,
+      usagePattern: input.usagePattern,
       notes: input.notes,
-      metadata: input.metadata,
+      metadata: meta,
       status: 'CREATED' as const,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
@@ -232,8 +302,16 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
     if (!existing) throw new DomainInvariantError(`Sample ${sampleId} not found in KodePengujian ${kpId}`);
 
     const now = new Date();
+    const existingMeta = (existing.metadata || {}) as Record<string, unknown>;
+    const updatedMeta = buildSampleMetadata(existingMeta, patch as Record<string, unknown>);
+
     const updateData: Partial<typeof samples.$inferInsert> = {
-      ...patch,
+      sampleCode: patch.sampleCode,
+      storageCondition: patch.storageCondition,
+      bottlePosition: patch.bottlePosition,
+      positionInRun: patch.positionInRun,
+      notes: patch.notes,
+      metadata: updatedMeta,
       updatedAt: now,
       version: existing.version + 1,
     };
@@ -249,6 +327,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
 
     const id = input.id ?? `TR-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
     const now = new Date();
+    const meta = buildTestRunMetadata(input.metadata, input as unknown as Record<string, unknown>);
 
     await this.dbInstance.insert(testRuns).values({
       id,
@@ -262,7 +341,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       operatorName: input.operatorName,
       repetitionIndex: input.repetitionIndex,
       notes: input.notes,
-      metadata: input.metadata,
+      metadata: meta,
       status: 'PENDING',
       createdAt: now,
       updatedAt: now,
@@ -271,7 +350,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
 
     await this.dbInstance.update(kodePengujian).set({ updatedAt: now, version: kp.version + 1 }).where(eq(kodePengujian.id, kpId));
 
-    const testRun = {
+    const testRun: TestRun = {
       id,
       kodePengujianId: kpId,
       sampleId: input.sampleId,
@@ -282,8 +361,12 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       operatorId: input.operatorId,
       operatorName: input.operatorName,
       repetitionIndex: input.repetitionIndex,
+      executionMeasurements: input.executionMeasurements,
+      operationalDerivedMetrics: input.operationalDerivedMetrics,
+      observationObjectives: input.observationObjectives,
+      acquisitionDate: input.acquisitionDate,
       notes: input.notes,
-      metadata: input.metadata,
+      metadata: meta,
       status: 'PENDING' as const,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
@@ -311,9 +394,28 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
     }
 
     const now = new Date();
-    const { startedAt, completedAt, ...restPatch } = patch;
+    const {
+      startedAt,
+      completedAt,
+      executionMeasurements,
+      operationalDerivedMetrics,
+      observationObjectives,
+      acquisitionDate,
+      ...restPatch
+    } = patch;
+
+    const existingMeta = (existing.metadata || {}) as Record<string, unknown>;
+    const updatedMeta = buildTestRunMetadata(existingMeta, {
+      ...patch,
+      executionMeasurements,
+      operationalDerivedMetrics,
+      observationObjectives,
+      acquisitionDate,
+    } as unknown as Record<string, unknown>);
+
     const updateData: Partial<typeof testRuns.$inferInsert> = {
       ...restPatch,
+      metadata: updatedMeta,
       ...(startedAt !== undefined ? { startedAt: startedAt ? new Date(startedAt) : null } : {}),
       ...(completedAt !== undefined ? { completedAt: completedAt ? new Date(completedAt) : null } : {}),
       updatedAt: now,
@@ -410,6 +512,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       }
 
       // 3. Update KodePengujian parent
+      const kpMeta = buildKpMetadata((existingRow.metadata || incomingKp.metadata || {}) as Record<string, unknown>, incomingKp);
       await this.dbInstance.update(kodePengujian).set({
         status: incomingKp.status as 'DRAFT' | 'ACTIVE' | 'CLOSED' | 'ARCHIVED',
         productLot: incomingKp.productLot,
@@ -418,7 +521,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
         storageCondition: incomingKp.storageCondition,
         bottlePosition: incomingKp.bottlePosition,
         notes: incomingKp.notes,
-        metadata: incomingKp.metadata,
+        metadata: kpMeta,
         updatedAt: now,
         version: existingRow.version + 1,
       }).where(eq(kodePengujian.id, incomingKp.id));
@@ -426,6 +529,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       // 4. Upsert samples
       for (const sample of (incomingKp.samples as Sample[])) {
         const [existingSample] = await this.dbInstance.select().from(samples).where(eq(samples.id, sample.id)).limit(1);
+        const sampleMeta = buildSampleMetadata((existingSample?.metadata || sample.metadata || {}) as Record<string, unknown>, sample);
         if (existingSample) {
           await this.dbInstance.update(samples).set({
             sampleCode: sample.sampleCode,
@@ -433,7 +537,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
             storageCondition: sample.storageCondition,
             bottlePosition: sample.bottlePosition,
             notes: sample.notes,
-            metadata: sample.metadata,
+            metadata: sampleMeta,
             status: sample.status,
             updatedAt: now,
           }).where(eq(samples.id, sample.id));
@@ -446,7 +550,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
             storageCondition: sample.storageCondition,
             bottlePosition: sample.bottlePosition,
             notes: sample.notes,
-            metadata: sample.metadata,
+            metadata: sampleMeta,
             status: sample.status,
             createdAt: sample.createdAt ? new Date(sample.createdAt) : now,
             updatedAt: now,
@@ -458,11 +562,12 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       // 5. Upsert testRuns and finalResults
       for (const tr of (incomingKp.testRuns as TestRun[])) {
         const [existingTr] = await this.dbInstance.select().from(testRuns).where(eq(testRuns.id, tr.id)).limit(1);
+        const trMeta = buildTestRunMetadata((existingTr?.metadata || tr.metadata || {}) as Record<string, unknown>, tr as unknown as Record<string, unknown>);
         if (existingTr) {
           if (existingTr.status === 'FINALIZED') {
             await this.dbInstance.update(testRuns).set({
               notes: tr.notes,
-              metadata: tr.metadata,
+              metadata: trMeta,
               failureReason: tr.failureReason,
               updatedAt: now,
             }).where(eq(testRuns.id, tr.id));
@@ -478,7 +583,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
               failureReason: tr.failureReason,
               status: tr.status,
               notes: tr.notes,
-              metadata: tr.metadata,
+              metadata: trMeta,
               startedAt: tr.startedAt ? new Date(tr.startedAt) : null,
               completedAt: tr.completedAt ? new Date(tr.completedAt) : null,
               updatedAt: now,
@@ -503,7 +608,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
             operatorName: tr.operatorName ?? existingRow.operatorName,
             status: tr.status,
             notes: tr.notes,
-            metadata: tr.metadata,
+            metadata: trMeta,
             startedAt: tr.startedAt ? new Date(tr.startedAt) : null,
             completedAt: tr.completedAt ? new Date(tr.completedAt) : null,
             createdAt: tr.createdAt ? new Date(tr.createdAt) : now,
@@ -538,6 +643,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       }
     } else {
       // Create new KP aggregate
+      const kpMeta = buildKpMetadata(incomingKp.metadata as Record<string, unknown>, incomingKp);
       await this.dbInstance.insert(kodePengujian).values({
         id: incomingKp.id,
         status: incomingKp.status as 'DRAFT' | 'ACTIVE' | 'CLOSED' | 'ARCHIVED',
@@ -553,13 +659,14 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
         storageCondition: incomingKp.storageCondition,
         bottlePosition: incomingKp.bottlePosition,
         notes: incomingKp.notes,
-        metadata: incomingKp.metadata,
+        metadata: kpMeta,
         createdAt: new Date(incomingKp.createdAt),
         updatedAt: now,
         version: 1,
       });
 
       for (const sample of (incomingKp.samples as Sample[])) {
+        const sampleMeta = buildSampleMetadata(sample.metadata as Record<string, unknown>, sample);
         await this.dbInstance.insert(samples).values({
           id: sample.id,
           kodePengujianId: incomingKp.id,
@@ -568,7 +675,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
           storageCondition: sample.storageCondition,
           bottlePosition: sample.bottlePosition,
           notes: sample.notes,
-          metadata: sample.metadata,
+          metadata: sampleMeta,
           status: sample.status,
           createdAt: sample.createdAt ? new Date(sample.createdAt) : now,
           updatedAt: now,
@@ -577,6 +684,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
       }
 
       for (const tr of (incomingKp.testRuns as TestRun[])) {
+        const trMeta = buildTestRunMetadata(tr.metadata as Record<string, unknown>, tr as unknown as Record<string, unknown>);
         await this.dbInstance.insert(testRuns).values({
           id: tr.id,
           kodePengujianId: incomingKp.id,
@@ -594,7 +702,7 @@ export class PostgresKodePengujianRepository implements KodePengujianRepository 
           operatorName: tr.operatorName ?? incomingKp.operatorName,
           status: tr.status,
           notes: tr.notes,
-          metadata: tr.metadata,
+          metadata: trMeta,
           startedAt: tr.startedAt ? new Date(tr.startedAt) : null,
           completedAt: tr.completedAt ? new Date(tr.completedAt) : null,
           createdAt: tr.createdAt ? new Date(tr.createdAt) : now,

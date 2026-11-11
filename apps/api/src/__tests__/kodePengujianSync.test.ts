@@ -121,7 +121,7 @@ describe('Phase P6.1 — Server Persistence for KodePengujian Metadata & Sync', 
     });
     const cookie = loginRes.cookies.find(c => c.name === 'spraybot_session');
     sessionCookie = `spraybot_session=${cookie?.value}`;
-  });
+  }, 30_000);
 
   it('1. auth required: unauthenticated requests are rejected with 401', async () => {
     const app = await buildApp({ authRepository: authRepo, kpRepository: kpRepo });

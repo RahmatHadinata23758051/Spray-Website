@@ -4,3 +4,4 @@ export * from './analysis/index';
 export * from './batch/index';
 export * from './test-session/index';
 export * from './kode-pengujian/index';
+export * from './calculations/sprayMetrics';

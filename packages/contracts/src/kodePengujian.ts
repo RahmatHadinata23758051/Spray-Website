@@ -24,11 +24,86 @@ export const RecipeSnapshotSchema = z.object({
   strokeMm: z.number(),
 });
 
+export const DeviceTypeSchema = z.enum(['Aerosol', 'Non-Aerosol']);
+export type DeviceType = z.infer<typeof DeviceTypeSchema>;
+
+export const UsagePatternSchema = z.enum(['Sekali Pakai', 'Berulang']);
+export type UsagePattern = z.infer<typeof UsagePatternSchema>;
+
+export const TrialTypeSchema = z.enum(['Lab', 'PS', 'MP']);
+export type TrialType = z.infer<typeof TrialTypeSchema>;
+
+export const StoragePositionSchema = z.enum(['Tegak', 'Tidur']);
+export type StoragePosition = z.infer<typeof StoragePositionSchema>;
+
+export const StorageConditionSchema = z.enum([
+  'Ruang',
+  'Jemur',
+  'Display',
+  'Oven 40',
+  'Oven 45',
+  'Oven 50',
+  'Oven 60',
+  'Freezer',
+  'Siklus',
+]);
+export type StorageCondition = z.infer<typeof StorageConditionSchema>;
+
+export const LeakageStatusSchema = z.enum(['Ya', 'Tidak']);
+export type LeakageStatus = z.infer<typeof LeakageStatusSchema>;
+
+export const AerosolPackagingSpecSchema = z.object({
+  actuatorCode: z.string().optional(),
+  canOrBottleCode: z.string().optional(),
+  valveCode: z.string().optional(),
+  gasRatio: z.string().optional(),
+  gasType: z.string().optional(),
+});
+export type AerosolPackagingSpec = z.infer<typeof AerosolPackagingSpecSchema>;
+
+export const NonAerosolPackagingSpecSchema = z.object({
+  bottleCode: z.string().optional(),
+  pumpCode: z.string().optional(),
+});
+export type NonAerosolPackagingSpec = z.infer<typeof NonAerosolPackagingSpecSchema>;
+
+export const DeviceConfigurationSchema = z.object({
+  deviceType: DeviceTypeSchema,
+  aerosol: AerosolPackagingSpecSchema.optional(),
+  nonAerosol: NonAerosolPackagingSpecSchema.optional(),
+});
+export type DeviceConfiguration = z.infer<typeof DeviceConfigurationSchema>;
+
 export const SetpointsSchema = z.object({
   forceSetpointN: z.number(),
   pressDurationMs: z.number(),
   strokeMm: z.number(),
+  bottleHeightMm: z.number().optional(),
+  actuatorAreaMm2: z.number().optional(),
+  forceMode: z.enum(['Normal', 'Tidak Normal']).optional(),
+  normalForcePresetN: z.number().optional(),
 });
+export type Setpoints = z.infer<typeof SetpointsSchema>;
+
+export const ExecutionMeasurementsSchema = z.object({
+  initialGrossWeightG: z.number().optional(),
+  initialPressureBar: z.number().optional(),
+  finalGrossWeightG: z.number().optional(),
+  finalPressureBar: z.number().optional(),
+  actualPressDurationS: z.number().optional(),
+  actualStrokeDepth: z.number().optional(),
+  leakage: LeakageStatusSchema.optional(),
+  dryingTimeS: z.number().optional(),
+  observationNotes: z.string().optional(),
+});
+export type ExecutionMeasurements = z.infer<typeof ExecutionMeasurementsSchema>;
+
+export const OperationalDerivedMetricsSchema = z.object({
+  dischargedMassG: z.number().optional(),
+  dischargeRateGPerS: z.number().optional(),
+  pressureDropBar: z.number().optional(),
+});
+export type OperationalDerivedMetrics = z.infer<typeof OperationalDerivedMetricsSchema>;
 
 export const CreateKodePengujianRequestSchema = z.object({
   id: z.string().optional(),
@@ -43,6 +118,11 @@ export const CreateKodePengujianRequestSchema = z.object({
   calculationStandard: z.string().optional(),
   storageCondition: z.string().optional(),
   bottlePosition: z.string().optional(),
+  kuf: z.string().optional(),
+  trialObjective: z.string().optional(),
+  benchmark: z.string().optional(),
+  trialType: TrialTypeSchema.optional(),
+  observationObjectives: z.array(z.string()).optional(),
   notes: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
 });
@@ -55,6 +135,11 @@ export const UpdateKodePengujianRequestSchema = z.object({
   calculationStandard: z.string().optional(),
   storageCondition: z.string().optional(),
   bottlePosition: z.string().optional(),
+  kuf: z.string().optional(),
+  trialObjective: z.string().optional(),
+  benchmark: z.string().optional(),
+  trialType: TrialTypeSchema.optional(),
+  observationObjectives: z.array(z.string()).optional(),
   notes: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
   defaultRecipeId: z.string().optional(),
@@ -70,6 +155,8 @@ export const CreateSampleRequestSchema = z.object({
   positionInRun: z.number().int().positive().optional(),
   storageCondition: z.string().optional(),
   bottlePosition: z.string().optional(),
+  deviceConfiguration: DeviceConfigurationSchema.optional(),
+  usagePattern: UsagePatternSchema.optional(),
   notes: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
 });
@@ -80,6 +167,8 @@ export const UpdateSampleRequestSchema = z.object({
   sampleCode: z.string().optional(),
   storageCondition: z.string().optional(),
   bottlePosition: z.string().optional(),
+  deviceConfiguration: DeviceConfigurationSchema.optional(),
+  usagePattern: UsagePatternSchema.optional(),
   notes: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
   status: SampleStatusSchema.optional(),
@@ -98,6 +187,10 @@ export const CreateTestRunRequestSchema = z.object({
   operatorId: z.string().uuid(),
   operatorName: z.string(),
   repetitionIndex: z.number().int().nonnegative().optional(),
+  executionMeasurements: ExecutionMeasurementsSchema.optional(),
+  operationalDerivedMetrics: OperationalDerivedMetricsSchema.optional(),
+  observationObjectives: z.array(z.string()).optional(),
+  acquisitionDate: z.string().optional(),
   notes: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
 });
@@ -105,6 +198,11 @@ export const CreateTestRunRequestSchema = z.object({
 export type CreateTestRunRequest = z.infer<typeof CreateTestRunRequestSchema>;
 
 export const UpdateTestRunRequestSchema = z.object({
+  setpoints: SetpointsSchema.optional(),
+  executionMeasurements: ExecutionMeasurementsSchema.optional(),
+  operationalDerivedMetrics: OperationalDerivedMetricsSchema.optional(),
+  observationObjectives: z.array(z.string()).optional(),
+  acquisitionDate: z.string().optional(),
   captureSession: z.unknown().optional(),
   analysisDraft: z.unknown().optional(),
   finalReport: z.unknown().optional(),

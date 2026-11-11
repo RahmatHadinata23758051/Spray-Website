@@ -37,7 +37,7 @@ describe('Phase P3A — TestRun Capture Bridge', () => {
     vi.restoreAllMocks();
   });
 
-  it('1. PENDING TestRun in KodePengujianDetailPage has "Mulai Pengujian" action navigating to capture route', async () => {
+  it('1. PENDING TestRun in KodePengujianDetailPage has "Studio Capture" secondary action navigating to capture route', async () => {
     const kp = await kodePengujianRepository.create({
       productId: 'p-1',
       productSnapshot: { productCode: 'PRD-MIST', productName: 'Hydra Mist' },
@@ -64,10 +64,10 @@ describe('Phase P3A — TestRun Capture Bridge', () => {
       </MemoryRouter>
     );
 
-    const startBtn = await screen.findByRole('button', { name: /Mulai Pengujian/i });
-    expect(startBtn).toBeInTheDocument();
+    const studioBtn = await screen.findByRole('button', { name: /Studio Capture/i });
+    expect(studioBtn).toBeInTheDocument();
 
-    fireEvent.click(startBtn);
+    fireEvent.click(studioBtn);
 
     // Verify it navigated to the contextual capture route
     expect(await screen.findByText(/Mode kamera nyata — Side only|Mode simulasi/i)).toBeInTheDocument();

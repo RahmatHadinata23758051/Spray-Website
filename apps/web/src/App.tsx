@@ -29,6 +29,7 @@ import { KodePengujianDetailPage } from './presentation/pages/KodePengujian/Kode
 import { TestRunCapturePage } from './presentation/pages/KodePengujian/TestRunCapturePage';
 import { TestRunAnalysisPage } from './presentation/pages/KodePengujian/TestRunAnalysisPage';
 import { TestRunResultPage } from './presentation/pages/KodePengujian/TestRunResultPage';
+import { TestExecutionWizardPage } from './presentation/pages/KodePengujian/TestExecutionWizardPage';
 
 export { createFinalReportCsv } from './application/reporting/createFinalReportCsv';
 
@@ -73,6 +74,10 @@ export function App() {
         <Route
           path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/result"
           element={<TestRunResultPage />}
+        />
+        <Route
+          path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/execute"
+          element={<TestExecutionWizardPage />}
         />
 
         <Route path="/reports" element={<ReportsPage />} />

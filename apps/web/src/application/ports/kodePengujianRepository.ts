@@ -1,4 +1,18 @@
-import type { KodePengujian, Sample, TestRun, FixtureScenario, CaptureSession, BatchAnalysisDraft, FinalAnalysisReport } from '@spray-paragon/domain';
+import type {
+  KodePengujian,
+  Sample,
+  TestRun,
+  FixtureScenario,
+  CaptureSession,
+  BatchAnalysisDraft,
+  FinalAnalysisReport,
+  TestRunSetpoints,
+  ExecutionMeasurements,
+  OperationalDerivedMetrics,
+  DeviceConfiguration,
+  UsagePattern,
+  TrialType,
+} from '@spray-paragon/domain';
 
 export interface KodePengujianRepository {
   list(): Promise<KodePengujian[]>;
@@ -25,6 +39,11 @@ export interface CreateKodePengujianInput {
   storageCondition?: string;
   bottlePosition?: string;
   notes?: string;
+  kuf?: string;
+  trialObjective?: string;
+  benchmark?: string;
+  trialType?: TrialType;
+  observationObjectives?: string[];
   metadata?: Record<string, unknown>;
   id?: string;
 }
@@ -36,6 +55,11 @@ export interface KodePengujianParentMetadata {
   storageCondition?: string;
   bottlePosition?: string;
   notes?: string;
+  kuf?: string;
+  trialObjective?: string;
+  benchmark?: string;
+  trialType?: TrialType;
+  observationObjectives?: string[];
   metadata?: Record<string, unknown>;
   defaultRecipeId?: string;
   defaultRecipeSnapshot?: { name: string; forceSetpointN: number; pressDurationMs: number; strokeMm: number };
@@ -46,6 +70,8 @@ export interface CreateSampleInput {
   positionInRun?: number;
   storageCondition?: string;
   bottlePosition?: string;
+  deviceConfiguration?: DeviceConfiguration;
+  usagePattern?: UsagePattern;
   notes?: string;
   metadata?: Record<string, unknown>;
   id?: string;
@@ -55,6 +81,8 @@ export interface UpdateSampleInput {
   sampleCode?: string;
   storageCondition?: string;
   bottlePosition?: string;
+  deviceConfiguration?: DeviceConfiguration;
+  usagePattern?: UsagePattern;
   notes?: string;
   metadata?: Record<string, unknown>;
   status?: 'CREATED' | 'TESTED' | 'EXCLUDED';
@@ -64,17 +92,26 @@ export interface CreateTestRunInput {
   sampleId: string;
   recipeId: string;
   recipeSnapshot: { name: string; forceSetpointN: number; pressDurationMs: number; strokeMm: number };
-  setpoints: { forceSetpointN: number; pressDurationMs: number; strokeMm: number };
+  setpoints: TestRunSetpoints;
   fixture: FixtureScenario;
   operatorId: string;
   operatorName: string;
   repetitionIndex?: number;
+  executionMeasurements?: ExecutionMeasurements;
+  operationalDerivedMetrics?: OperationalDerivedMetrics;
+  observationObjectives?: string[];
+  acquisitionDate?: string;
   notes?: string;
   metadata?: Record<string, unknown>;
   id?: string;
 }
 
 export interface UpdateTestRunInput {
+  setpoints?: TestRunSetpoints;
+  executionMeasurements?: ExecutionMeasurements;
+  operationalDerivedMetrics?: OperationalDerivedMetrics;
+  observationObjectives?: string[];
+  acquisitionDate?: string;
   captureSession?: CaptureSession;
   analysisDraft?: BatchAnalysisDraft;
   finalReport?: FinalAnalysisReport;

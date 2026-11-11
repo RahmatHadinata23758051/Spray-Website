@@ -1,6 +1,10 @@
 import type { Camera, RealSideBaselineSelection, SynchronizedAnalysisFrame, Test } from '../types/index';
 import type { Batch } from '../batch/index';
-import type { KodePengujian } from '../kode-pengujian/index';
+import type {
+  KodePengujian,
+  ExecutionMeasurements,
+  OperationalDerivedMetrics,
+} from '../kode-pengujian/index';
 import { getEffectiveSampleContext } from '../kode-pengujian/index';
 
 export type MeasurementValue = {
@@ -602,6 +606,10 @@ export type FinalAnalysisReport = {
     side: ReportFrameSnapshot;
     front?: ReportFrameSnapshot;
   }>;
+  operationalMetrics?: {
+    measurements?: ExecutionMeasurements;
+    derived?: OperationalDerivedMetrics;
+  };
   finalizedBy: string;
   finalizedAt: string;
 };

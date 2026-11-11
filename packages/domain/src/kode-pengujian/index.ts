@@ -6,6 +6,11 @@ import type {
   CaptureSession,
 } from '../batch/index';
 import type { FinalAnalysisReport } from '../analysis/index';
+import {
+  calculateDischargedMass,
+  calculateDischargeRate,
+  calculatePressureDrop,
+} from '../calculations/sprayMetrics';
 
 export type SyncState = 'local' | 'pending' | 'synced' | 'failed';
 
@@ -15,6 +20,75 @@ export interface SyncMetadata {
   serverUpdatedAt?: string;
   lastSyncError?: string;
   retryCount?: number;
+}
+
+export type DeviceType = 'Aerosol' | 'Non-Aerosol';
+export type UsagePattern = 'Sekali Pakai' | 'Berulang';
+export type TrialType = 'Lab' | 'PS' | 'MP';
+export type StoragePosition = 'Tegak' | 'Tidur';
+export type StorageCondition =
+  | 'Ruang'
+  | 'Jemur'
+  | 'Display'
+  | 'Oven 40'
+  | 'Oven 45'
+  | 'Oven 50'
+  | 'Oven 60'
+  | 'Freezer'
+  | 'Siklus';
+export type LeakageStatus = 'Ya' | 'Tidak';
+export type ObservationObjective =
+  | 'Panjang lintasan'
+  | 'Sebaran'
+  | 'Sudut kontak'
+  | 'Kecepatan pengeringan'
+  | 'Distribusi droplet';
+
+export interface AerosolPackagingSpec {
+  actuatorCode?: string;
+  canOrBottleCode?: string;
+  valveCode?: string;
+  gasRatio?: string;
+  gasType?: string;
+}
+
+export interface NonAerosolPackagingSpec {
+  bottleCode?: string;
+  pumpCode?: string;
+}
+
+export interface DeviceConfiguration {
+  deviceType: DeviceType;
+  aerosol?: AerosolPackagingSpec;
+  nonAerosol?: NonAerosolPackagingSpec;
+}
+
+export interface TestRunSetpoints {
+  forceSetpointN: number;
+  pressDurationMs: number;
+  strokeMm: number;
+  bottleHeightMm?: number;
+  actuatorAreaMm2?: number;
+  forceMode?: 'Normal' | 'Tidak Normal';
+  normalForcePresetN?: number;
+}
+
+export interface ExecutionMeasurements {
+  initialGrossWeightG?: number;
+  initialPressureBar?: number;
+  finalGrossWeightG?: number;
+  finalPressureBar?: number;
+  actualPressDurationS?: number;
+  actualStrokeDepth?: number;
+  leakage?: LeakageStatus;
+  dryingTimeS?: number;
+  observationNotes?: string;
+}
+
+export interface OperationalDerivedMetrics {
+  dischargedMassG?: number;
+  dischargeRateGPerS?: number;
+  pressureDropBar?: number;
 }
 
 /**
@@ -38,6 +112,11 @@ export interface KodePengujian {
   storageCondition?: string;
   bottlePosition?: string;
   notes?: string;
+  kuf?: string;
+  trialObjective?: string;
+  benchmark?: string;
+  trialType?: TrialType;
+  observationObjectives?: string[];
   metadata?: Record<string, unknown>;
   sync?: SyncMetadata;
   samples: Sample[];
@@ -56,6 +135,8 @@ export interface Sample {
   positionInRun: number;
   storageCondition?: string;
   bottlePosition?: string;
+  deviceConfiguration?: DeviceConfiguration;
+  usagePattern?: UsagePattern;
   notes?: string;
   metadata?: Record<string, unknown>;
   status: SampleStatus;
@@ -78,11 +159,15 @@ export interface TestRun {
   sampleId: string;
   recipeId: string;
   recipeSnapshot: { name: string; forceSetpointN: number; pressDurationMs: number; strokeMm: number };
-  setpoints: { forceSetpointN: number; pressDurationMs: number; strokeMm: number };
+  setpoints: TestRunSetpoints;
   fixture: FixtureScenario;
   captureSession?: CaptureSession;
   analysisDraft?: AnalysisDraft;
   finalReport?: FinalAnalysisReport;
+  executionMeasurements?: ExecutionMeasurements;
+  operationalDerivedMetrics?: OperationalDerivedMetrics;
+  observationObjectives?: string[];
+  acquisitionDate?: string;
   failureReason?: string;
   repetitionIndex?: number;
   operatorId: string;
@@ -151,6 +236,11 @@ export function createKodePengujian(input: {
   storageCondition?: string;
   bottlePosition?: string;
   notes?: string;
+  kuf?: string;
+  trialObjective?: string;
+  benchmark?: string;
+  trialType?: TrialType;
+  observationObjectives?: string[];
   metadata?: Record<string, unknown>;
   id?: string;
   now?: string;
@@ -171,6 +261,11 @@ export function createKodePengujian(input: {
     storageCondition: input.storageCondition,
     bottlePosition: input.bottlePosition,
     notes: input.notes,
+    kuf: input.kuf,
+    trialObjective: input.trialObjective,
+    benchmark: input.benchmark,
+    trialType: input.trialType,
+    observationObjectives: input.observationObjectives,
     metadata: input.metadata,
     sync: {
       status: 'local',
@@ -209,6 +304,8 @@ export function addSample(kp: KodePengujian, input: {
   positionInRun?: number;
   storageCondition?: string;
   bottlePosition?: string;
+  deviceConfiguration?: DeviceConfiguration;
+  usagePattern?: UsagePattern;
   notes?: string;
   metadata?: Record<string, unknown>;
   id?: string;
@@ -226,6 +323,8 @@ export function addSample(kp: KodePengujian, input: {
     positionInRun: position,
     storageCondition: input.storageCondition,
     bottlePosition: input.bottlePosition,
+    deviceConfiguration: input.deviceConfiguration,
+    usagePattern: input.usagePattern,
     notes: input.notes,
     metadata: input.metadata,
     status: 'CREATED',
@@ -243,11 +342,15 @@ export function createTestRun(kp: KodePengujian, input: {
   sampleId: string;
   recipeId: string;
   recipeSnapshot: { name: string; forceSetpointN: number; pressDurationMs: number; strokeMm: number };
-  setpoints: { forceSetpointN: number; pressDurationMs: number; strokeMm: number };
+  setpoints: TestRunSetpoints;
   fixture: FixtureScenario;
   operatorId: string;
   operatorName: string;
   repetitionIndex?: number;
+  executionMeasurements?: ExecutionMeasurements;
+  operationalDerivedMetrics?: OperationalDerivedMetrics;
+  observationObjectives?: string[];
+  acquisitionDate?: string;
   notes?: string;
   metadata?: Record<string, unknown>;
   id?: string;
@@ -270,6 +373,10 @@ export function createTestRun(kp: KodePengujian, input: {
     operatorId: input.operatorId,
     operatorName: input.operatorName,
     repetitionIndex,
+    executionMeasurements: input.executionMeasurements,
+    operationalDerivedMetrics: input.operationalDerivedMetrics,
+    observationObjectives: input.observationObjectives,
+    acquisitionDate: input.acquisitionDate,
     notes: input.notes,
     metadata: input.metadata,
     status: 'PENDING',
@@ -314,6 +421,101 @@ export function updateTestRunAnalysisDraft(kp: KodePengujian, testRunId: string,
     testRuns: kp.testRuns.map(t =>
       t.id === testRunId
         ? { ...t, analysisDraft, status: newStatus, updatedAt: now }
+        : t
+    ),
+    updatedAt: now,
+  };
+}
+
+export function updateTestRunSetpoints(
+  kp: KodePengujian,
+  testRunId: string,
+  setpoints: Partial<TestRunSetpoints>,
+  now = new Date().toISOString()
+): KodePengujian {
+  const tr = kp.testRuns.find(t => t.id === testRunId);
+  if (!tr) throw new DomainInvariantError(`TestRun ${testRunId} not found in KodePengujian ${kp.id}.`);
+  if (tr.status === 'FINALIZED') {
+    throw new DomainInvariantError(`Cannot update setpoints: TestRun ${testRunId} is already FINALIZED.`);
+  }
+  return {
+    ...kp,
+    testRuns: kp.testRuns.map(t =>
+      t.id === testRunId
+        ? {
+            ...t,
+            setpoints: {
+              ...t.setpoints,
+              ...setpoints,
+            },
+            updatedAt: now,
+          }
+        : t
+    ),
+    updatedAt: now,
+  };
+}
+
+export function updateSampleDeviceConfiguration(
+  kp: KodePengujian,
+  sampleId: string,
+  deviceConfiguration: DeviceConfiguration,
+  usagePattern?: UsagePattern,
+  now = new Date().toISOString()
+): KodePengujian {
+  const sample = kp.samples.find(s => s.id === sampleId);
+  if (!sample) throw new DomainInvariantError(`Sample ${sampleId} not found in KodePengujian ${kp.id}.`);
+
+  return {
+    ...kp,
+    samples: kp.samples.map(s =>
+      s.id === sampleId
+        ? {
+            ...s,
+            deviceConfiguration,
+            usagePattern: usagePattern ?? s.usagePattern,
+            updatedAt: now,
+          }
+        : s
+    ),
+    updatedAt: now,
+  };
+}
+
+export function updateTestRunExecutionMeasurements(
+  kp: KodePengujian,
+  testRunId: string,
+  measurements: ExecutionMeasurements,
+  now = new Date().toISOString()
+): KodePengujian {
+  const tr = kp.testRuns.find(t => t.id === testRunId);
+  if (!tr) throw new DomainInvariantError(`TestRun ${testRunId} not found in KodePengujian ${kp.id}.`);
+  if (tr.status === 'FINALIZED') {
+    throw new DomainInvariantError(`Cannot update execution measurements: TestRun ${testRunId} is already FINALIZED.`);
+  }
+
+  const sample = kp.samples.find(s => s.id === tr.sampleId);
+  const isAerosol = sample?.deviceConfiguration?.deviceType !== 'Non-Aerosol';
+  const dischargedMass = calculateDischargedMass(measurements.initialGrossWeightG, measurements.finalGrossWeightG);
+  const dischargeRate = calculateDischargeRate(dischargedMass, measurements.actualPressDurationS);
+  const pressureDrop = calculatePressureDrop(measurements.initialPressureBar, measurements.finalPressureBar, isAerosol);
+
+  const operationalDerivedMetrics: OperationalDerivedMetrics = {
+    dischargedMassG: dischargedMass,
+    dischargeRateGPerS: dischargeRate,
+    pressureDropBar: pressureDrop,
+  };
+
+  return {
+    ...kp,
+    testRuns: kp.testRuns.map(t =>
+      t.id === testRunId
+        ? {
+            ...t,
+            executionMeasurements: measurements,
+            operationalDerivedMetrics,
+            updatedAt: now,
+          }
         : t
     ),
     updatedAt: now,

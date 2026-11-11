@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   kodePengujianRepository,
   captureAssetStore,
@@ -60,6 +60,8 @@ interface PendingCapture {
 export function TestRunCapturePage() {
   const { kpId, sampleId, runId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnToWizard = searchParams.get('returnTo') === 'wizard';
   const [context, setContext] = useState<TestRunCaptureContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -956,6 +958,10 @@ export function TestRunCapturePage() {
   const activeBaseline = testRun.captureSession?.realSideBaseline;
   const baselineIndexes = new Set(activeBaseline?.frames.map((frame) => frame.frameIndex) ?? []);
   const activeVideo = pendingCapture?.realVideo ?? realVideo ?? restoredVideo;
+  const backPath = returnToWizard && context
+    ? `/kode-pengujian/${context.kp.id}/samples/${context.sample.id}/runs/${context.testRun.id}/execute?step=4`
+    : `/kode-pengujian/${kpId}`;
+  const backLabel = returnToWizard ? 'Kembali ke Wizard' : 'Kembali ke Kode Pengujian';
 
   return (
     <div className="flex flex-col h-full space-y-6 max-w-[1320px] mx-auto w-full">
@@ -1060,21 +1066,21 @@ export function TestRunCapturePage() {
           {mode === 'real' && !isCapturing && (realStatus === 'complete' || restoredRealFrameCount > 0) && !hasUnsavedCapture && (
             <>
               <button onClick={handleProceedToAnalysis} className="btn btn-primary">Lanjut ke Analisis</button>
-              <button onClick={() => handleNavigate(`/kode-pengujian/${kpId}`)} className="btn btn-secondary">Kembali ke Kode Pengujian</button>
+              <button onClick={() => handleNavigate(backPath)} className="btn btn-secondary">{backLabel}</button>
               <button onClick={handleAbortCapture} className="btn btn-danger">Batalkan Akuisisi</button>
             </>
           )}
           {mode === 'simulation' && !isCapturing && testRun.captureSession?.captureMode === 'simulation' && (testRun.captureSession?.synchronizedMoments?.length ?? 0) > 0 && !hasUnsavedCapture && (
             <>
               <button onClick={handleProceedToAnalysis} className="btn btn-primary">Lanjut ke Analisis</button>
-              <button onClick={() => handleNavigate(`/kode-pengujian/${kpId}`)} className="btn btn-secondary">Kembali ke Kode Pengujian</button>
+              <button onClick={() => handleNavigate(backPath)} className="btn btn-secondary">{backLabel}</button>
               <button onClick={handleAbortCapture} className="btn btn-danger">Batalkan Akuisisi</button>
             </>
           )}
           {hasUnsavedCapture && (
             <>
-              <button onClick={() => handleNavigate(`/kode-pengujian/${kp.id}`)} className="btn btn-secondary">
-                Kembali ke Kode Pengujian
+              <button onClick={() => handleNavigate(backPath)} className="btn btn-secondary">
+                {backLabel}
               </button>
               <button onClick={handleSaveCapture} className="btn btn-primary">Simpan</button>
               <button onClick={handleRetakeCapture} className="btn btn-secondary">Ulangi Pengambilan</button>

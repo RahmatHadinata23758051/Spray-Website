@@ -54,6 +54,19 @@ export function createFinalReportCsv(report: FinalAnalysisReport): string {
     fields.push([`front_${s}_auto`, getMeasurementValue(metric.value, 'auto')], [`front_${s}_final`, getMeasurementValue(metric.value, 'final')], [`front_${s}_adjusted`, getMeasurementValue(metric.value, 'adjusted')]);
   }
 
+  if (report.operationalMetrics) {
+    const derived = report.operationalMetrics.derived;
+    if (derived?.dischargedMassG !== undefined) {
+      fields.push(['operational_discharged_mass_g', derived.dischargedMassG]);
+    }
+    if (derived?.dischargeRateGPerS !== undefined) {
+      fields.push(['operational_discharge_rate_gps', derived.dischargeRateGPerS]);
+    }
+    if (derived?.pressureDropBar !== undefined) {
+      fields.push(['operational_pressure_drop_bar', derived.pressureDropBar]);
+    }
+  }
+
   const headers = fields.map(([key]) => escapeCsv(key)).join(',');
   const values = fields.map(([, value]) => escapeCsv(value)).join(',');
   
