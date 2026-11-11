@@ -96,26 +96,26 @@ export function KodePengujianPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {loading ? (
-        <div className="p-4 text-sm text-text-secondary">Memuat kode pengujian...</div>
+        <div className="p-4 text-xs text-text-secondary">Memuat kode pengujian...</div>
       ) : (
-        <div className="surface-panel surface-panel-large">
-          <div className="flex items-center justify-between p-4 border-b border-border-subtle bg-surface">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="text-sm font-semibold text-text-primary">
+        <div className="rounded-md border border-border-default bg-surface shadow-sm overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 border-b border-border-subtle bg-surface">
+            <div className="flex flex-wrap items-center gap-3 flex-1">
+              <div className="text-xs font-bold text-text-primary uppercase tracking-wider">
                 {filteredItems.length} Kode Pengujian
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <input
                   type="text"
                   placeholder="Cari ID, Produk, Lot, Operator..."
-                  className="form-input !min-h-[36px] w-[280px] text-sm"
+                  className="form-input !h-8 w-[260px] text-xs"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <select
-                  className="form-select !min-h-[36px] w-[160px] text-sm"
+                  className="form-select !h-8 w-[140px] text-xs"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -130,7 +130,7 @@ export function KodePengujianPage() {
             <Link
               to="/kode-pengujian/new"
               aria-label="Buat Kode Pengujian"
-              className="btn btn-primary !min-h-[36px] px-4"
+              className="btn btn-primary !min-h-[30px] px-3.5 text-xs font-semibold"
             >
               Buat Kode Pengujian
             </Link>
@@ -154,7 +154,7 @@ export function KodePengujianPage() {
             <tbody className="bg-surface">
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="text-center py-8 text-text-muted text-sm">
+                  <td colSpan={10} className="text-center py-8 text-text-muted text-xs">
                     {searchQuery || statusFilter
                       ? 'Tidak ada kode pengujian yang cocok dengan filter.'
                       : 'Belum ada kode pengujian. Buat kode pengujian baru untuk memulai.'}
@@ -218,7 +218,7 @@ export function KodePengujianPage() {
                       <td className="text-right" onClick={(e) => e.stopPropagation()}>
                         <Link
                           to={`/kode-pengujian/${kp.id}`}
-                          className="btn btn-secondary !min-h-[30px] px-3 text-xs"
+                          className="btn btn-secondary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
                         >
                           Buka
                         </Link>

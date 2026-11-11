@@ -9,3 +9,5 @@ coverage/
 *.log
 .claude/settings.local.json
 .codex/hooks.json
+pnpm-workspace.yaml
+

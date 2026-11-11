@@ -11,8 +11,14 @@ import type {
   FixtureScenario,
 } from '@spray-paragon/domain';
 import { getEffectiveSampleContext } from '@spray-paragon/domain';
-import { Status } from '../../components/ui/Status';
-import { Table } from '../../components/ui/Table';
+import {
+  Status,
+  Table,
+  FormField,
+  Input,
+  Select,
+  ActionBar,
+} from '../../components/ui';
 import { fmt } from '../../utils/formatters';
 
 const kpStatusLabels: Record<string, string> = {
@@ -236,7 +242,7 @@ export function KodePengujianDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-4 text-sm text-text-secondary">
+      <div className="p-4 text-xs text-text-secondary">
         Memuat kode pengujian {kpId}...
       </div>
     );
@@ -244,16 +250,16 @@ export function KodePengujianDetailPage() {
 
   if (!kp) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-xl font-bold text-text-primary">
+      <div className="space-y-3">
+        <h1 className="text-lg font-bold text-text-primary">
           Kode Pengujian Tidak Ditemukan
         </h1>
-        <p className="text-sm text-text-secondary">
+        <p className="text-xs text-text-secondary">
           Kode Pengujian {kpId} tidak ditemukan atau belum dibuat.
         </p>
         <button
           onClick={() => navigate('/kode-pengujian')}
-          className="text-sm font-medium text-primary hover:underline"
+          className="text-xs font-medium text-primary hover:underline"
         >
           &larr; Kembali ke Kode Pengujian
         </button>
@@ -266,18 +272,18 @@ export function KodePengujianDetailPage() {
   const activeRecipe = recipes.find((r) => r.id === selectedRecipeId) || null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Top Breadcrumb & Title */}
-      <div className="flex items-center justify-between border-b border-border-subtle pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3">
         <div>
           <button
             onClick={() => navigate('/kode-pengujian')}
-            className="text-xs font-semibold text-text-muted hover:text-text-primary mb-1.5 flex items-center gap-1 transition-colors"
+            className="text-xs font-semibold text-text-muted hover:text-text-primary mb-1 flex items-center gap-1 transition-colors"
           >
             <span>&larr;</span> <span>Kembali ke Daftar Kode Pengujian</span>
           </button>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight text-text-primary font-mono">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-xl font-bold tracking-tight text-text-primary font-mono">
               {kp.id}
             </h1>
             <Status tone={kp.status === 'CLOSED' ? 'success' : kp.status === 'ACTIVE' ? 'warning' : 'neutral'}>
@@ -292,14 +298,14 @@ export function KodePengujianDetailPage() {
                   <button
                     onClick={handleManualSync}
                     disabled={isSyncing}
-                    className="btn btn-secondary text-xs"
+                    className="btn btn-secondary !min-h-[28px] !py-0.5 px-2.5 text-xs"
                     type="button"
                   >
                     {isSyncing ? 'Menyinkronkan...' : 'Sinkronkan'}
                   </button>
                 )}
                 {syncFeedback && (
-                  <span className="text-xs text-text-muted font-mono ml-2">
+                  <span className="text-xs text-text-muted font-mono ml-1">
                     {syncFeedback}
                   </span>
                 )}
@@ -309,47 +315,52 @@ export function KodePengujianDetailPage() {
         </div>
       </div>
 
-      {/* Header Context Panel */}
-      <div className="surface-panel p-5 bg-surface rounded-xl border border-border-default space-y-4">
-        <div className="text-xs font-bold text-text-muted uppercase tracking-wider">
-          Konteks Pengujian Bersama
+      {/* Header Context Panel - Compact Flat Enterprise Specification Ribbon */}
+      <div className="rounded-md border border-border-default bg-surface shadow-sm overflow-hidden">
+        <div className="border-b border-border-subtle bg-surface-subtle px-4 py-2 flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
+            Konteks Pengujian Bersama
+          </span>
+          <span className="font-mono text-[11px] text-text-muted">
+            ID: {kp.id}
+          </span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-sm">
+        <div className="p-3.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-3 text-xs">
           <div>
-            <div className="text-xs text-text-muted">Produk / Formula</div>
-            <div className="font-semibold text-text-primary">
+            <div className="text-[11px] text-text-muted font-medium">Produk / Formula</div>
+            <div className="font-semibold text-text-primary truncate" title={kp.productSnapshot?.productName}>
               {kp.productSnapshot?.productName || '—'}
             </div>
-            <div className="font-mono text-xs text-text-secondary">
+            <div className="font-mono text-[11px] text-text-secondary">
               {kp.productSnapshot?.productCode || '—'}
             </div>
           </div>
           <div>
-            <div className="text-xs text-text-muted">Lot / Referensi Material</div>
+            <div className="text-[11px] text-text-muted font-medium">Lot / Referensi Material</div>
             <div className="font-mono font-semibold text-text-primary">
               {kp.productLot || '—'}
             </div>
           </div>
           <div>
-            <div className="text-xs text-text-muted">Periode Uji</div>
+            <div className="text-[11px] text-text-muted font-medium">Periode Uji</div>
             <div className="font-medium text-text-primary">
               {kp.testPeriod || '—'}
             </div>
           </div>
           <div>
-            <div className="text-xs text-text-muted">Kondisi Simpan (Default)</div>
+            <div className="text-[11px] text-text-muted font-medium">Kondisi Simpan (Default)</div>
             <div className="font-medium text-text-primary">
               {kp.storageCondition || '—'}
             </div>
           </div>
           <div>
-            <div className="text-xs text-text-muted">Posisi Botol (Default)</div>
+            <div className="text-[11px] text-text-muted font-medium">Posisi Botol (Default)</div>
             <div className="font-medium text-text-primary">
               {kp.bottlePosition || '—'}
             </div>
           </div>
           <div>
-            <div className="text-xs text-text-muted">Metodologi Default</div>
+            <div className="text-[11px] text-text-muted font-medium">Metodologi Default</div>
             <div className="font-medium text-text-primary">
               {kp.defaultRecipeSnapshot?.name || '—'}
             </div>
@@ -357,29 +368,31 @@ export function KodePengujianDetailPage() {
         </div>
 
         {kp.notes && (
-          <div className="pt-2 border-t border-border-subtle text-xs text-text-secondary">
-            <span className="font-semibold text-text-primary">Catatan:</span> {kp.notes}
+          <div className="border-t border-border-subtle/80 bg-surface-subtle/30 px-4 py-2 text-xs text-text-secondary flex items-start gap-1.5">
+            <span className="font-semibold text-text-primary">Catatan:</span>
+            <span>{kp.notes}</span>
           </div>
         )}
       </div>
 
       {/* Main Hierarchy: Samples Table & Selected Sample Test Runs */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Left Column: Samples List */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="surface-panel surface-panel-large overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-border-subtle bg-surface">
+        <div className="lg:col-span-7 space-y-3">
+          <div className="rounded-md border border-border-default bg-surface shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border-subtle bg-surface">
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-text-primary">
+                <h2 className="text-sm font-bold text-text-primary">
                   Sampel Pengujian
                 </h2>
-                <span className="px-2 py-0.5 rounded-full bg-surface-subtle text-xs font-semibold text-text-secondary">
+                <span className="px-2 py-0.5 rounded-full bg-surface-subtle text-[11px] font-semibold text-text-secondary">
                   {kp.samples.length}
                 </span>
               </div>
               <button
+                type="button"
                 onClick={() => setShowAddSampleModal(true)}
-                className="btn btn-primary !min-h-[32px] px-3 text-xs"
+                className="btn btn-primary !min-h-[30px] px-3 text-xs"
                 id="btn-tambah-sampel"
               >
                 + Tambah Sampel
@@ -418,7 +431,7 @@ export function KodePengujianDetailPage() {
                         onClick={() => setSelectedSampleId(sample.id)}
                         className={`cursor-pointer transition-colors ${
                           isSelected
-                            ? 'bg-primary-soft/40 border-l-4 border-primary font-medium'
+                            ? 'bg-primary-soft/40 border-l-2 border-primary font-medium'
                             : 'hover:bg-surface-subtle'
                         }`}
                       >
@@ -477,9 +490,9 @@ export function KodePengujianDetailPage() {
         </div>
 
         {/* Right Column: Selected Sample Test Runs */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="surface-panel surface-panel-large overflow-hidden">
-            <div className="p-4 border-b border-border-subtle bg-surface flex items-center justify-between">
+        <div className="lg:col-span-5 space-y-3">
+          <div className="rounded-md border border-border-default bg-surface shadow-sm overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-border-subtle bg-surface flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-text-primary">
                   {selectedSample
@@ -488,14 +501,15 @@ export function KodePengujianDetailPage() {
                       })`
                     : 'Detail Pengujian Sampel'}
                 </h3>
-                <p className="text-xs text-text-muted">
+                <p className="text-[11px] text-text-muted">
                   {sampleTestRuns.length} pengujian tercatat untuk sampel ini
                 </p>
               </div>
               {selectedSample && (
                 <button
+                  type="button"
                   onClick={() => setShowAddTestRunModal(true)}
-                  className="btn btn-primary !min-h-[32px] px-3 text-xs"
+                  className="btn btn-primary !min-h-[30px] px-3 text-xs"
                   id="btn-tambah-pengujian"
                 >
                   + Tambah Pengujian
@@ -511,8 +525,9 @@ export function KodePengujianDetailPage() {
               <div className="p-8 text-center text-text-muted text-xs space-y-3">
                 <p>Belum ada eksekusi pengujian untuk sampel ini.</p>
                 <button
+                  type="button"
                   onClick={() => setShowAddTestRunModal(true)}
-                  className="btn btn-secondary !min-h-[32px] px-4 text-xs"
+                  className="btn btn-secondary !min-h-[30px] px-3.5 text-xs"
                 >
                   + Tambah Pengujian Sekarang
                 </button>
@@ -520,7 +535,7 @@ export function KodePengujianDetailPage() {
             ) : (
               <div className="divide-y divide-border-subtle">
                 {sampleTestRuns.map((tr) => (
-                  <div key={tr.id} className="p-4 space-y-2 hover:bg-surface-subtle transition-colors">
+                  <div key={tr.id} className="p-3.5 space-y-2 hover:bg-surface-subtle/50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="font-mono font-bold text-xs text-primary">
                         {tr.id}
@@ -539,7 +554,7 @@ export function KodePengujianDetailPage() {
                       <div className="font-semibold text-text-primary">
                         {tr.recipeSnapshot.name}
                       </div>
-                      <div className="text-text-muted flex items-center gap-3 mt-1 font-mono text-[11px]">
+                      <div className="text-text-muted flex items-center gap-2 mt-0.5 font-mono text-[11px]">
                         <span>{tr.setpoints.forceSetpointN} N</span>
                         <span>•</span>
                         <span>{tr.setpoints.pressDurationMs} ms</span>
@@ -548,17 +563,18 @@ export function KodePengujianDetailPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-text-muted pt-2 border-t border-border-subtle/50">
+                    <div className="flex items-center justify-between text-[11px] text-text-muted pt-2 border-t border-border-subtle/60">
                       <span>Operator: {tr.operatorName}</span>
                       <div className="flex items-center gap-2">
                         {tr.status === 'PENDING' && (
                           <button
+                            type="button"
                             onClick={() =>
                               navigate(
                                 `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/capture`
                               )
                             }
-                            className="btn btn-primary !min-h-[28px] !py-1 px-3 text-xs"
+                            className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
                             id={`btn-mulai-pengujian-${tr.id}`}
                           >
                             Mulai Pengujian
@@ -566,12 +582,13 @@ export function KodePengujianDetailPage() {
                         )}
                         {tr.status === 'CAPTURING' && (
                           <button
+                            type="button"
                             onClick={() =>
                               navigate(
                                 `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/capture`
                               )
                             }
-                            className="btn btn-secondary !min-h-[28px] !py-1 px-3 text-xs"
+                            className="btn btn-secondary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
                             id={`btn-lanjut-pengujian-${tr.id}`}
                           >
                             Buka Pengambilan
@@ -579,12 +596,13 @@ export function KodePengujianDetailPage() {
                         )}
                         {tr.status === 'ANALYZING' && (
                           <button
+                            type="button"
                             onClick={() =>
                               navigate(
                                 `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/analysis`
                               )
                             }
-                            className="btn btn-primary !min-h-[28px] !py-1 px-3 text-xs"
+                            className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
                             id={`btn-buka-analisis-${tr.id}`}
                           >
                             Buka Analisis
@@ -592,12 +610,13 @@ export function KodePengujianDetailPage() {
                         )}
                         {tr.status === 'REVIEW_REQUIRED' && (
                           <button
+                            type="button"
                             onClick={() =>
                               navigate(
                                 `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/analysis`
                               )
                             }
-                            className="btn btn-primary !min-h-[28px] !py-1 px-3 text-xs"
+                            className="btn btn-primary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
                             id={`btn-tinjau-analisis-${tr.id}`}
                           >
                             Tinjau Analisis
@@ -605,18 +624,19 @@ export function KodePengujianDetailPage() {
                         )}
                         {tr.status === 'FINALIZED' && (
                           <button
+                            type="button"
                             onClick={() =>
                               navigate(
                                 `/kode-pengujian/${kp.id}/samples/${tr.sampleId}/runs/${tr.id}/result`
                               )
                             }
-                            className="btn btn-secondary !min-h-[28px] !py-1 px-3 text-xs"
+                            className="btn btn-secondary !min-h-[28px] !py-0.5 px-2.5 text-xs font-medium"
                             id={`btn-buka-hasil-${tr.id}`}
                           >
                             Buka Hasil
                           </button>
                         )}
-                        <span>{fmt.date(tr.createdAt)}</span>
+                        <span className="font-mono text-[10px]">{fmt.date(tr.createdAt)}</span>
                       </div>
                     </div>
                   </div>
@@ -629,107 +649,107 @@ export function KodePengujianDetailPage() {
 
       {/* Modal: Tambah Sampel */}
       {showAddSampleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-surface rounded-xl border border-border-default shadow-xl max-w-md w-full overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-surface rounded-md border border-border-default shadow-xl max-w-md w-full overflow-hidden">
             <form onSubmit={handleAddSample}>
-              <div className="p-4 border-b border-border-subtle bg-surface-subtle flex items-center justify-between">
+              <div className="px-4 py-2.5 border-b border-border-subtle bg-surface-subtle flex items-center justify-between">
                 <h3 className="text-sm font-bold text-text-primary">Tambah Botol Sampel</h3>
                 <button
                   type="button"
                   onClick={() => setShowAddSampleModal(false)}
-                  className="text-text-muted hover:text-text-primary text-sm font-bold"
+                  className="text-text-muted hover:text-text-primary text-sm font-bold leading-none p-1"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="p-4 space-y-4 text-sm">
-                <div className="form-group space-y-1">
-                  <label className="form-label text-xs">Kode / Label Sampel (Opsional)</label>
-                  <input
+              <div className="p-4 space-y-3.5 text-sm">
+                <FormField
+                  label="Kode / Label Sampel (Opsional)"
+                  hint={`Nomor urut posisi otomatis: #${kp.samples.length + 1}`}
+                >
+                  <Input
                     type="text"
                     placeholder={`Contoh: SMP-${String(kp.samples.length + 1).padStart(3, '0')}`}
-                    className="form-input w-full"
                     value={newSampleCode}
                     onChange={(e) => setNewSampleCode(e.target.value)}
                   />
-                  <p className="text-[11px] text-text-muted">
-                    Nomor urut posisi otomatis: #{kp.samples.length + 1}
-                  </p>
-                </div>
+                </FormField>
 
-                <div className="form-group space-y-1">
-                  <label className="form-label text-xs">
-                    Kondisi Simpan (Opsional Override)
-                  </label>
-                  <input
+                <FormField
+                  label="Kondisi Simpan (Opsional Override)"
+                  hint={
+                    kp.storageCondition ? (
+                      <>
+                        Default Kode Pengujian: <span className="font-semibold">{kp.storageCondition}</span>
+                      </>
+                    ) : undefined
+                  }
+                >
+                  <Input
                     type="text"
                     placeholder={
                       kp.storageCondition
                         ? `Default: ${kp.storageCondition}`
                         : 'Contoh: Oven 40°C'
                     }
-                    className="form-input w-full"
                     value={newSampleStorageOverride}
                     onChange={(e) => setNewSampleStorageOverride(e.target.value)}
                   />
-                  {kp.storageCondition && (
-                    <p className="text-[11px] text-text-muted">
-                      Default Kode Pengujian: <span className="font-semibold">{kp.storageCondition}</span>
-                    </p>
-                  )}
-                </div>
+                </FormField>
 
-                <div className="form-group space-y-1">
-                  <label className="form-label text-xs">
-                    Posisi Botol (Opsional Override)
-                  </label>
-                  <input
+                <FormField
+                  label="Posisi Botol (Opsional Override)"
+                  hint={
+                    kp.bottlePosition ? (
+                      <>
+                        Default Kode Pengujian: <span className="font-semibold">{kp.bottlePosition}</span>
+                      </>
+                    ) : undefined
+                  }
+                >
+                  <Input
                     type="text"
                     placeholder={
                       kp.bottlePosition
                         ? `Default: ${kp.bottlePosition}`
                         : 'Contoh: Terbalik'
                     }
-                    className="form-input w-full"
                     value={newSamplePositionOverride}
                     onChange={(e) => setNewSamplePositionOverride(e.target.value)}
                   />
-                  {kp.bottlePosition && (
-                    <p className="text-[11px] text-text-muted">
-                      Default Kode Pengujian: <span className="font-semibold">{kp.bottlePosition}</span>
-                    </p>
-                  )}
-                </div>
+                </FormField>
 
-                <div className="form-group space-y-1">
-                  <label className="form-label text-xs">Catatan Sampel (Opsional)</label>
-                  <input
+                <FormField label="Catatan Sampel (Opsional)">
+                  <Input
                     type="text"
                     placeholder="Catatan khusus botol ini..."
-                    className="form-input w-full"
                     value={newSampleNotes}
                     onChange={(e) => setNewSampleNotes(e.target.value)}
                   />
-                </div>
+                </FormField>
               </div>
 
-              <div className="p-4 border-t border-border-subtle bg-surface flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddSampleModal(false)}
-                  className="btn btn-secondary !min-h-[32px] px-3 text-xs"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={addingSample}
-                  className="btn btn-primary !min-h-[32px] px-4 text-xs"
-                >
-                  {addingSample ? 'Menyimpan...' : 'Simpan Sampel'}
-                </button>
-              </div>
+              <ActionBar
+                actions={
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSampleModal(false)}
+                      className="btn btn-secondary !min-h-[32px] px-3 text-xs"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={addingSample}
+                      className="btn btn-primary !min-h-[32px] px-4 text-xs font-semibold"
+                    >
+                      {addingSample ? 'Menyimpan...' : 'Simpan Sampel'}
+                    </button>
+                  </>
+                }
+              />
             </form>
           </div>
         </div>
@@ -737,36 +757,35 @@ export function KodePengujianDetailPage() {
 
       {/* Modal: Tambah Pengujian (Test Run) */}
       {showAddTestRunModal && selectedSample && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-surface rounded-xl border border-border-default shadow-xl max-w-md w-full overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-surface rounded-md border border-border-default shadow-xl max-w-md w-full overflow-hidden">
             <form onSubmit={handleAddTestRun}>
-              <div className="p-4 border-b border-border-subtle bg-surface-subtle flex items-center justify-between">
+              <div className="px-4 py-2.5 border-b border-border-subtle bg-surface-subtle flex items-center justify-between">
                 <h3 className="text-sm font-bold text-text-primary">
                   Tambah Pengujian Baru (Test Run)
                 </h3>
                 <button
                   type="button"
                   onClick={() => setShowAddTestRunModal(false)}
-                  className="text-text-muted hover:text-text-primary text-sm font-bold"
+                  className="text-text-muted hover:text-text-primary text-sm font-bold leading-none p-1"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="p-4 space-y-4 text-sm">
-                <div className="bg-surface-subtle p-3 rounded-input text-xs space-y-1">
-                  <div className="text-text-muted">Sampel Target:</div>
+              <div className="p-4 space-y-3.5 text-sm">
+                <div className="bg-surface-subtle p-2.5 rounded border border-border-subtle text-xs space-y-0.5">
+                  <div className="text-[11px] text-text-muted">Sampel Target:</div>
                   <div className="font-bold text-text-primary">
                     Sampel #{selectedSample.positionInRun} ({selectedSample.sampleCode || selectedSample.id})
                   </div>
                 </div>
 
-                <div className="form-group space-y-1">
-                  <label className="form-label text-xs">Pilih Metodologi</label>
-                  <select
+                <FormField label="Pilih Metodologi">
+                  <Select
                     value={selectedRecipeId}
                     onChange={(e) => setSelectedRecipeId(e.target.value)}
-                    className="form-select w-full"
+                    className="w-full"
                   >
                     <option value="">— Pilih metodologi —</option>
                     {recipes.map((r) => (
@@ -774,69 +793,71 @@ export function KodePengujianDetailPage() {
                         {r.name} ({r.forceSetpointN} N, {r.pressDurationMs} ms, {r.strokeMm} mm)
                       </option>
                     ))}
-                  </select>
-                </div>
+                  </Select>
+                </FormField>
 
                 {activeRecipe && (
-                  <div className="p-3 bg-surface-subtle rounded-input space-y-2">
-                    <div className="text-[11px] font-bold text-text-muted uppercase">Setpoint Terpilih</div>
+                  <div className="p-2.5 bg-surface-subtle rounded border border-border-subtle space-y-1.5">
+                    <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                      Setpoint Terpilih
+                    </div>
                     <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                      <div>
+                      <div className="bg-surface p-1.5 rounded border border-border-subtle">
                         <div className="text-[10px] text-text-muted">Gaya</div>
-                        <div className="font-mono font-bold">{activeRecipe.forceSetpointN} N</div>
+                        <div className="font-mono font-bold text-text-primary">{activeRecipe.forceSetpointN} N</div>
                       </div>
-                      <div>
+                      <div className="bg-surface p-1.5 rounded border border-border-subtle">
                         <div className="text-[10px] text-text-muted">Durasi</div>
-                        <div className="font-mono font-bold">{activeRecipe.pressDurationMs} ms</div>
+                        <div className="font-mono font-bold text-text-primary">{activeRecipe.pressDurationMs} ms</div>
                       </div>
-                      <div>
+                      <div className="bg-surface p-1.5 rounded border border-border-subtle">
                         <div className="text-[10px] text-text-muted">Stroke</div>
-                        <div className="font-mono font-bold">{activeRecipe.strokeMm} mm</div>
+                        <div className="font-mono font-bold text-text-primary">{activeRecipe.strokeMm} mm</div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                <div className="form-group space-y-1">
-                  <label className="form-label text-xs">Indeks Repetisi (Opsional)</label>
-                  <input
+                <FormField label="Indeks Repetisi (Opsional)">
+                  <Input
                     type="number"
                     min="1"
                     placeholder="Contoh: 1, 2, 3..."
-                    className="form-input w-full"
                     value={testRunRepetition}
                     onChange={(e) => setTestRunRepetition(e.target.value)}
                   />
-                </div>
+                </FormField>
 
-                <div className="form-group space-y-1">
-                  <label className="form-label text-xs">Catatan Pengujian (Opsional)</label>
-                  <input
+                <FormField label="Catatan Pengujian (Opsional)">
+                  <Input
                     type="text"
                     placeholder="Catatan pengujian..."
-                    className="form-input w-full"
                     value={testRunNotes}
                     onChange={(e) => setTestRunNotes(e.target.value)}
                   />
-                </div>
+                </FormField>
               </div>
 
-              <div className="p-4 border-t border-border-subtle bg-surface flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddTestRunModal(false)}
-                  className="btn btn-secondary !min-h-[32px] px-3 text-xs"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={addingTestRun || !activeRecipe}
-                  className="btn btn-primary !min-h-[32px] px-4 text-xs"
-                >
-                  {addingTestRun ? 'Menambahkan...' : 'Tambah Pengujian'}
-                </button>
-              </div>
+              <ActionBar
+                actions={
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddTestRunModal(false)}
+                      className="btn btn-secondary !min-h-[32px] px-3 text-xs"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={addingTestRun || !activeRecipe}
+                      className="btn btn-primary !min-h-[32px] px-4 text-xs font-semibold"
+                    >
+                      {addingTestRun ? 'Menambahkan...' : 'Tambah Pengujian'}
+                    </button>
+                  </>
+                }
+              />
             </form>
           </div>
         </div>
