@@ -3,6 +3,8 @@ import type { WizardFormData } from './types';
 import { computeLiveOperationalMetrics } from './types';
 import { Status } from '../../../components/ui/Status';
 import type { TestRun, KodePengujian, Sample, OperationalDerivedMetrics } from '@spray-paragon/domain';
+import { ResultEvidenceGallery } from '../../../features/analysis/ResultEvidenceGallery';
+import { TechnicalDetailsDisclosure } from '../../../features/analysis/TechnicalDetailsDisclosure';
 
 interface Step05ResultSummaryProps {
   formData: WizardFormData;
@@ -15,8 +17,8 @@ interface Step05ResultSummaryProps {
 
 export function Step05ResultSummary({
   formData,
-  kp: _kp,
-  sample: _sample,
+  kp,
+  sample,
   testRun,
   onDownloadCsv,
   onBackToKp,
@@ -282,6 +284,19 @@ export function Step05ResultSummary({
           </dl>
         </div>
       </div>
+
+      {/* Evidensi Frame Terpilih (Primary & Supporting Captures) */}
+      <ResultEvidenceGallery testRun={testRun} report={finalReport} />
+
+      {/* Detail Teknis (Collapsible Disclosure) */}
+      {finalReport && (
+        <TechnicalDetailsDisclosure
+          report={finalReport}
+          kp={kp}
+          sample={sample}
+          testRun={testRun}
+        />
+      )}
 
       {/* Action Footer */}
       <div className="pt-3 border-t border-border-default flex flex-wrap items-center justify-between gap-3">

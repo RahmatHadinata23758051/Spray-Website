@@ -29,7 +29,7 @@ import { Step04ExecutionData } from './wizard/Step04ExecutionData';
 import { Step05ResultSummary } from './wizard/Step05ResultSummary';
 
 function getMaxAllowedStep(testRun: TestRun): WizardStep {
-  if (testRun.status === 'FINALIZED') return 5;
+  if (testRun.status === 'FINALIZED' || testRun.finalReport) return 5;
   const wp = evaluateWizardProgress(testRun);
   if (!wp?.step1Completed) return 1;
   if (!wp?.step2Completed) return 2;
@@ -94,8 +94,8 @@ export function TestExecutionWizardPage() {
       const queryStep = parseInt(searchParams.get('step') || '', 10);
       let targetStep: WizardStep = 1;
       if (queryStep >= 1 && queryStep <= 5) {
-        targetStep = (testRun.status === 'FINALIZED' ? queryStep : Math.min(queryStep, maxAllowed)) as WizardStep;
-      } else if (testRun.status === 'FINALIZED') {
+        targetStep = (testRun.status === 'FINALIZED' || testRun.finalReport ? queryStep : Math.min(queryStep, maxAllowed)) as WizardStep;
+      } else if (testRun.status === 'FINALIZED' || testRun.finalReport) {
         targetStep = 5;
       } else if (['CAPTURING', 'ANALYZING', 'REVIEW_REQUIRED'].includes(testRun.status)) {
         targetStep = Math.min(4, maxAllowed) as WizardStep;

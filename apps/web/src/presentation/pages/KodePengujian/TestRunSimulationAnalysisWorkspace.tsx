@@ -540,7 +540,11 @@ export function TestRunSimulationAnalysisWorkspace({
       } catch (syncErr) {
         console.warn('Sync queue failed after finalization (non-blocking):', syncErr);
       }
-      navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/result`);
+      if (returnToWizard) {
+        navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/execute?step=5`);
+      } else {
+        navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/result`);
+      }
     } catch (e) {
       console.error(e);
       setSelectionError(e instanceof Error ? e.message : String(e));
@@ -560,6 +564,7 @@ export function TestRunSimulationAnalysisWorkspace({
     primaryFrontMeasurements,
     getPixelGeometryFn,
     navigate,
+    returnToWizard,
   ]);
 
   if (moments.length === 0) {
@@ -869,7 +874,7 @@ export function TestRunSimulationAnalysisWorkspace({
                   onClick={handleConfirmFinalAnalysis}
                   disabled={!canFinalize}
                 >
-                  Finalisasi Hasil
+                  {returnToWizard ? 'Finalisasi & Lanjut ke Hasil' : 'Finalisasi Hasil'}
                 </button>
               )}
 
@@ -885,9 +890,15 @@ export function TestRunSimulationAnalysisWorkspace({
                   <button
                     type="button"
                     className="btn btn-secondary w-full"
-                    onClick={() => navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/result`)}
+                    onClick={() => {
+                      if (returnToWizard) {
+                        navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/execute?step=5`);
+                      } else {
+                        navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/result`);
+                      }
+                    }}
                   >
-                    Buka Hasil &rarr;
+                    {returnToWizard ? 'Lanjut ke Hasil \u2192' : 'Buka Hasil \u2192'}
                   </button>
                 </div>
               )}

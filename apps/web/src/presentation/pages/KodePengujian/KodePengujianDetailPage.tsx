@@ -240,6 +240,79 @@ export function KodePengujianDetailPage() {
     }
   };
 
+  const [startingDirectTest, setStartingDirectTest] = useState(false);
+
+  const handleStartSampleTest = async () => {
+    if (!kp || startingDirectTest) return;
+    setStartingDirectTest(true);
+    try {
+      const defaultRecipe = recipes.find((r) => r.isDefault) || recipes[0] || {
+        id: 'rcp-default',
+        name: 'Standard Spray Test',
+        forceSetpointN: 35.0,
+        pressDurationMs: 1500,
+        strokeMm: 8.5,
+      };
+
+      // 1. Determine target sample: if selectedSample exists, use it; otherwise use first sample if available
+      let targetSample = kp.samples.find((s) => s.id === selectedSampleId) || null;
+      if (!targetSample && kp.samples.length > 0) {
+        targetSample = kp.samples[0];
+      }
+
+      // If no sample exists at all, auto-create Sample 01
+      if (!targetSample) {
+        const nextPosition = kp.samples.length + 1;
+        const autoCode = `SMP-${String(nextPosition).padStart(2, '0')}`;
+        const addSampleRes = await kodePengujianRepository.addSample(kp.id, {
+          sampleCode: autoCode,
+          positionInRun: nextPosition,
+          storageCondition: kp.storageCondition,
+          bottlePosition: kp.bottlePosition,
+        });
+        targetSample = addSampleRes.sample;
+      }
+
+      // 2. Check if this sample already has a PENDING or CAPTURING test run
+      const existingRuns = kp.testRuns.filter((t) => t.sampleId === targetSample!.id);
+      const pendingRun = existingRuns.find((t) => t.status === 'PENDING' || t.status === 'CAPTURING');
+
+      if (pendingRun) {
+        const step = pendingRun.status === 'CAPTURING' ? 4 : 1;
+        navigate(`/kode-pengujian/${kp.id}/samples/${targetSample.id}/runs/${pendingRun.id}/execute?step=${step}`);
+        return;
+      }
+
+      // 3. Otherwise create a new TestRun automatically
+      const nextRepetition = existingRuns.length + 1;
+      const addRunRes = await kodePengujianRepository.addTestRun(kp.id, {
+        sampleId: targetSample.id,
+        recipeId: defaultRecipe.id,
+        recipeSnapshot: {
+          name: defaultRecipe.name,
+          forceSetpointN: defaultRecipe.forceSetpointN,
+          pressDurationMs: defaultRecipe.pressDurationMs,
+          strokeMm: defaultRecipe.strokeMm,
+        },
+        setpoints: {
+          forceSetpointN: defaultRecipe.forceSetpointN,
+          pressDurationMs: defaultRecipe.pressDurationMs,
+          strokeMm: defaultRecipe.strokeMm,
+        },
+        fixture: 'nominal-01' as FixtureScenario,
+        operatorId: 'usr-np',
+        operatorName: 'Nadia Putri',
+        repetitionIndex: nextRepetition,
+      });
+
+      navigate(`/kode-pengujian/${kp.id}/samples/${targetSample.id}/runs/${addRunRes.testRun.id}/execute?step=1`);
+    } catch (err) {
+      console.error('Gagal memulai pengujian sampel:', err);
+    } finally {
+      setStartingDirectTest(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4 text-xs text-text-secondary">
@@ -312,6 +385,21 @@ export function KodePengujianDetailPage() {
               </>
             )}
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleStartSampleTest}
+            disabled={startingDirectTest}
+            className="btn btn-primary !min-h-[32px] px-3.5 text-xs font-medium flex items-center gap-1.5 shadow-sm"
+            id="btn-mulai-pengujian-sampel"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+            </svg>
+            {startingDirectTest ? 'Menyiapkan...' : 'Mulai Pengujian Sampel'}
+          </button>
         </div>
       </div>
 

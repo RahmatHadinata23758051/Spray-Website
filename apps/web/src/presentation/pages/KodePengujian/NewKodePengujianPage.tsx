@@ -92,6 +92,80 @@ export function NewKodePengujianPage() {
     }
   };
 
+  const handleCreateAndStart = async () => {
+    if (!product || submitting) return;
+
+    setSubmitting(true);
+    try {
+      const defaultRecipe = recipe || recipes[0] || {
+        id: 'rcp-default',
+        name: 'Standard Spray Test',
+        forceSetpointN: 35.0,
+        pressDurationMs: 1500,
+        strokeMm: 8.5,
+      };
+
+      const kp = await kodePengujianRepository.create({
+        productId: product.id,
+        productSnapshot: {
+          productCode: product.productCode,
+          productName: product.name,
+        },
+        productLot: productLot || undefined,
+        testPeriod: testPeriod || undefined,
+        operatorId: 'usr-np',
+        operatorName: 'Nadia Putri',
+        storageCondition: storageCondition || undefined,
+        bottlePosition: bottlePosition || undefined,
+        notes: notes || undefined,
+        defaultRecipeId: recipe ? recipe.id : undefined,
+        defaultRecipeSnapshot: recipe
+          ? {
+              name: recipe.name,
+              forceSetpointN: recipe.forceSetpointN,
+              pressDurationMs: recipe.pressDurationMs,
+              strokeMm: recipe.strokeMm,
+            }
+          : undefined,
+      });
+
+      // Auto-create Sample 01
+      const sampleRes = await kodePengujianRepository.addSample(kp.id, {
+        sampleCode: 'SMP-01',
+        positionInRun: 1,
+        storageCondition: storageCondition || undefined,
+        bottlePosition: bottlePosition || undefined,
+      });
+
+      // Auto-create TestRun 01
+      const runRes = await kodePengujianRepository.addTestRun(kp.id, {
+        sampleId: sampleRes.sample.id,
+        recipeId: defaultRecipe.id,
+        recipeSnapshot: {
+          name: defaultRecipe.name,
+          forceSetpointN: defaultRecipe.forceSetpointN,
+          pressDurationMs: defaultRecipe.pressDurationMs,
+          strokeMm: defaultRecipe.strokeMm,
+        },
+        setpoints: {
+          forceSetpointN: defaultRecipe.forceSetpointN,
+          pressDurationMs: defaultRecipe.pressDurationMs,
+          strokeMm: defaultRecipe.strokeMm,
+        },
+        fixture: 'nominal-01',
+        operatorId: 'usr-np',
+        operatorName: 'Nadia Putri',
+        repetitionIndex: 1,
+      });
+
+      navigate(`/kode-pengujian/${kp.id}/samples/${sampleRes.sample.id}/runs/${runRes.testRun.id}/execute?step=1`);
+    } catch (err) {
+      console.error('Gagal membuat dan memulai pengujian', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="w-full space-y-3 pb-8">
       {/* Back button navigation */}
@@ -270,16 +344,23 @@ export function NewKodePengujianPage() {
             >
               Batalkan
             </button>
-            <div className="flex items-center gap-3">
-              <span className="hidden sm:inline text-[11px] text-text-muted">
-                Pastikan data telah sesuai sebelum membuat kode pengujian.
-              </span>
+            <div className="flex items-center gap-2.5">
               <button
                 type="submit"
                 disabled={!product || submitting}
-                className="btn btn-primary !min-h-[34px] px-5 text-xs font-medium"
+                className="btn btn-secondary !min-h-[34px] px-4 text-xs font-medium"
               >
                 {submitting ? 'Membuat...' : 'Buat Kode Pengujian'}
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateAndStart}
+                disabled={!product || submitting}
+                className="btn btn-primary !min-h-[34px] px-4 text-xs font-medium flex items-center gap-1.5 shadow-sm"
+                id="btn-buat-dan-mulai"
+              >
+                <span>{submitting ? 'Memproses...' : 'Buat & Mulai Pengujian'}</span>
+                <span>&rarr;</span>
               </button>
             </div>
           </div>

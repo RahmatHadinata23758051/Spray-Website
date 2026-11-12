@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  kodePengujianRepository,
-} from '../../../application/services';
+import { kodePengujianRepository } from '../../../application/services';
 import type { KodePengujian, TestRun, Sample } from '@spray-paragon/domain';
-import { fmt, formatStatus } from '../../utils/formatters';
+import { formatStatus } from '../../utils/formatters';
 import { Status } from '../../components/ui/Status';
 import { Panel } from '../../components/ui/Panel';
 import { createFinalReportCsv } from '../../../application/reporting/createFinalReportCsv';
+import { ResultEvidenceGallery } from '../../features/analysis/ResultEvidenceGallery';
+import { TechnicalDetailsDisclosure } from '../../features/analysis/TechnicalDetailsDisclosure';
 
 export function TestRunResultPage() {
   const { kpId, sampleId, runId } = useParams();
@@ -31,12 +31,12 @@ export function TestRunResultPage() {
           setError(`Kode Pengujian ${kpId} tidak ditemukan`);
           return;
         }
-        const sample = kp.samples.find(s => s.id === sampleId);
+        const sample = kp.samples.find((s) => s.id === sampleId);
         if (!sample) {
           setError(`Sampel ${sampleId} tidak ditemukan dalam Kode Pengujian ${kpId}`);
           return;
         }
-        const testRun = kp.testRuns.find(t => t.id === runId && t.sampleId === sampleId);
+        const testRun = kp.testRuns.find((t) => t.id === runId && t.sampleId === sampleId);
         if (!testRun) {
           setError(`Pengujian ${runId} tidak ditemukan untuk Sampel ${sampleId}`);
           return;
@@ -78,7 +78,9 @@ export function TestRunResultPage() {
     URL.revokeObjectURL(url);
   }, [context]);
 
-  if (loading) return <div className="p-8 text-center text-text-muted font-medium">Memuat hasil pengujian...</div>;
+  if (loading) {
+    return <div className="p-8 text-center text-text-muted font-medium text-xs">Memuat hasil pengujian...</div>;
+  }
 
   if (error && !context) {
     return (
@@ -90,7 +92,7 @@ export function TestRunResultPage() {
             <button
               type="button"
               onClick={handleBack}
-              className="rounded-sm bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover shadow-sm"
+              className="btn btn-primary text-xs font-medium"
             >
               Kembali ke Kode Pengujian
             </button>
@@ -112,14 +114,15 @@ export function TestRunResultPage() {
           <div className="p-6 space-y-4">
             <Status tone="warning">Hasil Belum Tersedia ({formatStatus(testRun.status)})</Status>
             <p className="text-sm text-text-secondary">
-              Pengujian <strong className="font-mono font-medium">{testRun.id}</strong> saat ini dalam status <strong>{formatStatus(testRun.status)}</strong>. Hasil hanya tersedia untuk pengujian yang telah difinalisasi.
+              Pengujian <strong className="font-mono font-medium">{testRun.id}</strong> saat ini dalam status{' '}
+              <strong>{formatStatus(testRun.status)}</strong>. Hasil hanya tersedia untuk pengujian yang telah difinalisasi.
             </p>
             <div className="flex gap-3 pt-2">
               {testRun.status === 'ANALYZING' && (
                 <button
                   type="button"
                   onClick={() => navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/analysis`)}
-                  className="rounded-sm bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover shadow-sm"
+                  className="btn btn-primary text-xs font-medium"
                 >
                   Buka Ruang Kerja Analisis
                 </button>
@@ -127,7 +130,7 @@ export function TestRunResultPage() {
               <button
                 type="button"
                 onClick={handleBack}
-                className="rounded-sm border border-border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-subtle shadow-sm"
+                className="btn btn-secondary text-xs font-medium"
               >
                 Kembali ke Kode Pengujian
               </button>
@@ -138,313 +141,235 @@ export function TestRunResultPage() {
     );
   }
 
+  // Parse authoritative snapshot metrics
+  const rawOperational = report.operationalMetrics as {
+    measurements?: Record<string, unknown>;
+    derived?: {
+      dischargedMassG?: number;
+      dischargeRateGPerS?: number;
+      pressureDropBar?: number;
+    };
+    dischargedMassG?: number;
+    dischargeRateGPerS?: number;
+    pressureDropBar?: number;
+  } | undefined;
+
+  const derived = rawOperational?.derived ?? (rawOperational?.dischargedMassG !== undefined ? rawOperational : undefined);
+  const m = rawOperational?.measurements ?? {};
+
+  const isAerosol = sample.deviceConfiguration?.deviceType === 'Aerosol';
   const effectiveStorage = sample.storageCondition ?? kp.storageCondition ?? '—';
   const effectiveBottlePosition = sample.bottlePosition ?? kp.bottlePosition ?? '—';
+  const anyAdjusted = Boolean(
+    report.side.sprayLength?.adjusted ||
+    report.side.sprayAngle?.adjusted ||
+    report.side.verticalSpread?.adjusted ||
+    (report.side.calibration && report.side.calibration.adjusted)
+  );
 
   return (
-    <div className="max-w-5xl mx-auto w-full">
-      <div className="mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-text-primary">
-              Hasil Pengujian <span className="font-mono text-primary">{testRun.id}</span>
-            </h1>
-            <p className="text-sm text-text-secondary">
-              <span className="font-mono">{kp.id}</span> / <span>{sample.sampleCode || sample.id}</span> / <span className="text-primary">{testRun.recipeSnapshot.name}</span>
-            </p>
-          </div>
-          <div className="flex gap-2 shrink-0">
-            <button
-              onClick={handleDownloadCsv}
-              className="rounded-sm border border-border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-subtle shadow-sm flex items-center gap-2"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              Unduh CSV
-            </button>
-            <button onClick={handleBack} className="rounded-sm border border-border-subtle bg-bg-surface px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-subtle shadow-sm">
-              Kembali
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-4 text-sm">
-          <span className="px-3 py-1 bg-surface-subtle rounded border border-border-default">
-            <span className="font-medium text-text-primary">Status: </span>
+    <div className="max-w-5xl mx-auto w-full space-y-5">
+      {/* 1. Simplified Restrained Result Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-3 border-b border-border-subtle">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-lg font-semibold text-text-primary">Hasil Pengujian</h1>
             <Status tone="success">Finalized</Status>
-          </span>
-          <span className="px-3 py-1 bg-surface-subtle rounded border border-border-default">
-            <span className="font-medium text-text-primary">Finalized by: </span>
-            <span className="font-mono text-text-secondary">{report.finalizedBy}</span>
-          </span>
-          <span className="px-3 py-1 bg-surface-subtle rounded border border-border-default">
-            <span className="font-medium text-text-primary">Finalized at: </span>
-            <span className="font-mono text-text-secondary">{fmt.date(report.finalizedAt)}</span>
-          </span>
-          <span className="px-3 py-1 bg-surface-subtle rounded border border-border-default">
-            <span className="font-medium text-text-primary">Analisis: </span>
-            <span className="font-mono text-text-secondary">{report.analysisSource}</span>
-          </span>
-          {report.analysisSource === 'simulation' && (
-            <div className="flex items-center gap-1.5 text-xs font-medium text-primary bg-primary-soft px-2.5 py-1 rounded border border-primary/20">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-              <span>Mode Simulasi — Data Fixture</span>
-            </div>
-          )}
+            {report.analysisSource === 'simulation' && (
+              <span
+                className="text-[10px] font-mono text-primary bg-primary-soft px-2 py-0.5 rounded border border-primary/20"
+                title="Data fixture untuk validasi antarmuka"
+              >
+                Simulasi
+              </span>
+            )}
+          </div>
+          <div className="text-sm font-medium text-text-primary">
+            {kp.productSnapshot.productName} ({kp.productSnapshot.productCode})
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary font-mono">
+            <span className="font-semibold text-text-primary">{sample.sampleCode || sample.id}</span>
+            <span>•</span>
+            <span>{testRun.id}</span>
+            <span>•</span>
+            <span className="text-primary">{testRun.recipeSnapshot.name}</span>
+            <span>•</span>
+            <span>{kp.id}</span>
+          </div>
+          <div className="text-xs text-text-muted font-sans">
+            <span>{new Date(report.finalizedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            <span> · </span>
+            <span>Finalisasi oleh: </span>
+            <span className="font-medium text-text-primary">{report.finalizedBy}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleDownloadCsv}
+            className="btn btn-secondary !min-h-[30px] !py-1 px-3 text-xs font-medium flex items-center gap-1.5"
+            aria-label="Unduh CSV"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Unduh CSV
+          </button>
+          <button
+            onClick={handleBack}
+            className="btn btn-secondary !min-h-[30px] !py-1 px-3 text-xs font-medium"
+          >
+            Kembali
+          </button>
         </div>
       </div>
 
-      <div className="space-y-6">
-        {/* Test Context Panel */}
-        <Panel title="Konteks pengujian">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-3">
-              <h4 className="font-medium text-text-primary border-b border-border-subtle pb-2">Kode pengujian</h4>
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between"><dt className="text-text-muted">ID</dt><dd className="font-mono text-text-primary">{kp.id}</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">Produk</dt><dd className="font-medium text-text-primary">{kp.productSnapshot.productName} ({kp.productSnapshot.productCode})</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">No. Formula</dt><dd className="font-mono text-text-primary">{kp.formulaNumber || (kp.metadata?.formulaNumber as string) || '—'}</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">Lot Produk</dt><dd className="font-mono text-text-secondary">{kp.productLot || '—'}</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">Periode Uji</dt><dd className="font-mono text-text-secondary">{kp.testPeriod || '—'}</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">Operator</dt><dd className="font-medium text-text-primary">{kp.operatorName}</dd></div>
-              </dl>
-            </div>
-            <div className="space-y-3">
-              <h4 className="font-medium text-text-primary border-b border-border-subtle pb-2">Sampel</h4>
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between"><dt className="text-text-muted">Kode Sampel</dt><dd className="font-medium text-text-primary">{sample.sampleCode || sample.id}</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">Posisi</dt><dd className="font-mono text-text-secondary">#{sample.positionInRun}</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">Kondisi Simpan</dt><dd className="text-text-secondary">{effectiveStorage}</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">Posisi Botol</dt><dd className="text-text-secondary">{effectiveBottlePosition}</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">Status</dt><dd><Status tone="success">TESTED</Status></dd></div>
-              </dl>
-            </div>
-            <div className="space-y-3">
-              <h4 className="font-medium text-text-primary border-b border-border-subtle pb-2">Metodologi</h4>
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between"><dt className="text-text-muted">Resep</dt><dd className="font-medium text-text-primary">{testRun.recipeSnapshot.name}</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">Setpoint Gaya</dt><dd className="font-mono text-text-secondary">{testRun.setpoints.forceSetpointN} N</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">Durasi Tekan</dt><dd className="font-mono text-text-secondary">{testRun.setpoints.pressDurationMs} ms</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">Stroke</dt><dd className="font-mono text-text-secondary">{testRun.setpoints.strokeMm} mm</dd></div>
-                <div className="flex justify-between"><dt className="text-text-muted">Mode Capture</dt><dd className="font-mono text-text-secondary">{testRun.captureSession?.captureMode || '—'}</dd></div>
-              </dl>
-            </div>
+      {/* 2. Hasil Utama & Hasil Analisis (2-Column Grid) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Left Column: Hasil Utama (Operational Metrics) */}
+        <div className="bg-surface border border-border-default rounded-md overflow-hidden">
+          <div className="bg-surface-subtle px-3.5 py-2 border-b border-border-subtle flex items-center justify-between text-xs">
+            <span className="font-semibold text-text-primary">Hasil utama</span>
+            <span className="text-[10px] font-mono text-text-muted">Kalkulasi terverifikasi</span>
           </div>
-        </Panel>
-
-        {/* Operational Metrics & Measurements Panel (Authoritative Snapshot) */}
-        {report.operationalMetrics && (() => {
-          const raw = report.operationalMetrics as {
-            measurements?: Record<string, unknown>;
-            derived?: {
-              dischargedMassG?: number;
-              dischargeRateGPerS?: number;
-              pressureDropBar?: number;
-            };
-            dischargedMassG?: number;
-            dischargeRateGPerS?: number;
-            pressureDropBar?: number;
-          };
-          const derived = raw.derived ?? (raw.dischargedMassG !== undefined ? raw : undefined);
-          const m = raw.measurements ?? {};
-
-          return (
-            <Panel title="Metrik operasional">
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3 bg-surface-subtle rounded border border-border-default">
-                    <div className="text-xs text-text-muted">Discharged Mass</div>
-                    <div className="font-mono text-xl font-medium text-primary mt-1">
-                      {derived?.dischargedMassG !== undefined ? `${derived.dischargedMassG.toFixed(3)} g` : '—'}
-                    </div>
-                  </div>
-                  <div className="p-3 bg-surface-subtle rounded border border-border-default">
-                    <div className="text-xs text-text-muted">Discharge Rate</div>
-                    <div className="font-mono text-xl font-medium text-primary mt-1">
-                      {derived?.dischargeRateGPerS !== undefined ? `${derived.dischargeRateGPerS.toFixed(3)} g/s` : '—'}
-                    </div>
-                  </div>
-                  <div className="p-3 bg-surface-subtle rounded border border-border-default">
-                    <div className="text-xs text-text-muted">Pressure Drop</div>
-                    <div className="font-mono text-xl font-medium text-primary mt-1">
-                      {derived?.pressureDropBar !== undefined ? `${derived.pressureDropBar.toFixed(2)} bar` : '—'}
-                    </div>
-                  </div>
-                  <div className="p-3 bg-surface-subtle rounded border border-border-default">
-                    <div className="text-xs text-text-muted">Kebocoran</div>
-                    <div className="font-mono text-xl font-medium mt-1">
-                      {m.leakage === 'Tidak' ? (
-                        <span className="text-semantic-success">Tidak</span>
-                      ) : m.leakage === 'Ya' ? (
-                        <span className="text-semantic-danger">Ya</span>
-                      ) : (
-                        '—'
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-surface-subtle rounded border border-border-default">
-                  <h5 className="font-medium text-text-primary text-xs uppercase tracking-wider mb-2">
-                    Detail pengukuran fisik & sensor
-                  </h5>
-                  <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-                    <div>
-                      <dt className="text-text-muted font-sans">Bobot Awal / Akhir</dt>
-                      <dd className="text-text-primary mt-0.5">{String(m.initialGrossWeightG ?? '—')} g / {String(m.finalGrossWeightG ?? '—')} g</dd>
-                    </div>
-                    <div>
-                      <dt className="text-text-muted font-sans">Tekanan Awal / Akhir</dt>
-                      <dd className="text-text-primary mt-0.5">{String(m.initialPressureBar ?? '—')} bar / {String(m.finalPressureBar ?? '—')} bar</dd>
-                    </div>
-                    <div>
-                      <dt className="text-text-muted font-sans">Durasi Tekan Aktual</dt>
-                      <dd className="text-text-primary mt-0.5">{m.actualPressDurationS !== undefined ? `${String(m.actualPressDurationS)} s` : '—'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-text-muted font-sans">Kedalaman Stroke</dt>
-                      <dd className="text-text-primary mt-0.5">{m.actualStrokeDepth !== undefined ? `${String(m.actualStrokeDepth)}` : '—'}</dd>
-                    </div>
-                  </dl>
-                </div>
+          <div className="divide-y divide-border-subtle text-xs font-mono">
+            <div className="flex items-center justify-between px-3.5 py-2.5">
+              <span className="font-sans text-text-secondary">Discharged Mass</span>
+              <span className="font-medium text-text-primary">
+                {derived?.dischargedMassG !== undefined ? `${derived.dischargedMassG.toFixed(3)} g` : '—'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between px-3.5 py-2.5">
+              <span className="font-sans text-text-secondary">Discharge Rate</span>
+              <span className="font-medium text-text-primary">
+                {derived?.dischargeRateGPerS !== undefined ? `${derived.dischargeRateGPerS.toFixed(3)} g/s` : '—'}
+              </span>
+            </div>
+            {isAerosol && (
+              <div className="flex items-center justify-between px-3.5 py-2.5">
+                <span className="font-sans text-text-secondary">Pressure Drop</span>
+                <span className="font-medium text-text-primary">
+                  {derived?.pressureDropBar !== undefined ? `${derived.pressureDropBar.toFixed(2)} bar` : '—'}
+                </span>
               </div>
-            </Panel>
-          );
-        })()}
-
-        {/* Primary Capture Panel */}
-        <Panel title="Tangkapan utama">
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <dt className="text-text-muted">Frame Index</dt>
-              <dd className="font-mono text-text-primary">{report.primaryCapture.frameIndex}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-text-muted">Waktu (ms)</dt>
-              <dd className="font-mono text-text-primary">{report.primaryCapture.timestampMs}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-text-muted">Fase</dt>
-              <dd className="text-text-secondary">{report.primaryCapture.phase}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-text-muted">Capture Moment ID</dt>
-              <dd className="font-mono text-xs text-text-secondary">{report.primaryCaptureMomentId}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-text-muted">Jumlah Pendukung</dt>
-              <dd className="font-mono text-text-primary">{(report.supportingCaptureMomentIds?.length ?? 0)} / 9</dd>
-            </div>
-          </div>
-        </Panel>
-
-        {/* Side Analysis Panel */}
-        <Panel title="Analisis samping (side)">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {report.side.calibration && (
-                <div className="space-y-2">
-                  <h5 className="font-medium text-text-primary">Kalibrasi</h5>
-                  <dl className="space-y-1 text-xs text-text-secondary">
-                    <div className="flex justify-between"><dt>mm/px</dt><dd className="font-mono">{report.side.calibration.scaleMmPerPx.toFixed(4)}</dd></div>
-                    <div className="flex justify-between"><dt>Referensi (mm)</dt><dd className="font-mono">{report.side.calibration.referenceDistanceMm}</dd></div>
-                    <div className="flex justify-between"><dt>Diadjust</dt><dd>{report.side.calibration.adjusted ? 'Ya' : 'Tidak'}</dd></div>
-                  </dl>
-                </div>
-              )}
-              {report.side.autoGeometry && (
-                <div className="space-y-2">
-                  <h5 className="font-medium text-text-primary">Geometri otomatis (piksel)</h5>
-                  <dl className="space-y-1 text-xs text-text-secondary">
-                    <div className="flex justify-between"><dt>Nozzle Origin</dt><dd className="font-mono">({report.side.autoGeometry.nozzleOriginPx.x.toFixed(0)}, {report.side.autoGeometry.nozzleOriginPx.y.toFixed(0)})</dd></div>
-                    <div className="flex justify-between"><dt>Spray Endpoint</dt><dd className="font-mono">({report.side.autoGeometry.sprayEndpointPx.x.toFixed(0)}, {report.side.autoGeometry.sprayEndpointPx.y.toFixed(0)})</dd></div>
-                    <div className="flex justify-between"><dt>Upper Boundary</dt><dd className="font-mono">({report.side.autoGeometry.upperBoundaryPx.x.toFixed(0)}, {report.side.autoGeometry.upperBoundaryPx.y.toFixed(0)})</dd></div>
-                    <div className="flex justify-between"><dt>Lower Boundary</dt><dd className="font-mono">({report.side.autoGeometry.lowerBoundaryPx.x.toFixed(0)}, {report.side.autoGeometry.lowerBoundaryPx.y.toFixed(0)})</dd></div>
-                  </dl>
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <h5 className="font-medium text-text-primary">Pengukuran final (mm)</h5>
-              <dl className="grid grid-cols-2 gap-2 text-sm">
-                <div><dt className="text-text-muted">Panjang Spray</dt><dd className="font-mono text-text-primary">{report.side.sprayLength?.final !== undefined ? report.side.sprayLength.final.toFixed(2) : '—'}</dd></div>
-                <div><dt className="text-text-muted">Sudut Spray</dt><dd className="font-mono text-text-primary">{report.side.sprayAngle?.final !== undefined ? report.side.sprayAngle.final.toFixed(2) : '—'}</dd></div>
-                <div><dt className="text-text-muted">Spread Vertikal</dt><dd className="font-mono text-text-primary">{report.side.verticalSpread?.final !== undefined ? report.side.verticalSpread.final.toFixed(2) : '—'}</dd></div>
-                <div><dt className="text-text-muted">Offset Arah</dt><dd className="font-mono text-text-primary">{report.side.directionOffset?.final !== undefined ? report.side.directionOffset.final.toFixed(2) : '—'}</dd></div>
-                {report.side.spreadPosition && (
-                  <div><dt className="text-text-muted">Posisi Spread</dt><dd className="font-mono text-text-primary">{report.side.spreadPosition.final !== undefined ? report.side.spreadPosition.final.toFixed(2) : '—'}</dd></div>
+            )}
+            <div className="flex items-center justify-between px-3.5 py-2.5 font-sans">
+              <span className="text-text-secondary">Kebocoran</span>
+              <span className="font-medium text-text-primary">
+                {m.leakage === 'Tidak' ? (
+                  <span className="text-semantic-success">Tidak</span>
+                ) : m.leakage === 'Ya' ? (
+                  <span className="text-semantic-danger">Ya</span>
+                ) : (
+                  '—'
                 )}
-              </dl>
-            </div>
-            <div className="p-3 bg-surface-subtle rounded border border-border-default text-xs text-text-secondary">
-              Koreksi manual: {Object.keys(report.side.finalGeometry || {}).length > 0 ? 'Diterapkan' : 'Tidak ada'}
+              </span>
             </div>
           </div>
-        </Panel>
+        </div>
 
-        {/* Front Analysis Panel - only if available */}
-        {report.front ? (
-          <Panel title="Analisis depan (front)">
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <h5 className="font-medium text-text-primary">Kalibrasi</h5>
-                  <dl className="space-y-1 text-xs text-text-secondary">
-                    <div className="flex justify-between"><dt>mm/px</dt><dd className="font-mono">{report.front.calibration.scaleMmPerPx.toFixed(4)}</dd></div>
-                    <div className="flex justify-between"><dt>Referensi (mm)</dt><dd className="font-mono">{report.front.calibration.referenceDistanceMm}</dd></div>
-                    <div className="flex justify-between"><dt>Diadjust</dt><dd>{report.front.calibration.adjusted ? 'Ya' : 'Tidak'}</dd></div>
-                  </dl>
-                </div>
-                <div className="space-y-2">
-                  <h5 className="font-medium text-text-primary">Pengukuran otomatis</h5>
-                  <dl className="space-y-1 text-xs text-text-secondary">
-                    <div className="flex justify-between"><dt>Area Spray (mm²)</dt><dd className="font-mono">{report.front.autoGeometry?.sprayAreaPixels ? report.front.autoGeometry.sprayAreaPixels.toFixed(0) + ' px' : '—'}</dd></div>
-                    <div className="flex justify-between"><dt>Diameter Ekuivalen (mm)</dt><dd className="font-mono">{report.front.autoGeometry?.equivalentDiameterPx ? report.front.autoGeometry.equivalentDiameterPx.toFixed(1) + ' px' : '—'}</dd></div>
-                    <div className="flex justify-between"><dt>Circularity</dt><dd className="font-mono">{report.front.autoGeometry?.circularity ? report.front.autoGeometry.circularity.toFixed(3) : '—'}</dd></div>
-                  </dl>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h5 className="font-medium text-text-primary">Pengukuran final (mm)</h5>
-                <dl className="grid grid-cols-2 gap-2 text-sm">
-                  <div><dt className="text-text-muted">Area Spray</dt><dd className="font-mono text-text-primary">{report.front.sprayArea.final.toFixed(2)}</dd></div>
-                  <div><dt className="text-text-muted">Diameter Ekuivalen</dt><dd className="font-mono text-text-primary">{report.front.equivalentDiameter.final.toFixed(2)}</dd></div>
-                  <div><dt className="text-text-muted">Circularity</dt><dd className="font-mono text-text-primary">{report.front.circularity.final.toFixed(3)}</dd></div>
-                  <div><dt className="text-text-muted">Simetri Horizontal</dt><dd className="font-mono text-text-primary">{report.front.horizontalSymmetry.final.toFixed(3)}</dd></div>
-                  <div><dt className="text-text-muted">Simetri Vertikal</dt><dd className="font-mono text-text-primary">{report.front.verticalSymmetry.final.toFixed(3)}</dd></div>
-                </dl>
-              </div>
+        {/* Right Column: Hasil Analisis Kamera */}
+        <div className="bg-surface border border-border-default rounded-md overflow-hidden">
+          <div className="bg-surface-subtle px-3.5 py-2 border-b border-border-subtle flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-text-primary">Hasil analisis kamera</span>
+              {anyAdjusted && (
+                <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-semantic-warning/10 text-semantic-warning border border-semantic-warning/30">
+                  Disesuaikan
+                </span>
+              )}
             </div>
-          </Panel>
-        ) : (
-          <Panel title="Analisis depan (front)">
-            <p className="text-sm text-text-secondary">Data Profil Depan tidak tersedia</p>
-          </Panel>
-        )}
-
-        {/* Supporting Captures Panel */}
-        {Boolean(report.supportingCaptures && report.supportingCaptures.length > 0) && (
-          <Panel title="Tangkapan pendukung">
-            <div className="space-y-3">
-              {report.supportingCaptures.map((cap, idx) => (
-                <div key={cap.captureMomentId} className="p-3 bg-surface-subtle rounded border border-border-default">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-text-primary">Pendukung #{idx + 1}</span>
-                    <span className="font-mono text-xs text-text-secondary">{cap.captureMomentId}</span>
-                  </div>
-                  <dl className="grid grid-cols-3 gap-2 text-xs">
-                    <div><dt className="text-text-muted">Frame Index</dt><dd className="font-mono text-text-primary">{cap.frameIndex}</dd></div>
-                    <div><dt className="text-text-muted">Waktu (ms)</dt><dd className="font-mono text-text-primary">{cap.timestampMs}</dd></div>
-                    <div><dt className="text-text-muted">Fase</dt><dd className="text-text-secondary">{cap.phase}</dd></div>
-                  </dl>
-                </div>
-              ))}
+            <span className="text-[10px] font-mono text-text-muted">Side CV Geometry</span>
+          </div>
+          <div className="divide-y divide-border-subtle text-xs font-mono">
+            <div className="flex items-center justify-between px-3.5 py-2.5">
+              <span className="font-sans text-text-secondary">Spray Length</span>
+              <span className="font-medium text-text-primary">
+                {report.side.sprayLength?.final !== undefined ? `${report.side.sprayLength.final.toFixed(1)} mm` : '—'}
+              </span>
             </div>
-          </Panel>
-        )}
+            <div className="flex items-center justify-between px-3.5 py-2.5">
+              <span className="font-sans text-text-secondary">Spray Angle</span>
+              <span className="font-medium text-text-primary">
+                {report.side.sprayAngle?.final !== undefined ? `${report.side.sprayAngle.final.toFixed(1)}°` : '—'}
+              </span>
+            </div>
+            {report.side.verticalSpread?.final !== undefined && (
+              <div className="flex items-center justify-between px-3.5 py-2.5">
+                <span className="font-sans text-text-secondary">Vertical Spread</span>
+                <span className="font-medium text-text-primary">
+                  {report.side.verticalSpread.final.toFixed(1)} mm
+                </span>
+              </div>
+            )}
+            {report.side.directionOffset?.final !== undefined && (
+              <div className="flex items-center justify-between px-3.5 py-2.5">
+                <span className="font-sans text-text-secondary">Direction Offset</span>
+                <span className="font-medium text-text-primary">
+                  {report.side.directionOffset.final.toFixed(1)}°
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* 3. Evidence Presentation: Primary Frame + Telemetry & Supporting Gallery */}
+      <ResultEvidenceGallery testRun={testRun} report={report} />
+
+      {/* 4. Ringkasan Konteks & Parameter Pengujian */}
+      <div className="bg-surface border border-border-default rounded-md overflow-hidden">
+        <div className="bg-surface-subtle px-3.5 py-2 border-b border-border-subtle text-xs font-semibold text-text-primary">
+          Ringkasan parameter & data lapangan
+        </div>
+        <dl className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 text-xs">
+          <div>
+            <dt className="text-text-muted text-[10px]">No. Formula</dt>
+            <dd className="font-mono font-medium text-text-primary">{kp.formulaNumber || (kp.metadata?.formulaNumber as string) || '—'}</dd>
+          </div>
+          <div>
+            <dt className="text-text-muted text-[10px]">Lot Produk</dt>
+            <dd className="font-mono font-medium text-text-primary">{kp.productLot || '—'}</dd>
+          </div>
+          <div>
+            <dt className="text-text-muted text-[10px]">Periode Uji</dt>
+            <dd className="font-mono text-text-secondary">{kp.testPeriod || '—'}</dd>
+          </div>
+          <div>
+            <dt className="text-text-muted text-[10px]">Posisi / Kondisi Simpan</dt>
+            <dd className="text-text-primary">{effectiveBottlePosition} / {effectiveStorage}</dd>
+          </div>
+          <div>
+            <dt className="text-text-muted text-[10px]">Gaya Tekan (Setpoint)</dt>
+            <dd className="font-mono text-text-primary">{testRun.setpoints.forceSetpointN} N</dd>
+          </div>
+          <div>
+            <dt className="text-text-muted text-[10px]">Durasi Tekan (Set / Aktual)</dt>
+            <dd className="font-mono text-text-primary">
+              {(testRun.setpoints.pressDurationMs / 1000).toFixed(2)} s
+              {m.actualPressDurationS !== undefined ? ` / ${String(m.actualPressDurationS)} s` : ''}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-text-muted text-[10px]">Stroke (Set / Aktual)</dt>
+            <dd className="font-mono text-text-primary">
+              {testRun.setpoints.strokeMm} mm
+              {m.actualStrokeDepth !== undefined ? ` / ${String(m.actualStrokeDepth)} mm` : ''}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-text-muted text-[10px]">Bobot Awal / Akhir</dt>
+            <dd className="font-mono text-text-primary">
+              {String(m.initialGrossWeightG ?? '—')} g / {String(m.finalGrossWeightG ?? '—')} g
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      {/* 5. Detail Teknis (Collapsible Disclosure) */}
+      <TechnicalDetailsDisclosure report={report} kp={kp} sample={sample} testRun={testRun} />
     </div>
   );
 }
