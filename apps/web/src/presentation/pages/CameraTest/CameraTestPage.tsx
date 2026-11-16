@@ -587,7 +587,7 @@ export function CameraTestPage() {
     <div className="camera-test-page">
       <div className="camera-test-intro">
         <div>
-          <div className="camera-test-kicker">ENGINEERING POC · CAMERA I/O</div>
+          <div className="camera-test-kicker">DIAGNOSTIK · PERANGKAT KAMERA</div>
           <h1>Uji Dual Kamera</h1>
           <p>Uji terisolasi untuk dua kamera browser dan snapshot berpasangan.</p>
         </div>

@@ -105,7 +105,7 @@ export function TestRunAnalysisPage() {
         <h1 className="text-xl font-bold text-text-primary">Kesalahan Analisis</h1>
         <p className="text-sm text-text-secondary">{error}</p>
         <button onClick={handleBack} className="text-sm font-medium text-primary hover:underline">
-          &larr; Kembali ke Kode Pengujian
+          &larr; {returnToWizard ? 'Kembali ke Eksekusi' : 'Kembali ke Kode Pengujian'}
         </button>
       </div>
     );

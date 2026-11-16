@@ -237,7 +237,7 @@ describe('Phase P3C — TestRun Result Ownership & Finalization', () => {
     });
 
     expect(screen.getByText(/Hasil Belum Tersedia.*PENDING/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Kembali ke Kode Pengujian/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Kembali ke Detail Kode Pengujian/i })).toBeInTheDocument();
   });
 
   it('3. ANALYZING TestRun shows "Buka Ruang Kerja Analisis" action', async () => {

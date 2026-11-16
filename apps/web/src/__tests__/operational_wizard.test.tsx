@@ -5,8 +5,9 @@ import '@testing-library/jest-dom';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { TestExecutionWizardPage } from '../presentation/pages/KodePengujian/TestExecutionWizardPage';
 import { TestRunResultPage } from '../presentation/pages/KodePengujian/TestRunResultPage';
-import { kodePengujianRepository } from '../application/services';
+import { kodePengujianRepository, simulationService } from '../application/services';
 import type { FinalAnalysisReport } from '@spray-paragon/domain';
+import { createCalibrationSnapshot } from '@spray-paragon/domain';
 import { createFinalReportCsv } from '../application/reporting/createFinalReportCsv';
 
 describe('Operational Test Execution Wizard (Client Flow Alignment)', () => {
@@ -604,7 +605,7 @@ describe('Operational Test Execution Wizard (Client Flow Alignment)', () => {
       });
     });
 
-    it('Case F: Step 4 draft saved with measurements only blocks Next to Step 5', async () => {
+    it('Case F: Step 4 without capture replaces generic Selanjutnya with Mulai Pengambilan Data CTA', async () => {
       const { kp, sample, testRun } = await seedTestRun({
         runOverrides: {
           wizardProgress: { step1Completed: true, step2Completed: true, step3Completed: true, step4Completed: false },
@@ -622,14 +623,95 @@ describe('Operational Test Execution Wizard (Client Flow Alignment)', () => {
         expect(screen.getByText(/04\. Eksekusi Pengujian & Data Lapangan/i)).toBeInTheDocument();
       });
 
-      const nextBtn = screen.getByRole('button', { name: /Selanjutnya/i });
-      fireEvent.click(nextBtn);
+      // Generic Selanjutnya must NOT be present on Step 4
+      expect(screen.queryByRole('button', { name: /^Selanjutnya$/i })).not.toBeInTheDocument();
 
-      await waitFor(() => {
-        expect(screen.getByText(/Eksekusi penangkapan frame \(Capture\) harus diselesaikan/i)).toBeInTheDocument();
-      });
+      // State-driven CTA for State A (No capture yet) must be present
+      const startCaptureBtn = screen.getByRole('button', { name: /Mulai Pengambilan Data/i });
+      expect(startCaptureBtn).toBeInTheDocument();
+
+      // Step 5 should not be accessible without completing capture & analysis
       expect(screen.getByText(/04\. Eksekusi Pengujian & Data Lapangan/i)).toBeInTheDocument();
       expect(screen.queryByText(/05\. Ringkasan & Hasil Akhir Pengujian/i)).not.toBeInTheDocument();
+    });
+
+    it('Case F2: Step 4 with capture but incomplete analysis renders Lanjut ke Analisis CTA', async () => {
+      const moments = simulationService.getSynchronizedFrames().slice(0, 1);
+      const { kp, sample, testRun } = await seedTestRun({
+        runOverrides: {
+          wizardProgress: { step1Completed: true, step2Completed: true, step3Completed: true, step4Completed: true },
+          captureSession: {
+            captureMode: 'simulation',
+            scenario: 'nominal-01',
+            synchronizedMoments: moments,
+            startedAt: new Date().toISOString(),
+          },
+        },
+      });
+      render(
+        <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/execute?step=4`]}>
+          <Routes>
+            <Route path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/execute" element={<TestExecutionWizardPage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+      await waitFor(() => {
+        expect(screen.getByText(/04\. Eksekusi Pengujian & Data Lapangan/i)).toBeInTheDocument();
+      });
+
+      // No generic Selanjutnya
+      expect(screen.queryByRole('button', { name: /^Selanjutnya$/i })).not.toBeInTheDocument();
+
+      // State B CTA must be present in ActionBar
+      expect(screen.getByRole('button', { name: /Lanjut ke Analisis/i })).toBeInTheDocument();
+    });
+
+    it('Case F3: Step 4 with analysis completed renders Lanjut ke Hasil CTA and advances to Step 5', async () => {
+      const moments = simulationService.getSynchronizedFrames().slice(0, 1);
+      const { kp, sample, testRun } = await seedTestRun({
+        runOverrides: {
+          wizardProgress: { step1Completed: true, step2Completed: true, step3Completed: true, step4Completed: true },
+          captureSession: {
+            captureMode: 'simulation',
+            scenario: 'nominal-01',
+            synchronizedMoments: moments,
+            startedAt: new Date().toISOString(),
+          },
+        },
+      });
+      await kodePengujianRepository.updateTestRun(kp.id, testRun.id, {
+        analysisDraft: {
+          calibration: {
+            side: createCalibrationSnapshot({ camera: 'side', referenceDistanceMm: 100, anchorA: { x: 0, y: 0 }, anchorB: { x: 100, y: 0 } }),
+            front: createCalibrationSnapshot({ camera: 'front', referenceDistanceMm: 100, anchorA: { x: 0, y: 0 }, anchorB: { x: 100, y: 0 } }),
+          },
+          primaryCaptureMomentId: moments[0]?.id ?? 'm-1',
+          supportingCaptureMomentIds: [],
+          sideCorrections: {},
+          frontCorrections: {},
+          updatedAt: new Date().toISOString(),
+        },
+      });
+      render(
+        <MemoryRouter initialEntries={[`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/execute?step=4`]}>
+          <Routes>
+            <Route path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/execute" element={<TestExecutionWizardPage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+      await waitFor(() => {
+        expect(screen.getByText(/04\. Eksekusi Pengujian & Data Lapangan/i)).toBeInTheDocument();
+      });
+
+      // State C CTA must be present
+      const lanjutHasilBtn = screen.getByRole('button', { name: /Lanjut ke Hasil/i });
+      expect(lanjutHasilBtn).toBeInTheDocument();
+
+      fireEvent.click(lanjutHasilBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText(/05\. Ringkasan & Hasil Akhir Pengujian/i)).toBeInTheDocument();
+      });
     });
 
     it('Case G: FINALIZED TestRun allows any step and stays read-only', async () => {

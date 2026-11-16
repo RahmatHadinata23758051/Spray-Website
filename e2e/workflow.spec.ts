@@ -384,5 +384,91 @@ test.describe('Spraybot simulated workflow', () => {
     await batchRow.getByRole('button', { name: 'Buka Batch' }).click();
     await expect(page.getByRole('heading', { name: 'BAT-24-0618' })).toBeVisible();
   });
+
+  test('canonical operator flow: New KP -> Step 01-04 -> Capture -> Analysis -> Step 05 without touching /result', async ({ page }) => {
+    // 1. Login and go to Dashboard
+    await page.goto('/login');
+    await page.getByRole('button', { name: 'Masuk' }).click();
+    await expect(page.getByRole('heading', { name: 'Dasbor' })).toBeVisible();
+
+    // 2. Go to New Kode Pengujian
+    await page.goto('/kode-pengujian/new');
+    await expect(page.getByRole('heading', { name: 'Identitas Produk' })).toBeVisible();
+
+    // Fill new KP form
+    const lotInput = page.getByPlaceholder('Contoh: LOT-2026-X1');
+    await lotInput.fill('LOT-CANONICAL-TEST');
+
+    // Click "Buat & Mulai Pengujian"
+    const submitBtn = page.getByRole('button', { name: /Buat & Mulai Pengujian/i });
+    await submitBtn.click();
+
+    // 3. Step 01 Identifikasi
+    await expect(page).toHaveURL(/.*\/execute\?step=1/);
+    await expect(page.getByRole('heading', { name: /01\. Identifikasi Sampel/i })).toBeVisible();
+    await page.getByRole('button', { name: /Selanjutnya/i }).click();
+
+    // 4. Step 02 Device
+    await expect(page).toHaveURL(/.*\/execute\?step=2/);
+    await expect(page.getByRole('heading', { name: /02\. Konfigurasi Device/i })).toBeVisible();
+    await page.getByRole('button', { name: /Selanjutnya/i }).click();
+
+    // 5. Step 03 Parameter
+    await expect(page).toHaveURL(/.*\/execute\?step=3/);
+    await expect(page.getByRole('heading', { name: /03\. Parameter Uji/i })).toBeVisible();
+    await page.getByRole('button', { name: /Selanjutnya/i }).click();
+
+    // 6. Step 04 Eksekusi (State A: No capture yet)
+    await expect(page).toHaveURL(/.*\/execute\?step=4/);
+    await expect(page.getByRole('heading', { name: /04\. Eksekusi Pengujian & Data Lapangan/i })).toBeVisible();
+    // Generic Selanjutnya must NOT be present on Step 4
+    await expect(page.getByRole('button', { name: /^Selanjutnya$/i })).toHaveCount(0);
+
+    // Primary CTA is "Mulai Pengambilan Data →"
+    const startCaptureBtn = page.locator('#btn-mulai-pengambilan');
+    await expect(startCaptureBtn).toBeVisible();
+    await startCaptureBtn.click();
+
+    // 7. Capture Workspace
+    await expect(page).toHaveURL(/.*\/capture\?returnTo=wizard/);
+    await expect(page.getByText('Pengujian Spray / Capture')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Kembali ke Eksekusi' })).toBeVisible();
+
+    // Start simulation capture
+    await page.getByRole('button', { name: 'Mulai Simulasi' }).click();
+    await expect(page.getByText(/Pengambilan selesai/)).toBeVisible({ timeout: 15000 });
+
+    // Save capture
+    await page.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Lanjut ke Analisis' })).toBeVisible();
+    await page.getByRole('button', { name: 'Lanjut ke Analisis' }).click();
+
+    // 8. Analysis Workspace
+    await expect(page).toHaveURL(/.*\/analysis\?returnTo=wizard/);
+    await expect(page.getByText('Pengujian Spray / Analisis')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Kembali ke Eksekusi' })).toBeVisible();
+
+    // Select primary frame
+    const frameBtn = page.getByRole('button', { name: /Tangkapan/i }).first();
+    await frameBtn.click();
+    await page.getByRole('button', { name: 'Jadikan Utama' }).click();
+    await expect(page.getByText('★ Utama')).toBeVisible();
+
+    // Proceed to Hasil
+    const lanjutHasilBtn = page.getByRole('button', { name: /Lanjut ke Hasil/i });
+    await expect(lanjutHasilBtn).toBeVisible();
+    await lanjutHasilBtn.click();
+
+    // 9. Step 05 Hasil in Wizard
+    await expect(page).toHaveURL(/.*\/execute\?step=5/);
+    await expect(page.getByRole('heading', { name: /05\. Ringkasan & Hasil Akhir Pengujian/i })).toBeVisible();
+    // Crucial requirement: URL contains /execute?step=5 and NEVER touched /result during wizard
+    expect(page.url()).not.toContain('/result');
+    expect(page.url()).toContain('/execute?step=5');
+
+    // Finish & close returns to KP detail
+    await page.locator('#btn-selesai').click();
+    await expect(page).toHaveURL(/.*\/kode-pengujian\/KP-/);
+  });
 });
 

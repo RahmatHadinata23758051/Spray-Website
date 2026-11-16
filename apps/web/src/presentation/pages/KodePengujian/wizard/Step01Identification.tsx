@@ -45,7 +45,7 @@ export function Step01Identification({
         <h2 className="text-sm font-semibold text-text-primary">01. Identifikasi Sampel & Konteks Studi</h2>
       </div>
 
-      <FormSection title="Produk & Trial">
+      <FormSection title="Produk & trial">
         <FormField label="Nama Produk">
           <Input
             value={formData.productName}

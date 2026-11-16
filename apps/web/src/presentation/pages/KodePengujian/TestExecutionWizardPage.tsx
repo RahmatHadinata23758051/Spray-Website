@@ -257,23 +257,39 @@ export function TestExecutionWizardPage() {
       const ok = await handleSaveDraft();
       if (!ok) return;
     }
-    if (step < 5) {
-      if (step === 4) {
-        const wp = evaluateWizardProgress(context?.testRun ?? { status: 'PENDING' }, {
-          sampleCode: formData.sampleCode,
-          deviceType: formData.deviceType,
-          strokeMm: formData.strokeMm,
-          holdingTimeS: formData.holdingTimeS,
-        });
-        if (!wp.step4Completed) {
-          setSaveStatus('Eksekusi penangkapan frame (Capture) harus diselesaikan sebelum melihat ringkasan hasil.');
-          return;
-        }
-      }
+    if (step < 4) {
       const nextStep = (step + 1) as WizardStep;
       setStep(nextStep);
       setSearchParams({ step: nextStep.toString() });
     }
+  };
+
+  const handleStartCapture = async () => {
+    if (!context || isSaving) return;
+    if (!isReadOnly) {
+      const ok = await handleSaveDraft();
+      if (!ok) return;
+    }
+    handleOpenCapture();
+  };
+
+  const handleStartAnalysis = async () => {
+    if (!context || isSaving) return;
+    if (!isReadOnly) {
+      const ok = await handleSaveDraft();
+      if (!ok) return;
+    }
+    handleOpenAnalysis();
+  };
+
+  const handleGoToStep5 = async () => {
+    if (!context || isSaving) return;
+    if (!isReadOnly) {
+      const ok = await handleSaveDraft();
+      if (!ok) return;
+    }
+    setStep(5);
+    setSearchParams({ step: '5' });
   };
 
   const handlePrevStep = () => {
@@ -349,6 +365,17 @@ export function TestExecutionWizardPage() {
 
   const { kp, sample, testRun } = context;
 
+  const captureSession = testRun.captureSession;
+  const hasCapture = Boolean(
+    (captureSession?.realSideFrames && captureSession.realSideFrames.length > 0) ||
+      (captureSession?.synchronizedMoments && captureSession.synchronizedMoments.length > 0)
+  );
+  const isAnalysisComplete = Boolean(
+    testRun.status === 'FINALIZED' ||
+      testRun.finalReport ||
+      Boolean(testRun.analysisDraft?.primaryCaptureMomentId)
+  );
+
   return (
     <div className="flex flex-col min-h-screen bg-surface-subtle/30">
       {/* Top Header / Breadcrumb Bar */}
@@ -405,6 +432,17 @@ export function TestExecutionWizardPage() {
 
       {/* Main Form Content Area */}
       <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 pb-6">
+        {isReadOnly && (
+          <div className="mb-4 p-3 rounded-md bg-surface-subtle border border-border-default flex items-center justify-between text-xs text-text-secondary">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-semantic-success" />
+              <span>
+                <strong className="font-semibold text-text-primary">Status Arsip Terkunci:</strong> Pengujian ini telah difinalisasi (read-only). Seluruh input terkunci untuk menjaga integritas hasil uji.
+              </span>
+            </div>
+          </div>
+        )}
+
         {saveStatus && (
           <div
             className={`mb-4 p-2.5 rounded text-xs border font-medium ${
@@ -482,6 +520,15 @@ export function TestExecutionWizardPage() {
               >
                 {isSaving ? 'Menyimpan...' : 'Simpan Draf'}
               </button>
+            ) : step === 5 && testRun.finalReport ? (
+              <button
+                type="button"
+                onClick={handleDownloadCsv}
+                className="btn btn-secondary !min-h-[30px] px-3.5 text-xs font-medium flex items-center gap-1.5"
+                id="btn-ekspor-csv"
+              >
+                Ekspor CSV
+              </button>
             ) : null
           }
           actions={
@@ -497,7 +544,7 @@ export function TestExecutionWizardPage() {
                 </button>
               )}
 
-              {step < 5 && (
+              {step < 4 && (
                 <button
                   type="button"
                   onClick={handleNextStep}
@@ -506,6 +553,42 @@ export function TestExecutionWizardPage() {
                   id="btn-selanjutnya"
                 >
                   {isSaving ? 'Menyimpan...' : 'Selanjutnya'}
+                </button>
+              )}
+
+              {step === 4 && !hasCapture && (
+                <button
+                  type="button"
+                  onClick={handleStartCapture}
+                  disabled={isSaving}
+                  className="btn btn-primary !min-h-[30px] px-4 text-xs font-medium"
+                  id="btn-mulai-pengambilan"
+                >
+                  Mulai Pengambilan Data &rarr;
+                </button>
+              )}
+
+              {step === 4 && hasCapture && !isAnalysisComplete && (
+                <button
+                  type="button"
+                  onClick={handleStartAnalysis}
+                  disabled={isSaving}
+                  className="btn btn-primary !min-h-[30px] px-4 text-xs font-medium"
+                  id="btn-lanjut-analisis"
+                >
+                  Lanjut ke Analisis &rarr;
+                </button>
+              )}
+
+              {step === 4 && hasCapture && isAnalysisComplete && (
+                <button
+                  type="button"
+                  onClick={handleGoToStep5}
+                  disabled={isSaving}
+                  className="btn btn-primary !min-h-[30px] px-4 text-xs font-medium"
+                  id="btn-lanjut-hasil"
+                >
+                  Lanjut ke Hasil &rarr;
                 </button>
               )}
 

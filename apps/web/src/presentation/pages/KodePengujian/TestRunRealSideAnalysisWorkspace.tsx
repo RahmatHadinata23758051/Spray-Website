@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { KodePengujian, TestRun, Sample, SelectedCaptureMoment, Camera } from '@spray-paragon/domain';
 import {
   addSupportingAnalysisCapture,
@@ -37,6 +38,7 @@ export function TestRunRealSideAnalysisWorkspace({
   returnToWizard,
   backLabel,
 }: TestRunRealSideAnalysisWorkspaceProps) {
+  const navigate = useNavigate();
   const [preparation, setPreparation] = useState<Preparation>({ status: 'loading' });
   const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
   const [mode, setMode] = useState<ViewMode>('Original');
@@ -220,17 +222,12 @@ export function TestRunRealSideAnalysisWorkspace({
             <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Mode</span>
             <span className="font-mono font-medium text-text-primary">SAMPING SAJA</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Frame</span>
-            <span className="font-mono font-medium text-text-primary">
+          <div className="flex items-center gap-2 text-xs font-mono text-text-secondary bg-surface-subtle px-2.5 py-1 rounded border border-border-subtle">
+            <span className="font-medium text-text-primary">
               {frames.length > 0 ? `${(currentFrame?.frameIndex ?? 0) + 1} / ${frames.length}` : '—'}
             </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Waktu</span>
-            <span className="font-mono font-medium text-text-primary">
-              {currentFrame ? `${currentFrame.elapsedMs} ms` : '—'}
-            </span>
+            <span className="text-border-strong">&middot;</span>
+            <span>{currentFrame ? `${currentFrame.elapsedMs} ms` : '—'}</span>
           </div>
           <Status tone="info">Analisis</Status>
         </div>
@@ -556,6 +553,18 @@ export function TestRunRealSideAnalysisWorkspace({
                 return `Diblokir: ${result.reasons.join('; ')}`;
               })()}
             </div>
+            {returnToWizard && (
+              <button
+                type="button"
+                className="btn btn-primary w-full text-xs font-medium"
+                onClick={() => {
+                  navigate(`/kode-pengujian/${kp.id}/samples/${sample.id}/runs/${testRun.id}/execute?step=5`);
+                }}
+                disabled={!selectedCaptures.some((c) => c.role === 'primary')}
+              >
+                Lanjut ke Hasil &rarr;
+              </button>
+            )}
           </section>
         </aside>
       </div>

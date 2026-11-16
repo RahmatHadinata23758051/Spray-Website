@@ -2,6 +2,26 @@ import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+// Load .env file if available
+const candidateEnvPaths = [
+  path.resolve('.env'),
+  path.resolve('../../.env'),
+  path.resolve('../.env'),
+];
+for (const envPath of candidateEnvPaths) {
+  if (fs.existsSync(envPath) && typeof process.loadEnvFile === 'function') {
+    try {
+      process.loadEnvFile(envPath);
+      break;
+    } catch {
+      // ignore
+    }
+  }
+}
 import type { FastifyRequest } from 'fastify';
 import type { AuthRepository } from './application/ports/authRepository';
 import type { KodePengujianRepository } from './application/ports/kodePengujianRepository';
@@ -12,6 +32,7 @@ import { MemoryKodePengujianRepository } from './data/memory/kodePengujianReposi
 import authRoutes from './presentation/routes/authRoutes';
 import healthRoutes from './presentation/routes/healthRoutes';
 import { createKodePengujianRoutes } from './presentation/routes/kodePengujianRoutes';
+import { createModelTestingRoutes } from './presentation/routes/modelTestingRoutes';
 import { hashToken } from './presentation/middleware/auth';
 
 export type BuildAppOptions = {
@@ -63,11 +84,19 @@ export async function buildApp(optionsOrAuthRepo?: AuthRepository | BuildAppOpti
   await app.register(healthRoutes());
   await app.register(authRoutes(authRepo), { prefix: '/auth' });
   await app.register((fastify) => createKodePengujianRoutes(fastify, kpRepo, authMiddleware));
+  await app.register(createModelTestingRoutes);
 
   return app;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isDirectRun = Boolean(process.argv[1] && (
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]) ||
+  process.argv[1].endsWith('app.ts') ||
+  process.argv[1].endsWith('app.js')
+));
+
+if (isDirectRun) {
   const app = await buildApp();
-  await app.listen({ port: Number(process.env.PORT ?? 3001), host: '127.0.0.1' });
+  const port = Number(process.env.API_PORT ?? 3001);
+  await app.listen({ port, host: '127.0.0.1' });
 }

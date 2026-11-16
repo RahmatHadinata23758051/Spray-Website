@@ -18,9 +18,9 @@ interface Step03ParametersProps {
 const ALL_OBJECTIVES: Array<{ id: ObservationObjective; label: string; note?: string }> = [
   { id: 'Panjang lintasan', label: 'Panjang lintasan' },
   { id: 'Sebaran', label: 'Sebaran' },
-  { id: 'Sudut kontak', label: 'Sudut kontak', note: 'Menunggu konfirmasi semantik Paragon' },
+  { id: 'Sudut kontak', label: 'Sudut kontak' },
   { id: 'Kecepatan pengeringan', label: 'Kecepatan pengeringan' },
-  { id: 'Distribusi droplet', label: 'Distribusi droplet', note: 'Metode pengukuran menunggu konfirmasi Paragon' },
+  { id: 'Distribusi droplet', label: 'Distribusi droplet' },
 ];
 
 export function Step03Parameters({
@@ -91,7 +91,7 @@ export function Step03Parameters({
       </div>
 
       {/* Parameter Mesin */}
-      <FormSection title="Parameter Mesin">
+      <FormSection title="Parameter mesin">
         <FormField label="Mode Gaya Tekan" required>
           <div className="grid grid-cols-2 gap-1.5 p-0.5 bg-surface-subtle border border-border-subtle rounded">
             <button

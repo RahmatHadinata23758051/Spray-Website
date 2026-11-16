@@ -57,6 +57,25 @@ export function Header({ page }: { page?: Page }) {
     }
   }
 
+  if (pathname.startsWith('/uji-model')) {
+    title = 'UjiModel';
+    description = pageDescriptions.UjiModel;
+
+    const parts = pathname.split('/').filter(Boolean); // ['uji-model', ':testId', 'execute']
+    if (parts.length === 2 && parts[1] === 'new') {
+      subSectionLabel = 'Uji Model Baru';
+      description = '';
+    } else if (parts.length >= 2) {
+      description = '';
+      kpIdMatch = parts[1];
+      if (parts.length >= 3 && parts[2] === 'execute') {
+        subSectionLabel = 'Eksekusi';
+      } else {
+        subSectionLabel = 'Detail';
+      }
+    }
+  }
+
   const isAnalysisWorkspace = pathname.includes('/analysis');
 
   return (

@@ -94,7 +94,7 @@ export function TestRunResultPage() {
               onClick={handleBack}
               className="btn btn-primary text-xs font-medium"
             >
-              Kembali ke Kode Pengujian
+              Kembali ke Detail Kode Pengujian
             </button>
           </div>
         </Panel>
@@ -132,7 +132,7 @@ export function TestRunResultPage() {
                 onClick={handleBack}
                 className="btn btn-secondary text-xs font-medium"
               >
-                Kembali ke Kode Pengujian
+                Kembali ke Detail Kode Pengujian
               </button>
             </div>
           </div>
@@ -221,7 +221,7 @@ export function TestRunResultPage() {
             onClick={handleBack}
             className="btn btn-secondary !min-h-[30px] !py-1 px-3 text-xs font-medium"
           >
-            Kembali
+            Kembali ke Detail Kode Pengujian
           </button>
         </div>
       </div>

@@ -604,21 +604,12 @@ export function TestRunSimulationAnalysisWorkspace({
             <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Metodologi</span>
             <span className="font-medium text-text-primary text-xs">{testRun.recipeSnapshot.name}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Mode</span>
-            <span className="font-mono font-medium text-text-primary">SIMULASI</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Frame</span>
-            <span className="font-mono font-medium text-text-primary">{currentMoment.frameIndex + 1} / {moments.length}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Waktu</span>
-            <span className="font-mono font-medium text-text-primary">{currentMoment.timestampMs} ms</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-text-muted font-mono font-medium text-[11px] uppercase tracking-wider">Sinkron</span>
-            <span className="font-mono font-medium text-text-primary">Δ {currentMoment.timestampDeltaMs} ms</span>
+          <div className="flex items-center gap-2 text-xs font-mono text-text-secondary bg-surface-subtle px-2.5 py-1 rounded border border-border-subtle">
+            <span className="font-medium text-text-primary">{currentMoment.frameIndex + 1} / {moments.length}</span>
+            <span className="text-border-strong">&middot;</span>
+            <span>{currentMoment.timestampMs} ms</span>
+            <span className="text-border-strong">&middot;</span>
+            <span className="text-text-muted">Δ {currentMoment.timestampDeltaMs} ms</span>
           </div>
           <Status tone={isStable ? 'success' : 'neutral'}>{isStable ? 'Fase Stabil' : currentMoment.phase}</Status>
           {currentMoment.recommended && (
@@ -869,12 +860,12 @@ export function TestRunSimulationAnalysisWorkspace({
               {testRun.captureSession?.captureMode !== 'real' && !isFinalized && (
                 <button
                   type="button"
-                  aria-label="Finalisasi Hasil"
+                  aria-label={returnToWizard ? 'Lanjut ke Hasil' : 'Finalisasi Hasil'}
                   className="btn btn-primary w-full shadow-sm"
                   onClick={handleConfirmFinalAnalysis}
                   disabled={!canFinalize}
                 >
-                  {returnToWizard ? 'Finalisasi & Lanjut ke Hasil' : 'Finalisasi Hasil'}
+                  {returnToWizard ? 'Lanjut ke Hasil \u2192' : 'Finalisasi Hasil'}
                 </button>
               )}
 

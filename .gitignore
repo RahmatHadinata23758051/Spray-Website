@@ -5,6 +5,7 @@ dist/
 !.env.example
 playwright-report/
 test-results/
+.playwright-mcp/
 coverage/
 *.log
 .claude/settings.local.json

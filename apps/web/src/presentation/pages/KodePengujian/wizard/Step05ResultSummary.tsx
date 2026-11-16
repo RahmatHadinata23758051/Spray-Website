@@ -21,7 +21,7 @@ export function Step05ResultSummary({
   sample,
   testRun,
   onDownloadCsv,
-  onBackToKp,
+  onBackToKp: _onBackToKp,
 }: Step05ResultSummaryProps) {
   const isAerosol = formData.deviceType === 'Aerosol';
   const isFinalized = testRun.status === 'FINALIZED';
@@ -79,7 +79,7 @@ export function Step05ResultSummary({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-border-subtle">
         <div className="flex items-center gap-2.5">
           <h2 className="text-sm font-semibold text-text-primary">
-            05. Ringkasan & Hasil Akhir Pengujian
+            05. Ringkasan &amp; Hasil Akhir Pengujian
           </h2>
           {isFinalized ? (
             <Status tone="success">Final</Status>
@@ -88,11 +88,22 @@ export function Step05ResultSummary({
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Add Replication button - disabled per client audit requirements */}
+          <div className="relative group">
+            <button
+              type="button"
+              disabled
+              className="btn btn-secondary !min-h-[28px] !py-0.5 px-3 text-xs font-medium opacity-50 cursor-not-allowed"
+            >
+              + Tambah Repetisi
+            </button>
+          </div>
           <button
             type="button"
             onClick={onDownloadCsv}
             className="btn btn-secondary !min-h-[28px] !py-0.5 px-3 text-xs font-medium flex items-center gap-1.5"
             id="btn-export-csv"
+            aria-label="Unduh Hasil (CSV)"
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
               <path
@@ -101,7 +112,7 @@ export function Step05ResultSummary({
                 clipRule="evenodd"
               />
             </svg>
-            Ekspor CSV
+            Unduh Hasil (CSV)
           </button>
         </div>
       </div>
@@ -297,42 +308,6 @@ export function Step05ResultSummary({
           testRun={testRun}
         />
       )}
-
-      {/* Action Footer */}
-      <div className="pt-3 border-t border-border-default flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onBackToKp}
-          className="btn btn-secondary !min-h-[30px] px-3.5 text-xs font-medium"
-        >
-          &larr; Detail Kode Pengujian
-        </button>
-
-        <div className="flex items-center gap-2.5">
-          {/* Add Replication button - disabled per client audit requirements */}
-          <div className="relative group">
-            <button
-              type="button"
-              disabled
-              className="btn btn-secondary !min-h-[30px] px-3 text-xs font-medium opacity-50 cursor-not-allowed"
-            >
-              + Tambah Repetisi
-            </button>
-            <div className="hidden group-hover:block absolute bottom-full right-0 mb-1.5 w-64 p-2 bg-text-primary text-surface text-[10px] rounded shadow-md z-10">
-              Menunggu konfirmasi semantik repetisi sampel.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onDownloadCsv}
-            className="btn btn-primary !min-h-[30px] px-4 text-xs font-medium"
-            aria-label="Unduh Hasil (CSV)"
-          >
-            Unduh Hasil (CSV)
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

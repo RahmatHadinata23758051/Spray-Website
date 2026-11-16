@@ -5,14 +5,41 @@ import type { CaptureSavePolicy } from '@spray-paragon/domain';
 
 export function SettingsPage() {
   const [savePolicy, setSavePolicy] = useState<CaptureSavePolicy>(getCaptureSavePolicy());
+  const [clearSuccess, setClearSuccess] = useState(false);
 
   const handlePolicyChange = (newPolicy: CaptureSavePolicy) => {
     setCaptureSavePolicy(newPolicy);
     setSavePolicy(newPolicy);
   };
 
+  const handleClearLocalHistory = () => {
+    if (window.confirm('Hapus seluruh riwayat Kode Pengujian dari penyimpanan browser? Tindakan ini akan mengosongkan seluruh riwayat lokal.')) {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem('spraybot.kodePengujian.v1');
+        window.localStorage.removeItem('spraybot.batches.v1');
+      }
+      if (typeof indexedDB !== 'undefined') {
+        try {
+          indexedDB.deleteDatabase('spraybot.capture-assets.v1');
+        } catch {
+          // ignore
+        }
+      }
+      setClearSuccess(true);
+      setTimeout(() => {
+        window.location.href = '/kode-pengujian';
+      }, 600);
+    }
+  };
+
   return (
     <div className="space-y-4 max-w-4xl">
+      {clearSuccess && (
+        <div className="p-3 bg-semantic-success/10 border border-semantic-success/30 rounded text-xs text-semantic-success font-medium">
+          Riwayat pengujian lokal berhasil dikosongkan. Mengalihkan ke daftar Kode Pengujian...
+        </div>
+      )}
+
       {/* Top Header Banner */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3">
         <div>
@@ -156,6 +183,21 @@ export function SettingsPage() {
             <span className="font-mono font-medium text-text-secondary bg-surface-subtle px-2 py-0.5 rounded border border-border-subtle text-[11px]">
               Mode Sesi Lokal
             </span>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 bg-semantic-danger/5">
+            <div>
+              <div className="font-medium text-semantic-danger">Hapus Riwayat Pengujian Lokal</div>
+              <div className="text-text-muted mt-0.5">
+                Mengosongkan seluruh riwayat Kode Pengujian dan batch dari penyimpanan browser (LocalStorage & IndexedDB).
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearLocalHistory}
+              className="btn btn-danger !min-h-[28px] !py-1 px-3 text-xs font-medium self-start sm:self-auto"
+            >
+              Hapus Semua Riwayat
+            </button>
           </div>
         </div>
       </section>

@@ -68,7 +68,7 @@ export function Step02DeviceConfig({
               !isAerosol
                 ? 'bg-primary text-white shadow-xs'
                 : 'text-text-secondary hover:text-text-primary'
-            }`}
+            } ${isReadOnly ? 'cursor-not-allowed opacity-60' : ''}`}
           >
             Non-Aerosol
           </button>
@@ -80,7 +80,7 @@ export function Step02DeviceConfig({
               isAerosol
                 ? 'bg-primary text-white shadow-xs'
                 : 'text-text-secondary hover:text-text-primary'
-            }`}
+            } ${isReadOnly ? 'cursor-not-allowed opacity-60' : ''}`}
           >
             Aerosol
           </button>
@@ -89,7 +89,7 @@ export function Step02DeviceConfig({
 
       {/* Conditional Fields: Aerosol */}
       {isAerosol ? (
-        <FormSection title="Spesifikasi Komponen Aerosol">
+        <FormSection title="Spesifikasi komponen aerosol">
           <FormField label="Kode Aktuator" required>
             <Input
               value={formData.aerosolSpec.actuatorCode}
@@ -165,7 +165,7 @@ export function Step02DeviceConfig({
         </FormSection>
       ) : (
         /* Conditional Fields: Non-Aerosol */
-        <FormSection title="Spesifikasi Komponen Non-Aerosol">
+        <FormSection title="Spesifikasi komponen non-aerosol">
           <FormField label="Kode Botol" required>
             <Input
               value={formData.nonAerosolSpec.bottleCode}

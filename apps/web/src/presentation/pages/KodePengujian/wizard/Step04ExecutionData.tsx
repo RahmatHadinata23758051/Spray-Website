@@ -43,7 +43,12 @@ export function Step04ExecutionData({
     0;
   const analysisDraft = testRun.analysisDraft;
   const finalReport = testRun.finalReport;
-  const hasAnalysis = Boolean(analysisDraft || finalReport);
+  const isAnalysisComplete = Boolean(
+    testRun.status === 'FINALIZED' ||
+      finalReport ||
+      Boolean(analysisDraft?.primaryCaptureMomentId)
+  );
+  const supportingCount = analysisDraft?.supportingCaptureMomentIds?.length ?? 0;
 
   return (
     <div className="space-y-5">
@@ -65,10 +70,10 @@ export function Step04ExecutionData({
           <div className="text-xs text-text-secondary mt-0.5 flex items-center gap-1.5 font-mono">
             <span
               className={`w-2 h-2 rounded-full ${
-                hasCapture ? 'bg-semantic-success' : 'bg-semantic-warning'
+                hasCapture ? 'bg-semantic-success' : 'bg-text-muted'
               }`}
             />
-            <span>{hasCapture ? `${frameCount} frame • video tersedia` : 'Belum ada data'}</span>
+            <span>{hasCapture ? `Selesai (${frameCount} frame)` : 'Belum ada data'}</span>
           </div>
         </div>
         <button
@@ -82,7 +87,7 @@ export function Step04ExecutionData({
       </div>
 
       {/* B. Data Aktual Mesin & Fisik */}
-      <FormSection 
+      <FormSection
         title="Data aktual"
         badge={
           <span className="font-mono text-[10px] bg-secondary/10 text-secondary px-1.5 py-0.5 rounded font-medium">
@@ -92,10 +97,7 @@ export function Step04ExecutionData({
       >
         {isAerosol && (
           <>
-            <FormField
-              label="Tekanan Awal (bar)"
-              hint={<span className="text-[10px] text-text-muted">Manual</span>}
-            >
+            <FormField label="Tekanan Awal (bar)">
               <Input
                 type="number"
                 step="0.01"
@@ -107,10 +109,7 @@ export function Step04ExecutionData({
               />
             </FormField>
 
-            <FormField
-              label="Tekanan Setelah (bar)"
-              hint={<span className="text-[10px] text-text-muted">Manual</span>}
-            >
+            <FormField label="Tekanan Setelah (bar)">
               <Input
                 type="number"
                 step="0.01"
@@ -124,11 +123,7 @@ export function Step04ExecutionData({
           </>
         )}
 
-        <FormField
-          label="Bobot Awal Bruto (g)"
-          hint={<span className="text-[10px] text-text-muted">Manual</span>}
-          required
-        >
+        <FormField label="Bobot Awal Bruto (g)" required>
           <Input
             type="number"
             step="0.01"
@@ -140,11 +135,7 @@ export function Step04ExecutionData({
           />
         </FormField>
 
-        <FormField
-          label="Bobot Akhir Bruto (g)"
-          hint={<span className="text-[10px] text-text-muted">Manual</span>}
-          required
-        >
+        <FormField label="Bobot Akhir Bruto (g)" required>
           <Input
             type="number"
             step="0.01"
@@ -156,11 +147,7 @@ export function Step04ExecutionData({
           />
         </FormField>
 
-        <FormField
-          label="Durasi Tekan Aktual (s)"
-          hint={<span className="text-[10px] text-text-muted">Manual</span>}
-          required
-        >
+        <FormField label="Durasi Tekan Aktual (s)" required>
           <Input
             type="number"
             step="0.01"
@@ -172,10 +159,7 @@ export function Step04ExecutionData({
           />
         </FormField>
 
-        <FormField
-          label="Kedalaman Stroke Aktual"
-          hint={<span className="text-[10px] text-text-muted">Manual</span>}
-        >
+        <FormField label="Kedalaman Stroke Aktual (mm)">
           <Input
             type="number"
             step="0.1"
@@ -194,9 +178,7 @@ export function Step04ExecutionData({
               <span className="text-[10px] text-semantic-success font-medium">Aman (Tidak Bocor)</span>
             ) : formData.leakage === 'Ya' ? (
               <span className="text-[10px] text-semantic-danger font-medium">Terdeteksi Bocor</span>
-            ) : (
-              <span className="text-[10px] text-text-muted">Manual</span>
-            )
+            ) : undefined
           }
           required
         >
@@ -211,10 +193,7 @@ export function Step04ExecutionData({
           </Select>
         </FormField>
 
-        <FormField
-          label="Waktu Pengeringan (s)"
-          hint={<span className="text-[10px] text-text-muted">Manual</span>}
-        >
+        <FormField label="Waktu Pengeringan (s)">
           <Input
             type="number"
             step="0.1"
@@ -247,17 +226,21 @@ export function Step04ExecutionData({
           <div className="text-xs text-text-secondary mt-0.5 flex items-center gap-1.5 font-mono">
             <span
               className={`w-2 h-2 rounded-full ${
-                finalReport ? 'bg-semantic-success' : hasAnalysis ? 'bg-primary' : 'bg-text-muted'
+                isAnalysisComplete
+                  ? 'bg-semantic-success'
+                  : hasCapture
+                  ? 'bg-semantic-warning'
+                  : 'bg-text-muted'
               }`}
             />
             <span>
-              {finalReport
-                ? 'Final'
-                : analysisDraft
-                ? 'Review diperlukan'
-                : hasCapture
-                ? 'Siap dianalisis'
-                : 'Belum dianalisis'}
+              {!hasCapture
+                ? 'Menunggu capture'
+                : !isAnalysisComplete
+                ? 'Belum selesai'
+                : finalReport
+                ? 'Selesai'
+                : `1 utama${supportingCount > 0 ? ` · ${supportingCount} pendukung` : ''}`}
             </span>
           </div>
         </div>
@@ -266,11 +249,15 @@ export function Step04ExecutionData({
           onClick={onOpenAnalysis}
           disabled={!hasCapture}
           className={`btn !min-h-[30px] px-3.5 text-xs font-medium self-start sm:self-auto ${
-            hasCapture ? 'btn-primary' : 'btn-secondary opacity-50 cursor-not-allowed'
+            !hasCapture
+              ? 'btn-secondary opacity-50 cursor-not-allowed'
+              : isAnalysisComplete
+              ? 'btn-secondary'
+              : 'btn-primary'
           }`}
           id="btn-buka-analisis"
         >
-          {hasAnalysis ? 'Tinjau Analisis' : 'Buka Analisis'}
+          {isAnalysisComplete ? 'Tinjau Analisis' : 'Buka Analisis'}
         </button>
       </div>
 

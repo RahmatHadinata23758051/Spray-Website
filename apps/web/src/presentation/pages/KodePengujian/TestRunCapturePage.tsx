@@ -877,7 +877,10 @@ export function TestRunCapturePage() {
       await kodePengujianRepository.updateTestRun(context.kp.id, currentTestRun.id, {
         status: 'ANALYZING',
       });
-      navigate(`/kode-pengujian/${context.kp.id}/samples/${context.sample.id}/runs/${currentTestRun.id}/analysis`);
+      const analysisUrl = `/kode-pengujian/${context.kp.id}/samples/${context.sample.id}/runs/${currentTestRun.id}/analysis${
+        returnToWizard ? '?returnTo=wizard' : ''
+      }`;
+      navigate(analysisUrl);
     } catch (err) {
       console.error('Gagal melanjutkan ke analisis', err);
       setError('Gagal melanjutkan ke analisis');
@@ -1042,6 +1045,9 @@ export function TestRunCapturePage() {
 
           {!isCapturing && testRun.status === 'PENDING' && (
             <>
+              <button onClick={() => handleNavigate(backPath)} className="btn btn-secondary font-medium">
+                {backLabel}
+              </button>
               <button onClick={handleStartSimulation} className="btn btn-secondary font-medium">Mulai Simulasi</button>
               <label className="flex items-center gap-2 text-xs text-text-secondary">
                 <span>Durasi</span>

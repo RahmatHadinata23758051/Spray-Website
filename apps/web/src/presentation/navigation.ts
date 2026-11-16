@@ -3,17 +3,18 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  ScanLine,
   SlidersHorizontal,
   Users as UsersIcon,
   type LucideIcon,
 } from 'lucide-react';
 
-export type NavPage = 'Dashboard' | 'Reports' | 'Products' | 'Calibration' | 'Users' | 'KodePengujian';
-export type Page = NavPage | 'Settings' | 'Login' | 'KodePengujianNew' | 'KodePengujianDetail' | 'Batches';
+export type NavPage = 'Dashboard' | 'Reports' | 'Products' | 'Calibration' | 'Users' | 'KodePengujian' | 'UjiModel';
+export type Page = NavPage | 'Settings' | 'Login' | 'KodePengujianNew' | 'KodePengujianDetail' | 'Batches' | 'UjiModelNew';
 
 export const navigation: { label: string; items: { page: NavPage; icon: LucideIcon }[] }[] = [
   { label: 'Navigasi Utama', items: [{ page: 'Dashboard', icon: LayoutDashboard }, { page: 'KodePengujian', icon: ClipboardList }] },
-  { label: 'Alur Kerja', items: [{ page: 'Reports', icon: FileText }] },
+  { label: 'Alur Kerja', items: [{ page: 'Reports', icon: FileText }, { page: 'UjiModel', icon: ScanLine }] },
   { label: 'Konfigurasi', items: [{ page: 'Products', icon: Beaker }, { page: 'Calibration', icon: SlidersHorizontal }] },
   { label: 'Sistem', items: [{ page: 'Users', icon: UsersIcon }] },
 ];
@@ -30,6 +31,8 @@ export const legacyPageToPath: Record<Page, string> = {
   KodePengujian: '/kode-pengujian',
   KodePengujianNew: '/kode-pengujian/new',
   KodePengujianDetail: '/kode-pengujian/:kpId',
+  UjiModel: '/uji-model',
+  UjiModelNew: '/uji-model/new',
 };
 
 export const pathToLegacyPage: Record<string, Page> = {
@@ -43,6 +46,8 @@ export const pathToLegacyPage: Record<string, Page> = {
   '/settings': 'Settings',
   '/kode-pengujian': 'KodePengujian',
   '/kode-pengujian/new': 'KodePengujianNew',
+  '/uji-model': 'UjiModel',
+  '/uji-model/new': 'UjiModelNew',
 };
 
 export const pageLabels: Record<Page, string> = {
@@ -57,6 +62,8 @@ export const pageLabels: Record<Page, string> = {
   KodePengujian: 'Kode Pengujian',
   KodePengujianNew: 'Kode Pengujian Baru',
   KodePengujianDetail: 'Detail Kode Pengujian',
+  UjiModel: 'Uji Model',
+  UjiModelNew: 'Uji Model Baru',
 };
 
 export const pageDescriptions: Record<Exclude<Page, 'Login'>, string> = {
@@ -70,4 +77,6 @@ export const pageDescriptions: Record<Exclude<Page, 'Login'>, string> = {
   KodePengujian: 'Kelola sampel dan pengujian.',
   KodePengujianNew: 'Buat konteks pengujian sebelum menambahkan sampel.',
   KodePengujianDetail: '',
+  UjiModel: '',
+  UjiModelNew: '',
 };

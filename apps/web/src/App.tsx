@@ -31,6 +31,11 @@ import { TestRunAnalysisPage } from './presentation/pages/KodePengujian/TestRunA
 import { TestRunResultPage } from './presentation/pages/KodePengujian/TestRunResultPage';
 import { TestExecutionWizardPage } from './presentation/pages/KodePengujian/TestExecutionWizardPage';
 
+// Model Testing Pages (Video Upload & Segmentation Sandbox)
+import { ModelTestingListPage } from './presentation/pages/ModelTesting/ModelTestingListPage';
+import { NewModelTestingPage } from './presentation/pages/ModelTesting/NewModelTestingPage';
+import { ModelTestingWizardPage } from './presentation/pages/ModelTesting/ModelTestingWizardPage';
+
 export { createFinalReportCsv } from './application/reporting/createFinalReportCsv';
 
 export function App() {
@@ -79,6 +84,11 @@ export function App() {
           path="/kode-pengujian/:kpId/samples/:sampleId/runs/:runId/execute"
           element={<TestExecutionWizardPage />}
         />
+
+        {/* Model Testing Sandbox Routes (Manual Spray Video Segmentation) */}
+        <Route path="/uji-model" element={<ModelTestingListPage />} />
+        <Route path="/uji-model/new" element={<NewModelTestingPage />} />
+        <Route path="/uji-model/:testId/execute" element={<ModelTestingWizardPage />} />
 
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/products" element={<ProductsPage />} />
