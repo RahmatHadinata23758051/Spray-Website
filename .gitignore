@@ -7,8 +7,10 @@ playwright-report/
 test-results/
 .playwright-mcp/
 coverage/
+.claude/
+.agents/
+agent/
+.codex/
 *.log
-.claude/settings.local.json
-.codex/hooks.json
 pnpm-workspace.yaml
 
