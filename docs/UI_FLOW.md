@@ -1,5 +1,11 @@
 # UI FLOW — Information Architecture
 
+> [!WARNING]
+> **DEPRECATED / SUPERSEDED DOCUMENT**
+> This document describes an earlier UI flow design and has been superseded by the canonical developer handover documentation:
+> - See [OPERATOR_WORKFLOW.md](./OPERATOR_WORKFLOW.md) for the active 5-step operational wizard and sub-workspace navigation.
+> - See [CODEBASE_GUIDE.md](./CODEBASE_GUIDE.md) for current canonical, technical, and legacy routes.
+
 ## 1. Navigation
 
 Recommended primary navigation:

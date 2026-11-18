@@ -13,19 +13,24 @@ Hardware is **not available yet**. The first development target is therefore a f
 
 The application must never pretend that real hardware is connected. During this phase the UI runs in **Simulation / Mock Mode**.
 
-## Documentation map
+## Developer Handover Documentation
 
-Read in this order:
+A complete, production-grade developer handover documentation set is available in the [`docs/`](./docs/README.md) directory:
 
-1. `docs/PRD.md` — product scope, goals, MVP, non-goals, acceptance criteria.
-2. `docs/DESIGN.md` — visual direction, design tokens, typography, anti-AI-slop constraints.
-3. `docs/ARCHITECTURE.md` — 3-layer software architecture and backend boundary.
-4. `docs/ANALYSIS_FLOW.md` — mock analysis pipeline and per-camera metrics.
-5. `docs/UI_FLOW.md` — screens, navigation, screen responsibilities, main flows.
-6. `docs/MOCK_DATA.md` — mock-mode contracts and fixture rules.
-7. `docs/SKILLS.md` — skills/capabilities OpenCode should discover and load.
-8. `AGENTS.md` — repository-wide rules for coding agents.
-9. `docs/HANDOVER.md` — implementation summary, backlog completion, known gaps, next steps.
+1. [docs/README.md](./docs/README.md) — Documentation index & recommended reading order
+2. [docs/HANDOVER.md](./docs/HANDOVER.md) — Primary executive handover & "Do Not Break" rules
+3. [docs/SYSTEM_ARCHITECTURE.md](./docs/SYSTEM_ARCHITECTURE.md) — System layers & monorepo boundaries
+4. [docs/DOMAIN_MODEL.md](./docs/DOMAIN_MODEL.md) — Canonical domain entities & immutability invariants
+5. [docs/OPERATOR_WORKFLOW.md](./docs/OPERATOR_WORKFLOW.md) — 5-step operational wizard & sub-workspaces
+6. [docs/CODEBASE_GUIDE.md](./docs/CODEBASE_GUIDE.md) — Directory map, file modification guide & routes
+7. [docs/DATA_PERSISTENCE_AND_SYNC.md](./docs/DATA_PERSISTENCE_AND_SYNC.md) — Hybrid local-first & sync architecture
+8. [docs/API_AND_DATABASE.md](./docs/API_AND_DATABASE.md) — Fastify routes, auth & PostgreSQL schema
+9. [docs/CAPTURE_AND_ANALYSIS.md](./docs/CAPTURE_AND_ANALYSIS.md) — Real camera, baseline subtraction & CV engine
+10. [docs/DEVELOPMENT_SETUP.md](./docs/DEVELOPMENT_SETUP.md) — Local environment setup & runbook
+11. [docs/TESTING_AND_QA.md](./docs/TESTING_AND_QA.md) — Testing strategy, critical suites & regression guards
+12. [docs/OPEN_ITEMS_AND_ROADMAP.md](./docs/OPEN_ITEMS_AND_ROADMAP.md) — Unresolved client items, hardware & roadmap
+
+Older planning documentation (e.g. `docs/ARCHITECTURE.md`, `docs/ANALYSIS_FLOW.md`, `docs/UI_FLOW.md`) is maintained for historical context but is superseded by the new handover documentation.
 
 ## Product principle
 

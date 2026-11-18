@@ -1,5 +1,11 @@
 # ANALYSIS FLOW — 3-Camera Mock Pipeline
 
+> [!WARNING]
+> **DEPRECATED / SUPERSEDED DOCUMENT**
+> This document describes an earlier 3-camera mock design and has been superseded by the canonical developer handover documentation:
+> - See [CAPTURE_AND_ANALYSIS.md](./CAPTURE_AND_ANALYSIS.md) for actual Side vs Front camera handling, IndexedDB storage, and CV pipeline boundaries.
+> - See [OPERATOR_WORKFLOW.md](./OPERATOR_WORKFLOW.md) for the active 5-step operational wizard workflow.
+
 ## 1. Purpose
 
 This document defines the analysis process the frontend must represent.

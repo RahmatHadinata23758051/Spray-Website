@@ -1,5 +1,12 @@
 # ARCHITECTURE — Software-First MVP
 
+> [!WARNING]
+> **DEPRECATED / SUPERSEDED DOCUMENT**
+> This document describes an earlier planning/MVP stage and has been superseded by the canonical developer handover documentation:
+> - See [SYSTEM_ARCHITECTURE.md](./SYSTEM_ARCHITECTURE.md) for current system layers and repository structure.
+> - See [CODEBASE_GUIDE.md](./CODEBASE_GUIDE.md) for current file maps and routes.
+> - See [DATA_PERSISTENCE_AND_SYNC.md](./DATA_PERSISTENCE_AND_SYNC.md) for current persistence and sync architecture.
+
 ## 1. Architecture objective
 
 The software must be easy to demo today and easy to connect to real machine hardware later.
